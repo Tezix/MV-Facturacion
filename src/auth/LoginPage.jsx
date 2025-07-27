@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import axios from 'axios';
+import API from '../api/axios';
 import { Box, TextField, Button, Typography, Alert } from '@mui/material';
 
 export default function LoginPage({ onLogin }) {
@@ -10,7 +10,7 @@ export default function LoginPage({ onLogin }) {
   const handleLogin = async e => {
     e.preventDefault();
     try {
-      const res = await axios.post('http://localhost:8000/api/login/', {
+      const res = await API.post('login/', {
         username,
         password
       });
