@@ -1,6 +1,7 @@
 import axios from "axios";
 
 export const API = axios.create({
+  // baseURL: 'https://mv-facturacion-back.onrender.com/api/',
   baseURL: 'https://mv-facturacion-back.onrender.com/api/',
   withCredentials: true, // Puedes dejar esto si usas cookies, pero no es necesario para Token Auth
 });
