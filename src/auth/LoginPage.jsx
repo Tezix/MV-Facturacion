@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import axios from 'axios';
+import { Box, TextField, Button, Typography, Alert } from '@mui/material';
 
 export default function LoginPage({ onLogin }) {
   const [username, setUsername] = useState('');
@@ -15,34 +16,59 @@ export default function LoginPage({ onLogin }) {
       });
       const token = res.data.token;
       localStorage.setItem('token', token);
-      onLogin(); // Cambia el estado en App
-    } catch (e) {
-      setError('Credenciales inválidas', e);
+      onLogin();
+    } catch (err) {
+      setError('Credenciales inválidas', err);
     }
   };
 
   return (
-    <div className="p-6 max-w-sm mx-auto bg-white rounded shadow">
-      <h2 className="text-xl mb-4">Login</h2>
+    <Box
+      sx={{
+        p: 4,
+        maxWidth: 400,
+        mx: 'auto',
+        bgcolor: 'background.paper',
+        borderRadius: 2,
+        boxShadow: 3,
+      }}
+    >
+      <Typography variant="h5" mb={2}>
+        Login
+      </Typography>
       <form onSubmit={handleLogin}>
-        <input
-          className="border p-2 mb-2 w-full"
-          placeholder="Usuario"
+        <TextField
+          label="Usuario"
+          variant="outlined"
+          fullWidth
+          margin="normal"
           value={username}
           onChange={e => setUsername(e.target.value)}
         />
-        <input
+        <TextField
+          label="Contraseña"
           type="password"
-          className="border p-2 mb-2 w-full"
-          placeholder="Contraseña"
+          variant="outlined"
+          fullWidth
+          margin="normal"
           value={password}
           onChange={e => setPassword(e.target.value)}
         />
-        <button className="bg-blue-600 text-white p-2 w-full rounded" type="submit">
+        <Button
+          variant="contained"
+          color="primary"
+          fullWidth
+          type="submit"
+          sx={{ mt: 2 }}
+        >
           Iniciar sesión
-        </button>
-        {error && <p className="text-red-600 mt-2">{error}</p>}
+        </Button>
+        {error && (
+          <Alert severity="error" sx={{ mt: 2 }}>
+            {error}
+          </Alert>
+        )}
       </form>
-    </div>
+    </Box>
   );
 }
