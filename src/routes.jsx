@@ -38,7 +38,7 @@ const [auth, setAuth] = useState(!!localStorage.getItem('token'));
     <BrowserRouter>
       <Navbar onLogout={handleLogout} />
       <Routes>
-        <Route path="/" element={<ClientesList />} />
+        <Route path="/" element={<FacturasList />} />
         <Route path="/clientes" element={<ClientesList />} />
         <Route path="/clientes/crear" element={<ClienteForm />} />
         <Route path="/clientes/editar/:id" element={<ClienteForm />} />
