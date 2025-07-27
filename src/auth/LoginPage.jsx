@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import API from '../api/axios';
+import {API} from '../api/axios';
 import { Box, TextField, Button, Typography, Alert } from '@mui/material';
 
 export default function LoginPage({ onLogin }) {
