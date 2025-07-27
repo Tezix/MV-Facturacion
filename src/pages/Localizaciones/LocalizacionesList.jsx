@@ -11,13 +11,18 @@ import {
   TableBody,
   Paper,
   Box,
+  CircularProgress,
 } from '@mui/material';
+
 
 export default function LocalizacionTrabajoList() {
   const [localizaciones, setLocalizaciones] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    API.get('localizaciones_trabajos/').then((res) => setLocalizaciones(res.data));
+    API.get('localizaciones_trabajos/')
+      .then((res) => setLocalizaciones(res.data))
+      .finally(() => setLoading(false));
   }, []);
 
   const handleDelete = async (id) => {
@@ -26,6 +31,17 @@ export default function LocalizacionTrabajoList() {
       setLocalizaciones(localizaciones.filter((l) => l.id !== id));
     }
   };
+
+  if (loading) {
+    return (
+      <Box p={4} display="flex" flexDirection="column" alignItems="center">
+        <Typography variant="body1" fontWeight="bold">
+          Cargando localizaciones...
+        </Typography>
+        <CircularProgress size={24} sx={{ mt: 2 }} />
+      </Box>
+    );
+  }
 
   return (
     <Box p={3}>

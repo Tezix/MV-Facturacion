@@ -25,8 +25,10 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
+  /* Elimina el centrado vertical */
+  /* justify-content: center; */
+  padding-top: 48px; /* Ajusta la distancia al top aquí */
 }
 
 h1 {

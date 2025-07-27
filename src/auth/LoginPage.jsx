@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import favicon from '../../public/favicon.webp';
 import {API} from '../api/axios';
 import { Box, TextField, Button, Typography, Alert } from '@mui/material';
 
@@ -33,6 +34,9 @@ export default function LoginPage({ onLogin }) {
         boxShadow: 3,
       }}
     >
+      <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+        <img src={favicon} alt="Favicon" style={{ width: 64}} />
+      </Box>
       <Typography variant="h5" mb={2}>
         Login
       </Typography>
@@ -44,6 +48,7 @@ export default function LoginPage({ onLogin }) {
           margin="normal"
           value={username}
           onChange={e => setUsername(e.target.value)}
+          required
         />
         <TextField
           label="Contraseña"
@@ -53,6 +58,7 @@ export default function LoginPage({ onLogin }) {
           margin="normal"
           value={password}
           onChange={e => setPassword(e.target.value)}
+          required
         />
         <Button
           variant="contained"
@@ -60,6 +66,7 @@ export default function LoginPage({ onLogin }) {
           fullWidth
           type="submit"
           sx={{ mt: 2 }}
+          disabled={!username || !password}
         >
           Iniciar sesión
         </Button>

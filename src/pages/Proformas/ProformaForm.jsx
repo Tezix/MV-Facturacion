@@ -25,17 +25,22 @@ const ProformaForm = () => {
   const [clientes, setClientes] = useState([]);
   const [facturas, setFacturas] = useState([]);
   const [estados, setEstados] = useState([]);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { id } = useParams();
 
   useEffect(() => {
-    API.get("clientes/").then((res) => setClientes(res.data));
-    API.get("facturas/").then((res) => setFacturas(res.data));
-    API.get("estados/").then((res) => setEstados(res.data));
-
-    if (id) {
-      API.get(`proformas/${id}/`).then((res) => setForm(res.data));
-    }
+    Promise.all([
+      API.get("clientes/"),
+      API.get("facturas/"),
+      API.get("estados/"),
+      id ? API.get(`proformas/${id}/`) : Promise.resolve(null)
+    ]).then(([clientesRes, facturasRes, estadosRes, proformaRes]) => {
+      setClientes(clientesRes.data);
+      setFacturas(facturasRes.data);
+      setEstados(estadosRes.data);
+      if (proformaRes) setForm(proformaRes.data);
+    }).finally(() => setLoading(false));
   }, [id]);
 
   const handleChange = (e) => {
@@ -51,6 +56,17 @@ const ProformaForm = () => {
     }
     navigate("/proformas");
   };
+
+  if (loading) {
+    return (
+      <Box p={4} display="flex" flexDirection="column" alignItems="center">
+        <Typography variant="body1" fontWeight="bold">
+          Cargando datos de proforma...
+        </Typography>
+        <CircularProgress size={24} sx={{ mt: 2 }} />
+      </Box>
+    );
+  }
 
   return (
     <Box
@@ -68,7 +84,7 @@ const ProformaForm = () => {
       <Typography variant="h5" fontWeight="bold">
         {id ? "Editar" : "Crear"} Proforma
       </Typography>
-
+      {/* ...existing code for dropdowns and fields... */}
       <FormControl fullWidth required>
         <InputLabel id="cliente-label">Cliente</InputLabel>
         <Select

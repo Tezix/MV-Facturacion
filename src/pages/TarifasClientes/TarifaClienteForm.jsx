@@ -22,16 +22,20 @@ const TarifaClienteForm = () => {
 
   const [clientes, setClientes] = useState([]);
   const [tarifas, setTarifas] = useState([]);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { id } = useParams();
 
   useEffect(() => {
-    API.get('clientes/').then((res) => setClientes(res.data));
-    API.get('tarifas/').then((res) => setTarifas(res.data));
-
-    if (id) {
-      API.get(`tarifas_clientes/${id}/`).then((res) => setForm(res.data));
-    }
+    Promise.all([
+      API.get('clientes/'),
+      API.get('tarifas/'),
+      id ? API.get(`tarifas_clientes/${id}/`) : Promise.resolve(null)
+    ]).then(([clientesRes, tarifasRes, tarifaClienteRes]) => {
+      setClientes(clientesRes.data);
+      setTarifas(tarifasRes.data);
+      if (tarifaClienteRes) setForm(tarifaClienteRes.data);
+    }).finally(() => setLoading(false));
   }, [id]);
 
   const handleChange = (e) => {
@@ -48,11 +52,11 @@ const TarifaClienteForm = () => {
     navigate('/tarifas-clientes');
   };
 
-  if (id && !form.cliente) {
+  if (loading) {
     return (
-      <Box p={4} textAlign="center">
-        <Typography variant="body1" fontWeight="bold">Cargando...</Typography>
-        <CircularProgress sx={{ mt: 2 }} />
+      <Box p={4} display="flex" flexDirection="column" alignItems="center">
+        <Typography variant="body1" fontWeight="bold">Cargando datos de tarifa cliente...</Typography>
+        <CircularProgress size={24} sx={{ mt: 2 }} />
       </Box>
     );
   }

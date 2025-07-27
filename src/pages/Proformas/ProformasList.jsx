@@ -11,13 +11,17 @@ import {
   TableBody,
   Paper,
   Box,
+  CircularProgress,
 } from "@mui/material";
 
 const ProformasList = () => {
   const [proformas, setProformas] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    API.get("proformas/").then((res) => setProformas(res.data));
+    API.get("proformas/")
+      .then((res) => setProformas(res.data))
+      .finally(() => setLoading(false));
   }, []);
 
   const handleDelete = async (id) => {
@@ -26,6 +30,17 @@ const ProformasList = () => {
       setProformas(proformas.filter((p) => p.id !== id));
     }
   };
+
+  if (loading) {
+    return (
+      <Box p={4} display="flex" flexDirection="column" alignItems="center">
+        <Typography variant="body1" fontWeight="bold">
+          Cargando proformas...
+        </Typography>
+        <CircularProgress size={24} sx={{ mt: 2 }} />
+      </Box>
+    );
+  }
 
   return (
     <Box p={3}>

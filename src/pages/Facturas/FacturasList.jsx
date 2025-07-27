@@ -11,13 +11,18 @@ import {
   TableBody,
   Paper,
   Box,
+  CircularProgress,
 } from '@mui/material';
+
 
 export default function FacturasList() {
   const [facturas, setFacturas] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    API.get('facturas/').then((res) => setFacturas(res.data));
+    API.get('facturas/')
+      .then((res) => setFacturas(res.data))
+      .finally(() => setLoading(false));
   }, []);
 
   const handleDelete = async (id) => {
@@ -26,6 +31,17 @@ export default function FacturasList() {
       setFacturas(facturas.filter((f) => f.id !== id));
     }
   };
+
+  if (loading) {
+    return (
+      <Box p={4} display="flex" flexDirection="column" alignItems="center">
+        <Typography variant="body1" fontWeight="bold">
+          Cargando facturas...
+        </Typography>
+        <CircularProgress size={24} sx={{ mt: 2 }} />
+      </Box>
+    );
+  }
 
   return (
     <Box p={3}>

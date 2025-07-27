@@ -11,13 +11,17 @@ import {
   TableBody,
   Paper,
   Box,
+  CircularProgress,
 } from '@mui/material';
 
 export default function TarifaClienteList() {
   const [tarifasClientes, setTarifasClientes] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    API.get('tarifas_clientes/').then((res) => setTarifasClientes(res.data));
+    API.get('tarifas_clientes/')
+      .then((res) => setTarifasClientes(res.data))
+      .finally(() => setLoading(false));
   }, []);
 
   const handleDelete = async (id) => {
@@ -26,6 +30,17 @@ export default function TarifaClienteList() {
       setTarifasClientes(tarifasClientes.filter((tc) => tc.id !== id));
     }
   };
+
+  if (loading) {
+    return (
+      <Box p={4} display="flex" flexDirection="column" alignItems="center">
+        <Typography variant="body1" fontWeight="bold">
+          Cargando tarifas clientes...
+        </Typography>
+        <CircularProgress size={24} sx={{ mt: 2 }} />
+      </Box>
+    );
+  }
 
   return (
     <Box p={3}>

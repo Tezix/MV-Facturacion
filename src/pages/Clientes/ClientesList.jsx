@@ -11,13 +11,18 @@ import {
   TableBody,
   Paper,
   Box,
+  CircularProgress,
 } from '@mui/material';
+
 
 export default function ClientesList() {
   const [clientes, setClientes] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    API.get('clientes/').then((res) => setClientes(res.data));
+    API.get('clientes/')
+      .then((res) => setClientes(res.data))
+      .finally(() => setLoading(false));
   }, []);
 
   const deleteCliente = (id) => {
@@ -27,6 +32,17 @@ export default function ClientesList() {
       });
     }
   };
+
+  if (loading) {
+    return (
+      <Box p={4} display="flex" flexDirection="column" alignItems="center">
+        <Typography variant="body1" fontWeight="bold">
+          Cargando clientes...
+        </Typography>
+        <CircularProgress size={24} sx={{ mt: 2 }} />
+      </Box>
+    );
+  }
 
   return (
     <Box p={3}>

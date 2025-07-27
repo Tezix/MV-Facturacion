@@ -24,16 +24,20 @@ const FacturaForm = () => {
 
   const [clientes, setClientes] = useState([]);
   const [estados, setEstados] = useState([]);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { id } = useParams();
 
   useEffect(() => {
-    API.get('clientes/').then((res) => setClientes(res.data));
-    API.get('estados/').then((res) => setEstados(res.data));
-
-    if (id) {
-      API.get(`facturas/${id}/`).then((res) => setForm(res.data));
-    }
+    Promise.all([
+      API.get('clientes/'),
+      API.get('estados/'),
+      id ? API.get(`facturas/${id}/`) : Promise.resolve(null)
+    ]).then(([clientesRes, estadosRes, facturaRes]) => {
+      setClientes(clientesRes.data);
+      setEstados(estadosRes.data);
+      if (facturaRes) setForm(facturaRes.data);
+    }).finally(() => setLoading(false));
   }, [id]);
 
   const handleChange = (e) => {
@@ -50,13 +54,13 @@ const FacturaForm = () => {
     navigate('/facturas');
   };
 
-  if (id && !form.cliente) {
+  if (loading) {
     return (
-      <Box p={4}>
+      <Box p={4} display="flex" flexDirection="column" alignItems="center">
         <Typography variant="body1" fontWeight="bold">
-          Cargando...
+          Cargando datos de factura...
         </Typography>
-        <CircularProgress sx={{ mt: 2 }} />
+        <CircularProgress size={24} sx={{ mt: 2 }} />
       </Box>
     );
   }
