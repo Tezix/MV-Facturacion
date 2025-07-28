@@ -63,7 +63,6 @@ export default function EstadosList() {
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell><strong>ID</strong></TableCell>
               <TableCell><strong>Nombre</strong></TableCell>
               <TableCell><strong>Descripción</strong></TableCell>
               <TableCell><strong>Acciones</strong></TableCell>
@@ -72,7 +71,6 @@ export default function EstadosList() {
           <TableBody>
             {estados.map((estado) => (
               <TableRow key={estado.id}>
-                <TableCell>{estado.id}</TableCell>
                 <TableCell>{estado.nombre}</TableCell>
                 <TableCell>{estado.descripcion}</TableCell>
                 <TableCell>
