@@ -62,7 +62,6 @@ const TarifasList = () => {
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell><strong>ID</strong></TableCell>
               <TableCell><strong>Nombre Trabajo</strong></TableCell>
               <TableCell><strong>Acciones</strong></TableCell>
             </TableRow>
@@ -70,7 +69,6 @@ const TarifasList = () => {
           <TableBody>
             {tarifas.map((tarifa) => (
               <TableRow key={tarifa.id}>
-                <TableCell>{tarifa.id}</TableCell>
                 <TableCell>{tarifa.nombre_trabajo}</TableCell>
                 <TableCell>
                   <Button
