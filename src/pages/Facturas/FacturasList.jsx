@@ -20,7 +20,7 @@ export default function FacturasList() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    API.get('facturas/')
+    API.get('facturas/con-reparaciones/')
       .then((res) => setFacturas(res.data))
       .finally(() => setLoading(false));
   }, []);
@@ -68,6 +68,7 @@ export default function FacturasList() {
               <TableCell><strong>Fecha</strong></TableCell>
               <TableCell><strong>Estado</strong></TableCell>
               <TableCell><strong>Total</strong></TableCell>
+              <TableCell><strong>Reparaciones Asociados</strong></TableCell>
               <TableCell><strong>Acciones</strong></TableCell>
             </TableRow>
           </TableHead>
@@ -79,6 +80,11 @@ export default function FacturasList() {
                 <TableCell>{factura.fecha}</TableCell>
                 <TableCell>{factura.estado_nombre || factura.estado}</TableCell>
                 <TableCell>{factura.total} €</TableCell>
+                <TableCell>
+                  {factura.reparaciones && factura.reparaciones.length > 0
+                    ? factura.reparaciones.map(t => `${t.fecha} - ${t.localizacion} - ${t.tarifa}`).join(', ')
+                    : '—'}
+                </TableCell>
                 <TableCell>
                   <Button
                     component={Link}
@@ -101,6 +107,13 @@ export default function FacturasList() {
                 </TableCell>
               </TableRow>
             ))}
+            {facturas.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
+                  No hay facturas registradas.
+                </TableCell>
+              </TableRow>
+            )}
           </TableBody>
         </Table>
       </Paper>

@@ -11,7 +11,7 @@ import {
 
 const TarifaForm = () => {
   const [form, setForm] = useState({
-    nombre_trabajo: "",
+    nombre_reparacion: "",
   });
 
   const navigate = useNavigate();
@@ -37,7 +37,7 @@ const TarifaForm = () => {
     navigate("/tarifas");
   };
 
-  if (id && !form.nombre_trabajo) {
+  if (id && !form.nombre_reparacion) {
     return (
       <Box p={4} textAlign="center">
         <Typography variant="body1" fontWeight="bold">
@@ -66,9 +66,9 @@ const TarifaForm = () => {
       </Typography>
 
       <TextField
-        label="Nombre del Trabajo"
-        name="nombre_trabajo"
-        value={form.nombre_trabajo}
+        label="Nombre de la Reparación"
+        name="nombre_reparacion"
+        value={form.nombre_reparacion}
         onChange={handleChange}
         required
         fullWidth

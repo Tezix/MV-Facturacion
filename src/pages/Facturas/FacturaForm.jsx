@@ -11,20 +11,24 @@ import {
   Button,
   Typography,
   CircularProgress,
-} from '@mui/material';
+        } from '@mui/material';
+        import {
+          Autocomplete,
+          Chip,
+        } from '@mui/material';
 
 const FacturaForm = () => {
   const [form, setForm] = useState({
     cliente: '',
-    numero_factura: '',
     fecha: '',
     estado: '',
-    total: '',
   });
 
   const [clientes, setClientes] = useState([]);
   const [estados, setEstados] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [reparaciones, setReparaciones] = useState([]);
+  const [reparacionesSeleccionados, setReparacionesSeleccionados] = useState([]);
   const navigate = useNavigate();
   const { id } = useParams();
 
@@ -32,11 +36,52 @@ const FacturaForm = () => {
     Promise.all([
       API.get('clientes/'),
       API.get('estados/'),
+      API.get('reparaciones/agrupados/'),
       id ? API.get(`facturas/${id}/`) : Promise.resolve(null)
-    ]).then(([clientesRes, estadosRes, facturaRes]) => {
+    ]).then(([clientesRes, estadosRes, reparacionesAgrupadosRes, facturaRes]) => {
       setClientes(clientesRes.data);
       setEstados(estadosRes.data);
-      if (facturaRes) setForm(facturaRes.data);
+      let reparacionesGrupos = [];
+      if (Array.isArray(reparacionesAgrupadosRes.data)) {
+        reparacionesGrupos = reparacionesAgrupadosRes.data.map(grupo => ({
+          id: grupo.reparacion_ids[0],
+          fecha: grupo.fecha,
+          num_reparacion: grupo.num_reparacion,
+          num_pedido: grupo.num_pedido,
+          localizacion: grupo.localizacion,
+          tarifa: Array.isArray(grupo.tarifas) && grupo.tarifas.length > 0 ? grupo.tarifas[0] : null,
+          factura: grupo.factura,
+          proforma: grupo.proforma,
+          reparacion_ids: grupo.reparacion_ids,
+        }));
+        // Filtrar reparaciones: solo mostrar los que NO tienen factura asignada, o los que están asignados a la factura actual (en edición)
+        reparacionesGrupos = reparacionesGrupos.filter(grupo => {
+          // Si no tiene factura asignada, mostrar
+          if (!grupo.factura) return true;
+          // Si estamos editando y la factura asignada es la actual, mostrar
+          if (id && grupo.factura === Number(id)) return true;
+          // Si no, ocultar
+          return false;
+        });
+      }
+      setReparaciones(reparacionesGrupos);
+      if (facturaRes) {
+        const facturaData = facturaRes.data;
+      // Excluir numero_factura y total del form
+      const restFacturaData = { ...facturaData };
+      delete restFacturaData.numero_factura;
+      delete restFacturaData.total;
+      setForm({
+        ...restFacturaData,
+        cliente: facturaData.cliente && typeof facturaData.cliente === 'object' ? facturaData.cliente.id : facturaData.cliente,
+        estado: facturaData.estado && typeof facturaData.estado === 'object' ? facturaData.estado.id : facturaData.estado,
+      });
+        // Seleccionar automáticamente los grupos de reparaciones que tengan la propiedad factura igual al id de la factura
+        if (id) {
+          const gruposSeleccionados = reparacionesGrupos.filter(grupo => grupo.factura === Number(id));
+          setReparacionesSeleccionados(gruposSeleccionados);
+        }
+      }
     }).finally(() => setLoading(false));
   }, [id]);
 
@@ -46,10 +91,28 @@ const FacturaForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    let facturaId = id;
+    // Asegurarse de enviar solo los ids en el form
+    const formToSend = {
+      ...form,
+      cliente: typeof form.cliente === 'object' && form.cliente !== null ? form.cliente.id : form.cliente,
+      estado: typeof form.estado === 'object' && form.estado !== null ? form.estado.id : form.estado,
+    };
+    // Eliminar numero_factura y total si por alguna razón están presentes
+    delete formToSend.numero_factura;
+    delete formToSend.total;
     if (id) {
-      await API.put(`facturas/${id}/`, form);
+      await API.put(`facturas/${id}/`, formToSend);
     } else {
-      await API.post('facturas/', form);
+      const res = await API.post('facturas/', formToSend);
+      facturaId = res.data.id;
+    }
+    // Asignar todos los reparacion_ids de los grupos seleccionados a la factura
+    if (reparacionesSeleccionados.length > 0) {
+      const allReparacionIds = reparacionesSeleccionados.flatMap(g => Array.isArray(g.reparacion_ids) ? g.reparacion_ids : []);
+      await API.post(`facturas/${facturaId}/asignar-reparaciones/`, {
+        reparaciones: allReparacionIds
+      });
     }
     navigate('/facturas');
   };
@@ -122,14 +185,7 @@ const FacturaForm = () => {
         </Select>
       </FormControl>
 
-      <TextField
-        name="numero_factura"
-        label="Número Factura"
-        value={form.numero_factura}
-        onChange={handleChange}
-        fullWidth
-        required
-      />
+
 
       <TextField
         name="fecha"
@@ -142,15 +198,37 @@ const FacturaForm = () => {
         InputLabelProps={{ shrink: true }}
       />
 
-      <TextField
-        name="total"
-        label="Total (€)"
-        type="number"
-        step="0.01"
-        value={form.total}
-        onChange={handleChange}
-        fullWidth
-        required
+
+
+      <Autocomplete
+        multiple
+        options={reparaciones}
+        getOptionLabel={(option) => {
+          if (!option) return '';
+          const fecha = option.fecha || '';
+          const numReparacion = option.num_reparacion || '';
+          const loc = option.localizacion || {};
+          const direccion = loc.direccion || '';
+          const numero = loc.numero !== undefined && loc.numero !== null ? loc.numero : '';
+          return `${fecha} - ${numReparacion} - ${direccion} ${numero}`;
+        }}
+        value={reparacionesSeleccionados}
+        onChange={(_, newValue) => setReparacionesSeleccionados(newValue)}
+        renderTags={(value, getTagProps) =>
+          value.map((option, index) => {
+            const fecha = option.fecha || '';
+            const numReparacion = option.num_reparacion || '';
+            const loc = option.localizacion || {};
+            const direccion = loc.direccion || '';
+            const numero = loc.numero !== undefined && loc.numero !== null ? loc.numero : '';
+            return (
+              <Chip label={`${fecha} - ${numReparacion} - ${direccion} ${numero}`} {...getTagProps({ index })} key={option.id} />
+            );
+          })
+        }
+        renderInput={(params) => (
+          <TextField {...params} label="Reparaciones a asociar" placeholder="Selecciona reparaciones" fullWidth />
+        )}
       />
 
       <Button type="submit" variant="contained" color="primary">

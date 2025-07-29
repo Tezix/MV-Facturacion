@@ -9,7 +9,7 @@ import {
   CircularProgress,
 } from '@mui/material';
 
-const LocalizacionTrabajoForm = () => {
+const LocalizacionReparacionForm = () => {
   const [form, setForm] = useState({
     direccion: '',
     numero: '',
@@ -21,7 +21,7 @@ const LocalizacionTrabajoForm = () => {
 
   useEffect(() => {
     if (id) {
-      API.get(`localizaciones_trabajos/${id}/`).then((res) => setForm(res.data));
+      API.get(`localizaciones_Reparaciones/${id}/`).then((res) => setForm(res.data));
     }
   }, [id]);
 
@@ -32,9 +32,9 @@ const LocalizacionTrabajoForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (id) {
-      await API.put(`localizaciones_trabajos/${id}/`, form);
+      await API.put(`localizaciones_Reparaciones/${id}/`, form);
     } else {
-      await API.post('localizaciones_trabajos/', form);
+      await API.post('localizaciones_Reparaciones/', form);
     }
     navigate('/localizaciones');
   };
@@ -64,7 +64,7 @@ const LocalizacionTrabajoForm = () => {
       }}
     >
       <Typography variant="h5" fontWeight="bold">
-        {id ? 'Editar' : 'Crear'} Localización de Trabajo
+        {id ? 'Editar' : 'Crear'} Localización de Reparacion
       </Typography>
 
       <TextField
@@ -102,4 +102,4 @@ const LocalizacionTrabajoForm = () => {
   );
 };
 
-export default LocalizacionTrabajoForm;
+export default LocalizacionReparacionForm;

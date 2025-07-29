@@ -10,6 +10,7 @@ import {
   MenuItem,
   InputLabel,
   FormControl,
+  CircularProgress
 } from "@mui/material";
 
 const ProformaForm = () => {
@@ -23,7 +24,6 @@ const ProformaForm = () => {
   });
 
   const [clientes, setClientes] = useState([]);
-  const [facturas, setFacturas] = useState([]);
   const [estados, setEstados] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
@@ -35,9 +35,8 @@ const ProformaForm = () => {
       API.get("facturas/"),
       API.get("estados/"),
       id ? API.get(`proformas/${id}/`) : Promise.resolve(null)
-    ]).then(([clientesRes, facturasRes, estadosRes, proformaRes]) => {
+    ]).then(([clientesRes, estadosRes, proformaRes]) => {
       setClientes(clientesRes.data);
-      setFacturas(facturasRes.data);
       setEstados(estadosRes.data);
       if (proformaRes) setForm(proformaRes.data);
     }).finally(() => setLoading(false));
@@ -84,7 +83,6 @@ const ProformaForm = () => {
       <Typography variant="h5" fontWeight="bold">
         {id ? "Editar" : "Crear"} Proforma
       </Typography>
-      {/* ...existing code for dropdowns and fields... */}
       <FormControl fullWidth required>
         <InputLabel id="cliente-label">Cliente</InputLabel>
         <Select
@@ -104,35 +102,6 @@ const ProformaForm = () => {
           ))}
         </Select>
       </FormControl>
-
-      <FormControl fullWidth>
-        <InputLabel id="factura-label">Factura (opcional)</InputLabel>
-        <Select
-          labelId="factura-label"
-          name="factura"
-          value={form.factura || ""}
-          onChange={handleChange}
-          label="Factura (opcional)"
-        >
-          <MenuItem value="">
-            <em>Sin asociar</em>
-          </MenuItem>
-          {facturas.map((f) => (
-            <MenuItem key={f.id} value={f.id}>
-              {f.numero_factura}
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
-
-      <TextField
-        name="numero_proforma"
-        label="Número Proforma"
-        value={form.numero_proforma}
-        onChange={handleChange}
-        fullWidth
-        required
-      />
 
       <TextField
         name="fecha"

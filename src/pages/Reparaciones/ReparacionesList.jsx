@@ -13,31 +13,36 @@ import {
   Box,
 } from '@mui/material';
 
-export default function TrabajoList() {
-  const [trabajos, setTrabajos] = useState([]);
+export default function ReparacionList() {
+  const [reparaciones, setReparaciones] = useState([]);
 
   useEffect(() => {
-    API.get('trabajos/').then((res) => setTrabajos(res.data));
+    API.get('reparaciones/agrupados/').then((res) => setReparaciones(res.data));
   }, []);
 
   const handleDelete = async (id) => {
-    if (window.confirm('¿Eliminar este trabajo?')) {
-      await API.delete(`trabajos/${id}/`);
-      setTrabajos(trabajos.filter((t) => t.id !== id));
+    // Buscar el grupo correspondiente
+    const grupos = await API.get('reparaciones/agrupados/').then(res => res.data);
+    const grupo = grupos.find(g => g.reparacion_ids.includes(Number(id)));
+    if (grupo && window.confirm('¿Eliminar todos los reparaciones de este grupo?')) {
+      await Promise.all(grupo.reparacion_ids.map(tid => API.delete(`reparaciones/${tid}/`)));
+      // Refrescar la lista agrupada
+      const nuevos = await API.get('reparaciones/agrupados/').then(res => res.data);
+      setReparaciones(nuevos);
     }
   };
 
   return (
     <Box p={3}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h4">Trabajos</Typography>
+        <Typography variant="h4">Reparaciones</Typography>
         <Button
           variant="contained"
           color="success"
           component={Link}
-          to="/trabajos/crear"
+          to="/reparaciones/crear"
         >
-          Nuevo Trabajo
+          Nueva Reparacion
         </Button>
       </Box>
 
@@ -56,19 +61,27 @@ export default function TrabajoList() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {trabajos.map((t) => (
-              <TableRow key={t.id}>
+            {reparaciones.map((t, idx) => (
+              <TableRow key={idx}>
                 <TableCell>{t.fecha}</TableCell>
                 <TableCell>{t.num_reparacion || '—'}</TableCell>
                 <TableCell>{t.num_pedido || '—'}</TableCell>
-                <TableCell>{t.factura || '—'}</TableCell>
+                <TableCell>{t.factura_numero || t.factura || '—'}</TableCell>
                 <TableCell>{t.proforma || '—'}</TableCell>
-                <TableCell>{t.localizacion || '—'}</TableCell>
-                <TableCell>{t.tarifa || '—'}</TableCell>
+                <TableCell>
+                  {t.localizacion
+                    ? `${t.localizacion.direccion}, ${t.localizacion.numero}, ${t.localizacion.localidad}`
+                    : '—'}
+                </TableCell>
+                <TableCell>
+                  {t.tarifas && t.tarifas.length > 0
+                    ? t.tarifas.map((tarifa) => tarifa.nombre_reparacion).join(', ')
+                    : '—'}
+                </TableCell>
                 <TableCell>
                   <Button
                     component={Link}
-                    to={`/trabajos/editar/${t.id}`}
+                    to={`/reparaciones/editar/${t.reparacion_ids[0]}`}
                     variant="outlined"
                     color="primary"
                     size="small"
@@ -76,8 +89,9 @@ export default function TrabajoList() {
                   >
                     Editar
                   </Button>
+                  {/* Eliminar solo el primer reparacion del grupo, o puedes adaptar para eliminar todos */}
                   <Button
-                    onClick={() => handleDelete(t.id)}
+                    onClick={() => handleDelete(t.reparacion_ids[0])}
                     variant="outlined"
                     color="error"
                     size="small"
@@ -87,10 +101,10 @@ export default function TrabajoList() {
                 </TableCell>
               </TableRow>
             ))}
-            {trabajos.length === 0 && (
+            {reparaciones.length === 0 && (
               <TableRow>
                 <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
-                  No hay trabajos registrados.
+                  No hay reparaciones registrados.
                 </TableCell>
               </TableRow>
             )}

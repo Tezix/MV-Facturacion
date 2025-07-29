@@ -20,8 +20,8 @@ import TarifaClienteForm from './pages/TarifasClientes/TarifaClienteForm';
 import LocalizacionesList from './pages/Localizaciones/LocalizacionesList';
 import LocalizacionForm from './pages/Localizaciones/LocalizacionForm';
 
-import TrabajosList from './pages/Trabajos/TrabajosList';
-import TrabajoForm from './pages/Trabajos/TrabajoForm';
+import ReparacionesList from './pages/Reparaciones/ReparacionesList';
+import ReparacionForm from './pages/Reparaciones/ReparacionForm';
 export default function AppRoutes() {
 
 const [auth, setAuth] = useState(!!localStorage.getItem('token'));
@@ -64,9 +64,9 @@ const [auth, setAuth] = useState(!!localStorage.getItem('token'));
         <Route path="/localizaciones/crear" element={<LocalizacionForm />} />
         <Route path="/localizaciones/editar/:id" element={<LocalizacionForm />} />
 
-        <Route path="/trabajos" element={<TrabajosList />} />
-        <Route path="/trabajos/crear" element={<TrabajoForm />} />
-        <Route path="/trabajos/editar/:id" element={<TrabajoForm />} />
+        <Route path="/reparaciones" element={<ReparacionesList />} />
+        <Route path="/reparaciones/crear" element={<ReparacionForm />} />
+        <Route path="/reparaciones/editar/:id" element={<ReparacionForm />} />
       </Routes>
     </BrowserRouter>
       

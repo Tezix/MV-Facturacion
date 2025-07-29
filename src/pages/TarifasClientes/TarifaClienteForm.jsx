@@ -97,18 +97,18 @@ const TarifaClienteForm = () => {
       </FormControl>
 
       <FormControl fullWidth required>
-        <InputLabel id="tarifa-label">Trabajo</InputLabel>
+        <InputLabel id="tarifa-label">Reparacion</InputLabel>
         <Select
           labelId="tarifa-label"
           name="tarifa"
           value={form.tarifa}
           onChange={handleChange}
-          label="Trabajo"
+          label="Reparacion"
         >
           <MenuItem value=""><em>-- Selecciona --</em></MenuItem>
           {tarifas.map((t) => (
             <MenuItem key={t.id} value={t.id}>
-              {t.nombre_trabajo}
+              {t.nombre_reparacion}
             </MenuItem>
           ))}
         </Select>

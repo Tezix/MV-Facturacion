@@ -61,7 +61,7 @@ export default function TarifaClienteList() {
           <TableHead>
             <TableRow>
               <TableCell><strong>Cliente</strong></TableCell>
-              <TableCell><strong>Trabajo</strong></TableCell>
+              <TableCell><strong>Reparacion</strong></TableCell>
               <TableCell><strong>Precio (€)</strong></TableCell>
               <TableCell><strong>Acciones</strong></TableCell>
             </TableRow>

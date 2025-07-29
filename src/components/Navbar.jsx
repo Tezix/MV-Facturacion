@@ -5,6 +5,7 @@ import { useState } from 'react';
 const mainLinks = [
   { label: 'Facturas', path: '/facturas' },
   { label: 'Proformas', path: '/proformas' },
+  { label: 'Reparaciones', path: '/reparaciones' },
 ];
 
 const dropdownLinks = [

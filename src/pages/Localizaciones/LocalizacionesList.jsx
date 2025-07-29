@@ -15,19 +15,19 @@ import {
 } from '@mui/material';
 
 
-export default function LocalizacionTrabajoList() {
+export default function LocalizacionReparacionList() {
   const [localizaciones, setLocalizaciones] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    API.get('localizaciones_trabajos/')
+    API.get('localizaciones_reparaciones/')
       .then((res) => setLocalizaciones(res.data))
       .finally(() => setLoading(false));
   }, []);
 
   const handleDelete = async (id) => {
     if (window.confirm('¿Eliminar esta localización?')) {
-      await API.delete(`localizaciones_trabajos/${id}/`);
+      await API.delete(`localizaciones_reparaciones/${id}/`);
       setLocalizaciones(localizaciones.filter((l) => l.id !== id));
     }
   };
@@ -46,7 +46,7 @@ export default function LocalizacionTrabajoList() {
   return (
     <Box p={3}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h4">Localizaciones de Trabajo</Typography>
+        <Typography variant="h4">Localizaciones de Reparacion</Typography>
         <Button
           variant="contained"
           color="success"
