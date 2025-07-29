@@ -91,9 +91,17 @@ export default function FacturasList() {
                 <TableCell>{factura.estado_nombre || factura.estado}</TableCell>
                 <TableCell>{factura.total} €</TableCell>
                 <TableCell>
-                  {factura.reparaciones && factura.reparaciones.length > 0
-                    ? factura.reparaciones.map(t => `${t.fecha} - ${t.localizacion} - ${t.trabajo}`).join(', ')
-                    : '—'}
+                  {factura.reparaciones && factura.reparaciones.length > 0 ? (
+                    <Box>
+                      {factura.reparaciones.map((t, index) => (
+                        <Typography key={index} variant="body2">
+                          {`${t.localizacion} - ${t.trabajo}`}
+                        </Typography>
+                      ))}
+                    </Box>
+                  ) : (
+                    '—'
+                  )}
                 </TableCell>
                 <TableCell>
                   <IconButton

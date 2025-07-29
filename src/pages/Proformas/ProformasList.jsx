@@ -98,7 +98,7 @@ const ProformasList = () => {
               <TableCell><strong>Fecha</strong></TableCell>
               <TableCell><strong>Estado</strong></TableCell>
               <TableCell><strong>Total</strong></TableCell>
-              <TableCell><strong>Reparaciones Asociadas</strong></TableCell>
+              <TableCell><strong>Reparaciones</strong></TableCell>
               <TableCell><strong>Acciones</strong></TableCell>
             </TableRow>
           </TableHead>
@@ -111,9 +111,17 @@ const ProformasList = () => {
                 <TableCell>{proforma.estado_nombre || proforma.estado}</TableCell>
                 <TableCell>{proforma.total} €</TableCell>
                 <TableCell>
-                  {proforma.reparaciones && proforma.reparaciones.length > 0
-                    ? proforma.reparaciones.map(t => `${t.fecha} - ${t.localizacion} - ${t.trabajo}`).join(', ')
-                    : '—'}
+                  {proforma.reparaciones && proforma.reparaciones.length > 0 ? (
+                    <Box>
+                      {proforma.reparaciones.map((t, index) => (
+                        <Typography key={index} variant="body2">
+                          {`${t.localizacion} - ${t.trabajo}`}
+                        </Typography>
+                      ))}
+                    </Box>
+                  ) : (
+                    '—'
+                  )}
                 </TableCell>
                 <TableCell>
                   <IconButton

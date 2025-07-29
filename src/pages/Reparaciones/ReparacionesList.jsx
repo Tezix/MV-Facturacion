@@ -11,6 +11,7 @@ import {
   TableBody,
   Paper,
   Box,
+  CircularProgress,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -23,9 +24,12 @@ import { faTrash, faPencilAlt } from '@fortawesome/free-solid-svg-icons';
 
 export default function ReparacionList() {
   const [reparaciones, setReparaciones] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    API.get('reparaciones/agrupados/').then((res) => setReparaciones(res.data));
+    API.get('reparaciones/agrupados/')
+      .then((res) => setReparaciones(res.data))
+      .finally(() => setLoading(false));
   }, []);
 
   const [deleteDialog, setDeleteDialog] = useState({ open: false, grupo: null });
@@ -42,6 +46,13 @@ export default function ReparacionList() {
     }
   };
 
+  if (loading) {
+    return (
+      <Box p={4} display="flex" flexDirection="column" alignItems="center">
+        <CircularProgress size={24} sx={{ mt: 2 }} />
+      </Box>
+    );
+  }
   return (
     <Box p={3}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
@@ -84,9 +95,17 @@ export default function ReparacionList() {
                     : '—'}
                 </TableCell>
                 <TableCell>
-                  {t.trabajos && t.trabajos.length > 0
-                    ? t.trabajos.map((trabajo) => trabajo.nombre_reparacion).join(', ')
-                    : '—'}
+                  {t.trabajos && t.trabajos.length > 0 ? (
+                    <Box>
+                      {t.trabajos.map((trabajo, index) => (
+                        <Typography key={index} variant="body2">
+                          {trabajo.nombre_reparacion}
+                        </Typography>
+                      ))}
+                    </Box>
+                  ) : (
+                    '—'
+                  )}
                 </TableCell>
                 <TableCell>
                   <IconButton
