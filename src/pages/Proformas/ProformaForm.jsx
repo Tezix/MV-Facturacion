@@ -10,21 +10,21 @@ import {
   MenuItem,
   InputLabel,
   FormControl,
-  CircularProgress
+  CircularProgress,
+  Autocomplete,
+  Chip
 } from "@mui/material";
 
 const ProformaForm = () => {
   const [form, setForm] = useState({
     cliente: "",
-    factura: "",
-    numero_proforma: "",
     fecha: "",
     estado: "",
-    total: "",
   });
-
   const [clientes, setClientes] = useState([]);
   const [estados, setEstados] = useState([]);
+  const [reparaciones, setReparaciones] = useState([]);
+  const [reparacionesSeleccionados, setReparacionesSeleccionados] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { id } = useParams();
@@ -32,13 +32,50 @@ const ProformaForm = () => {
   useEffect(() => {
     Promise.all([
       API.get("clientes/"),
-      API.get("facturas/"),
       API.get("estados/"),
+      API.get("reparaciones/agrupados/"),
       id ? API.get(`proformas/${id}/`) : Promise.resolve(null)
-    ]).then(([clientesRes, estadosRes, proformaRes]) => {
+    ]).then(([clientesRes, estadosRes, reparacionesAgrupadosRes, proformaRes]) => {
       setClientes(clientesRes.data);
       setEstados(estadosRes.data);
-      if (proformaRes) setForm(proformaRes.data);
+      let reparacionesGrupos = [];
+      if (Array.isArray(reparacionesAgrupadosRes.data)) {
+        reparacionesGrupos = reparacionesAgrupadosRes.data.map(grupo => ({
+          id: grupo.reparacion_ids[0],
+          fecha: grupo.fecha,
+          num_reparacion: grupo.num_reparacion,
+          num_pedido: grupo.num_pedido,
+          localizacion: grupo.localizacion,
+          trabajo: Array.isArray(grupo.trabajos) && grupo.trabajos.length > 0 ? grupo.trabajos[0] : null,
+          factura: grupo.factura,
+          proforma: grupo.proforma,
+          reparacion_ids: grupo.reparacion_ids,
+        }));
+        // Filtrar reparaciones: solo mostrar los que NO tienen ni factura ni proforma asignada, o los que están asignados a la proforma actual (en edición)
+        reparacionesGrupos = reparacionesGrupos.filter(grupo => {
+          const sinFacturaNiProforma = !grupo.factura && !grupo.proforma;
+          const asignadaEstaProforma = id && grupo.proforma === Number(id);
+          return sinFacturaNiProforma || asignadaEstaProforma;
+        });
+      }
+      setReparaciones(reparacionesGrupos);
+      if (proformaRes) {
+        const proformaData = proformaRes.data;
+        // Excluir numero_proforma y total del form
+        const restProformaData = { ...proformaData };
+        delete restProformaData.numero_proforma;
+        delete restProformaData.total;
+        setForm({
+          ...restProformaData,
+          cliente: proformaData.cliente && typeof proformaData.cliente === 'object' ? proformaData.cliente.id : proformaData.cliente,
+          estado: proformaData.estado && typeof proformaData.estado === 'object' ? proformaData.estado.id : proformaData.estado,
+        });
+        // Seleccionar automáticamente los grupos de reparaciones que tengan la propiedad proforma igual al id de la proforma
+        if (id) {
+          const gruposSeleccionados = reparacionesGrupos.filter(grupo => grupo.proforma === Number(id));
+          setReparacionesSeleccionados(gruposSeleccionados);
+        }
+      }
     }).finally(() => setLoading(false));
   }, [id]);
 
@@ -48,12 +85,30 @@ const ProformaForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    let proformaId = id;
+    // Asegurarse de enviar solo los ids en el form
+    const formToSend = {
+      ...form,
+      cliente: typeof form.cliente === 'object' && form.cliente !== null ? form.cliente.id : form.cliente,
+      estado: typeof form.estado === 'object' && form.estado !== null ? form.estado.id : form.estado,
+    };
+    // Eliminar numero_proforma y total si por alguna razón están presentes
+    delete formToSend.numero_proforma;
+    delete formToSend.total;
     if (id) {
-      await API.put(`proformas/${id}/`, form);
+      await API.put(`proformas/${id}/`, formToSend);
     } else {
-      await API.post("proformas/", form);
+      const res = await API.post('proformas/', formToSend);
+      proformaId = res.data.id;
     }
-    navigate("/proformas");
+    // Asignar todos los reparacion_ids de los grupos seleccionados a la proforma
+    if (reparacionesSeleccionados.length > 0) {
+      const allReparacionIds = reparacionesSeleccionados.flatMap(g => Array.isArray(g.reparacion_ids) ? g.reparacion_ids : []);
+      await API.post(`proformas/${proformaId}/asignar-reparaciones/`, {
+        reparaciones: allReparacionIds
+      });
+    }
+    navigate('/proformas');
   };
 
   if (loading) {
@@ -74,15 +129,16 @@ const ProformaForm = () => {
       sx={{
         p: 3,
         maxWidth: 600,
-        mx: "auto",
-        display: "flex",
-        flexDirection: "column",
+        mx: 'auto',
+        display: 'flex',
+        flexDirection: 'column',
         gap: 3,
       }}
     >
       <Typography variant="h5" fontWeight="bold">
-        {id ? "Editar" : "Crear"} Proforma
+        {id ? 'Editar' : 'Crear'} Proforma
       </Typography>
+
       <FormControl fullWidth required>
         <InputLabel id="cliente-label">Cliente</InputLabel>
         <Select
@@ -93,7 +149,7 @@ const ProformaForm = () => {
           label="Cliente"
         >
           <MenuItem value="">
-            <em>Selecciona cliente</em>
+            <em>-- Selecciona --</em>
           </MenuItem>
           {clientes.map((c) => (
             <MenuItem key={c.id} value={c.id}>
@@ -102,17 +158,6 @@ const ProformaForm = () => {
           ))}
         </Select>
       </FormControl>
-
-      <TextField
-        name="fecha"
-        label="Fecha"
-        type="date"
-        value={form.fecha}
-        onChange={handleChange}
-        InputLabelProps={{ shrink: true }}
-        fullWidth
-        required
-      />
 
       <FormControl fullWidth required>
         <InputLabel id="estado-label">Estado</InputLabel>
@@ -124,7 +169,7 @@ const ProformaForm = () => {
           label="Estado"
         >
           <MenuItem value="">
-            <em>Selecciona estado</em>
+            <em>-- Selecciona --</em>
           </MenuItem>
           {estados.map((e) => (
             <MenuItem key={e.id} value={e.id}>
@@ -135,14 +180,45 @@ const ProformaForm = () => {
       </FormControl>
 
       <TextField
-        name="total"
-        label="Total (€)"
-        type="number"
-        step="0.01"
-        value={form.total}
+        name="fecha"
+        label="Fecha"
+        type="date"
+        value={form.fecha}
         onChange={handleChange}
         fullWidth
         required
+        InputLabelProps={{ shrink: true }}
+      />
+
+      <Autocomplete
+        multiple
+        options={reparaciones}
+        getOptionLabel={(option) => {
+          if (!option) return '';
+          const fecha = option.fecha || '';
+          const numReparacion = option.num_reparacion || '';
+          const loc = option.localizacion || {};
+          const direccion = loc.direccion || '';
+          const numero = loc.numero !== undefined && loc.numero !== null ? loc.numero : '';
+          return `${fecha} - ${numReparacion} - ${direccion} ${numero}`;
+        }}
+        value={reparacionesSeleccionados}
+        onChange={(_, newValue) => setReparacionesSeleccionados(newValue)}
+        renderTags={(value, getTagProps) =>
+          value.map((option, index) => {
+            const fecha = option.fecha || '';
+            const numReparacion = option.num_reparacion || '';
+            const loc = option.localizacion || {};
+            const direccion = loc.direccion || '';
+            const numero = loc.numero !== undefined && loc.numero !== null ? loc.numero : '';
+            return (
+              <Chip label={`${fecha} - ${numReparacion} - ${direccion} ${numero}`} {...getTagProps({ index })} key={option.id} />
+            );
+          })
+        }
+        renderInput={(params) => (
+          <TextField {...params} label="Reparaciones a asociar" placeholder="Selecciona reparaciones" fullWidth />
+        )}
       />
 
       <Button type="submit" variant="contained" color="success">

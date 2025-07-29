@@ -82,7 +82,7 @@ export default function FacturasList() {
                 <TableCell>{factura.total} €</TableCell>
                 <TableCell>
                   {factura.reparaciones && factura.reparaciones.length > 0
-                    ? factura.reparaciones.map(t => `${t.fecha} - ${t.localizacion} - ${t.tarifa}`).join(', ')
+                    ? factura.reparaciones.map(t => `${t.fecha} - ${t.localizacion} - ${t.trabajo}`).join(', ')
                     : '—'}
                 </TableCell>
                 <TableCell>

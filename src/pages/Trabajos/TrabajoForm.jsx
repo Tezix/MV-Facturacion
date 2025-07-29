@@ -9,9 +9,10 @@ import {
   CircularProgress,
 } from "@mui/material";
 
-const TarifaForm = () => {
+const TrabajoForm = () => {
   const [form, setForm] = useState({
     nombre_reparacion: "",
+    precio: "",
   });
 
   const navigate = useNavigate();
@@ -19,7 +20,7 @@ const TarifaForm = () => {
 
   useEffect(() => {
     if (id) {
-      API.get(`tarifas/${id}/`).then((res) => setForm(res.data));
+      API.get(`trabajos/${id}/`).then((res) => setForm(res.data));
     }
   }, [id]);
 
@@ -30,11 +31,11 @@ const TarifaForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (id) {
-      await API.put(`tarifas/${id}/`, form);
+      await API.put(`trabajos/${id}/`, form);
     } else {
-      await API.post("tarifas/", form);
+      await API.post("trabajos/", form);
     }
-    navigate("/tarifas");
+    navigate("/trabajos");
   };
 
   if (id && !form.nombre_reparacion) {
@@ -62,8 +63,9 @@ const TarifaForm = () => {
       }}
     >
       <Typography variant="h5" fontWeight="bold">
-        {id ? "Editar" : "Crear"} Tarifa
+        {id ? "Editar" : "Crear"} Trabajo
       </Typography>
+
 
       <TextField
         label="Nombre de la Reparación"
@@ -75,6 +77,18 @@ const TarifaForm = () => {
         placeholder="Ej: Reparación de aire acondicionado"
       />
 
+      <TextField
+        label="Precio"
+        name="precio"
+        type="number"
+        value={form.precio}
+        onChange={handleChange}
+        required
+        fullWidth
+        inputProps={{ step: "0.01", min: "0" }}
+        placeholder="Ej: 100.00"
+      />
+
       <Button type="submit" variant="contained" color="primary">
         Guardar
       </Button>
@@ -82,4 +96,4 @@ const TarifaForm = () => {
   );
 };
 
-export default TarifaForm;
+export default TrabajoForm;

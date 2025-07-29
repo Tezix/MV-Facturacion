@@ -13,15 +13,15 @@ import {
   CircularProgress,
 } from '@mui/material';
 
-const TarifaClienteForm = () => {
+const TrabajoClienteForm = () => {
   const [form, setForm] = useState({
     cliente: '',
-    tarifa: '',
+    trabajo: '',
     precio: '',
   });
 
   const [clientes, setClientes] = useState([]);
-  const [tarifas, setTarifas] = useState([]);
+  const [trabajos, setTrabajos] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { id } = useParams();
@@ -29,12 +29,12 @@ const TarifaClienteForm = () => {
   useEffect(() => {
     Promise.all([
       API.get('clientes/'),
-      API.get('tarifas/'),
-      id ? API.get(`tarifas_clientes/${id}/`) : Promise.resolve(null)
-    ]).then(([clientesRes, tarifasRes, tarifaClienteRes]) => {
+      API.get('trabajos/'),
+      id ? API.get(`trabajos_clientes/${id}/`) : Promise.resolve(null)
+    ]).then(([clientesRes, trabajosRes, trabajoClienteRes]) => {
       setClientes(clientesRes.data);
-      setTarifas(tarifasRes.data);
-      if (tarifaClienteRes) setForm(tarifaClienteRes.data);
+      setTrabajos(trabajosRes.data);
+      if (trabajoClienteRes) setForm(trabajoClienteRes.data);
     }).finally(() => setLoading(false));
   }, [id]);
 
@@ -45,17 +45,17 @@ const TarifaClienteForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (id) {
-      await API.put(`tarifas_clientes/${id}/`, form);
+      await API.put(`trabajos_clientes/${id}/`, form);
     } else {
-      await API.post('tarifas_clientes/', form);
+      await API.post('trabajos_clientes/', form);
     }
-    navigate('/tarifas-clientes');
+    navigate('/trabajos-clientes');
   };
 
   if (loading) {
     return (
       <Box p={4} display="flex" flexDirection="column" alignItems="center">
-        <Typography variant="body1" fontWeight="bold">Cargando datos de tarifa cliente...</Typography>
+        <Typography variant="body1" fontWeight="bold">Cargando datos de trabajo cliente...</Typography>
         <CircularProgress size={24} sx={{ mt: 2 }} />
       </Box>
     );
@@ -75,7 +75,7 @@ const TarifaClienteForm = () => {
       }}
     >
       <Typography variant="h5" fontWeight="bold">
-        {id ? 'Editar' : 'Crear'} Tarifa por Cliente
+        {id ? 'Editar' : 'Crear'} Trabajo por Cliente
       </Typography>
 
       <FormControl fullWidth required>
@@ -97,16 +97,16 @@ const TarifaClienteForm = () => {
       </FormControl>
 
       <FormControl fullWidth required>
-        <InputLabel id="tarifa-label">Reparacion</InputLabel>
+        <InputLabel id="trabajo-label">Reparacion</InputLabel>
         <Select
-          labelId="tarifa-label"
-          name="tarifa"
-          value={form.tarifa}
+          labelId="trabajo-label"
+          name="trabajo"
+          value={form.trabajo}
           onChange={handleChange}
           label="Reparacion"
         >
           <MenuItem value=""><em>-- Selecciona --</em></MenuItem>
-          {tarifas.map((t) => (
+          {trabajos.map((t) => (
             <MenuItem key={t.id} value={t.id}>
               {t.nombre_reparacion}
             </MenuItem>
@@ -131,4 +131,4 @@ const TarifaClienteForm = () => {
   );
 };
 
-export default TarifaClienteForm;
+export default TrabajoClienteForm;

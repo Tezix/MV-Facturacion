@@ -25,8 +25,8 @@ const ReparacionForm = () => {
     localizacion: '',
   });
   const [localizaciones, setLocalizaciones] = useState([]);
-  const [tarifas, setTarifas] = useState([]);
-  const [tarifasSeleccionadas, setTarifasSeleccionadas] = useState([]);
+  const [trabajos, setTrabajos] = useState([]);
+  const [trabajosSeleccionadas, setTrabajosSeleccionadas] = useState([]);
 
   const navigate = useNavigate();
   const { id } = useParams();
@@ -48,12 +48,12 @@ const ReparacionForm = () => {
             proforma: grupo.proforma,
             localizacion: grupo.localizacion.id,
           }));
-          setTarifasSeleccionadas(grupo.tarifas);
+          setTrabajosSeleccionadas(grupo.trabajos);
         }
       });
     }
     API.get('localizaciones_reparaciones/').then((res) => setLocalizaciones(res.data));
-    API.get('tarifas/').then((res) => setTarifas(res.data));
+    API.get('trabajos/').then((res) => setTrabajos(res.data));
   }, [id]);
 
   const handleChange = (e) => {
@@ -62,14 +62,14 @@ const ReparacionForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (tarifasSeleccionadas.length === 0) {
-      alert('Debes seleccionar al menos una tarifa.');
+    if (trabajosSeleccionadas.length === 0) {
+      alert('Debes seleccionar al menos una trabajo.');
       return;
     }
     const payload = {
       ...form,
       localizacion_id: form.localizacion,
-      tarifas: tarifasSeleccionadas.map((t) => t.id),
+      trabajos: trabajosSeleccionadas.map((t) => t.id),
     };
     delete payload.localizacion;
     if (id) {
@@ -80,7 +80,7 @@ const ReparacionForm = () => {
         // Eliminar todos los reparaciones del grupo
         await Promise.all(grupo.reparacion_ids.map(tid => API.delete(`reparaciones/${tid}/`)));
       }
-      // Crear los nuevos reparaciones con las tarifas seleccionadas
+      // Crear los nuevos reparaciones con las trabajos seleccionadas
       await API.post('reparaciones/', payload);
     } else {
       await API.post('reparaciones/', payload);
@@ -162,17 +162,17 @@ const ReparacionForm = () => {
 
       <Autocomplete
         multiple
-        options={tarifas}
+        options={trabajos}
         getOptionLabel={(option) => option.nombre_reparacion}
-        value={tarifasSeleccionadas}
-        onChange={(_, newValue) => setTarifasSeleccionadas(newValue)}
+        value={trabajosSeleccionadas}
+        onChange={(_, newValue) => setTrabajosSeleccionadas(newValue)}
         renderTags={(value, getTagProps) =>
           value.map((option, index) => (
             <Chip label={option.nombre_reparacion} {...getTagProps({ index })} key={option.id} />
           ))
         }
         renderInput={(params) => (
-          <TextField {...params} label="Tarifas" placeholder="Selecciona tarifas" fullWidth />
+          <TextField {...params} label="Trabajos" placeholder="Selecciona trabajos" fullWidth />
         )}
       />
 

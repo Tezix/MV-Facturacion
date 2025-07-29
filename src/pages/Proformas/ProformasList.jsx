@@ -19,7 +19,7 @@ const ProformasList = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    API.get("proformas/")
+    API.get("proformas/con-reparaciones/")
       .then((res) => setProformas(res.data))
       .finally(() => setLoading(false));
   }, []);
@@ -62,28 +62,32 @@ const ProformasList = () => {
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell><strong>ID</strong></TableCell>
-              <TableCell><strong>Cliente</strong></TableCell>
               <TableCell><strong>Número</strong></TableCell>
+              <TableCell><strong>Cliente</strong></TableCell>
               <TableCell><strong>Fecha</strong></TableCell>
               <TableCell><strong>Estado</strong></TableCell>
               <TableCell><strong>Total</strong></TableCell>
+              <TableCell><strong>Reparaciones Asociadas</strong></TableCell>
               <TableCell><strong>Acciones</strong></TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {proformas.map((p) => (
-              <TableRow key={p.id}>
-                <TableCell>{p.id}</TableCell>
-                <TableCell>{p.cliente}</TableCell>
-                <TableCell>{p.numero_proforma}</TableCell>
-                <TableCell>{p.fecha}</TableCell>
-                <TableCell>{p.estado}</TableCell>
-                <TableCell>{p.total} €</TableCell>
+            {proformas.map((proforma) => (
+              <TableRow key={proforma.id}>
+                <TableCell>{proforma.numero_proforma}</TableCell>
+                <TableCell>{proforma.cliente_nombre || proforma.cliente}</TableCell>
+                <TableCell>{proforma.fecha}</TableCell>
+                <TableCell>{proforma.estado_nombre || proforma.estado}</TableCell>
+                <TableCell>{proforma.total} €</TableCell>
+                <TableCell>
+                  {proforma.reparaciones && proforma.reparaciones.length > 0
+                    ? proforma.reparaciones.map(t => `${t.fecha} - ${t.localizacion} - ${t.trabajo}`).join(', ')
+                    : '—'}
+                </TableCell>
                 <TableCell>
                   <Button
                     component={Link}
-                    to={`/proformas/editar/${p.id}`}
+                    to={`/proformas/editar/${proforma.id}`}
                     variant="outlined"
                     color="primary"
                     size="small"
@@ -92,7 +96,7 @@ const ProformasList = () => {
                     Editar
                   </Button>
                   <Button
-                    onClick={() => handleDelete(p.id)}
+                    onClick={() => handleDelete(proforma.id)}
                     variant="outlined"
                     color="error"
                     size="small"
@@ -102,6 +106,13 @@ const ProformasList = () => {
                 </TableCell>
               </TableRow>
             ))}
+            {proformas.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
+                  No hay proformas registradas.
+                </TableCell>
+              </TableRow>
+            )}
           </TableBody>
         </Table>
       </Paper>

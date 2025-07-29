@@ -10,8 +10,8 @@ const mainLinks = [
 
 const dropdownLinks = [
   { label: 'Clientes', path: '/clientes' },
-  { label: 'Tarifas', path: '/tarifas' },
-  { label: 'Tarifas Clientes', path: '/tarifas-clientes' },
+  { label: 'Trabajos', path: '/trabajos' },
+  { label: 'Trabajos Clientes', path: '/trabajos-clientes' },
   { label: 'Localizaciones', path: '/localizaciones' },
   { label: 'Estados', path: '/estados' },
 ];

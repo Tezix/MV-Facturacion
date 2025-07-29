@@ -56,7 +56,7 @@ export default function ReparacionList() {
               <TableCell><strong>Factura</strong></TableCell>
               <TableCell><strong>Proforma</strong></TableCell>
               <TableCell><strong>Localización</strong></TableCell>
-              <TableCell><strong>Tarifa</strong></TableCell>
+              <TableCell><strong>Trabajo</strong></TableCell>
               <TableCell><strong>Acciones</strong></TableCell>
             </TableRow>
           </TableHead>
@@ -74,8 +74,8 @@ export default function ReparacionList() {
                     : '—'}
                 </TableCell>
                 <TableCell>
-                  {t.tarifas && t.tarifas.length > 0
-                    ? t.tarifas.map((tarifa) => tarifa.nombre_reparacion).join(', ')
+                  {t.trabajos && t.trabajos.length > 0
+                    ? t.trabajos.map((trabajo) => trabajo.nombre_reparacion).join(', ')
                     : '—'}
                 </TableCell>
                 <TableCell>

@@ -49,19 +49,16 @@ const FacturaForm = () => {
           num_reparacion: grupo.num_reparacion,
           num_pedido: grupo.num_pedido,
           localizacion: grupo.localizacion,
-          tarifa: Array.isArray(grupo.tarifas) && grupo.tarifas.length > 0 ? grupo.tarifas[0] : null,
+          trabajo: Array.isArray(grupo.trabajos) && grupo.trabajos.length > 0 ? grupo.trabajos[0] : null,
           factura: grupo.factura,
           proforma: grupo.proforma,
           reparacion_ids: grupo.reparacion_ids,
         }));
-        // Filtrar reparaciones: solo mostrar los que NO tienen factura asignada, o los que están asignados a la factura actual (en edición)
+        // Filtrar reparaciones: solo mostrar los que NO tienen ni factura ni proforma asignada, o los que están asignados a la factura actual (en edición)
         reparacionesGrupos = reparacionesGrupos.filter(grupo => {
-          // Si no tiene factura asignada, mostrar
-          if (!grupo.factura) return true;
-          // Si estamos editando y la factura asignada es la actual, mostrar
-          if (id && grupo.factura === Number(id)) return true;
-          // Si no, ocultar
-          return false;
+          const sinFacturaNiProforma = !grupo.factura && !grupo.proforma;
+          const asignadaEstaFactura = id && grupo.factura === Number(id);
+          return sinFacturaNiProforma || asignadaEstaFactura;
         });
       }
       setReparaciones(reparacionesGrupos);

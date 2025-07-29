@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
-import { API } from '../../api/axios';
-import { Link } from 'react-router-dom';
+import { useEffect, useState } from "react";
+import { API } from "../../api/axios";
+import { Link } from "react-router-dom";
 import {
   Typography,
   Button,
@@ -12,22 +12,22 @@ import {
   Paper,
   Box,
   CircularProgress,
-} from '@mui/material';
+} from "@mui/material";
 
-export default function TarifaClienteList() {
-  const [tarifasClientes, setTarifasClientes] = useState([]);
+const TrabajosList = () => {
+  const [trabajos, setTrabajos] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    API.get('tarifas_clientes/')
-      .then((res) => setTarifasClientes(res.data))
+    API.get("trabajos/")
+      .then((res) => setTrabajos(res.data))
       .finally(() => setLoading(false));
   }, []);
 
   const handleDelete = async (id) => {
-    if (window.confirm('¿Eliminar esta tarifa de cliente?')) {
-      await API.delete(`tarifas_clientes/${id}/`);
-      setTarifasClientes(tarifasClientes.filter((tc) => tc.id !== id));
+    if (window.confirm("¿Eliminar esta trabajo?")) {
+      await API.delete(`trabajos/${id}/`);
+      setTrabajos(trabajos.filter((t) => t.id !== id));
     }
   };
 
@@ -35,7 +35,7 @@ export default function TarifaClienteList() {
     return (
       <Box p={4} display="flex" flexDirection="column" alignItems="center">
         <Typography variant="body1" fontWeight="bold">
-          Cargando tarifas clientes...
+          Cargando trabajos...
         </Typography>
         <CircularProgress size={24} sx={{ mt: 2 }} />
       </Box>
@@ -45,14 +45,16 @@ export default function TarifaClienteList() {
   return (
     <Box p={3}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h4">Tarifas por Cliente</Typography>
+        <Typography variant="h4" component="h1">
+          Trabajos
+        </Typography>
         <Button
           variant="contained"
           color="success"
           component={Link}
-          to="/tarifas-clientes/crear"
+          to="/trabajos/crear"
         >
-          Nueva Tarifa Cliente
+          Nueva Trabajo
         </Button>
       </Box>
 
@@ -60,22 +62,20 @@ export default function TarifaClienteList() {
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell><strong>Cliente</strong></TableCell>
-              <TableCell><strong>Reparacion</strong></TableCell>
-              <TableCell><strong>Precio (€)</strong></TableCell>
+              <TableCell><strong>Nombre Reparación</strong></TableCell>
+              <TableCell><strong>Precio</strong></TableCell>
               <TableCell><strong>Acciones</strong></TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {tarifasClientes.map((tc) => (
-              <TableRow key={tc.id}>
-                <TableCell>{tc.cliente_nombre || tc.cliente}</TableCell>
-                <TableCell>{tc.tarifa_nombre || tc.tarifa}</TableCell>
-                <TableCell>{tc.precio}</TableCell>
+            {trabajos.map((trabajo) => (
+              <TableRow key={trabajo.id}>
+                <TableCell>{trabajo.nombre_reparacion}</TableCell>
+                <TableCell>{Number(trabajo.precio).toLocaleString("es-ES", { style: "currency", currency: "EUR" })}</TableCell>
                 <TableCell>
                   <Button
                     component={Link}
-                    to={`/tarifas-clientes/editar/${tc.id}`}
+                    to={`/trabajos/editar/${trabajo.id}`}
                     variant="outlined"
                     color="primary"
                     size="small"
@@ -84,7 +84,7 @@ export default function TarifaClienteList() {
                     Editar
                   </Button>
                   <Button
-                    onClick={() => handleDelete(tc.id)}
+                    onClick={() => handleDelete(trabajo.id)}
                     variant="outlined"
                     color="error"
                     size="small"
@@ -94,10 +94,10 @@ export default function TarifaClienteList() {
                 </TableCell>
               </TableRow>
             ))}
-            {tarifasClientes.length === 0 && (
+            {trabajos.length === 0 && (
               <TableRow>
-                <TableCell colSpan={4} align="center" sx={{ py: 4 }}>
-                  No hay tarifas registradas.
+                <TableCell colSpan={3} align="center" sx={{ py: 4 }}>
+                  No hay trabajos disponibles.
                 </TableCell>
               </TableRow>
             )}
@@ -106,4 +106,6 @@ export default function TarifaClienteList() {
       </Paper>
     </Box>
   );
-}
+};
+
+export default TrabajosList;

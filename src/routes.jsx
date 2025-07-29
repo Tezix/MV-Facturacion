@@ -11,11 +11,11 @@ import ProformaForm from "./pages/Proformas/ProformaForm";
 import EstadosList from './pages/Estados/EstadosList';
 import EstadoForm from './pages/Estados/EstadoForm';
 
-import TarifasList from './pages/Tarifas/TarifasList';
-import TarifaForm from './pages/Tarifas/TarifaForm';
+import TrabajosList from './pages/Trabajos/TrabajosList';
+import TrabajoForm from './pages/Trabajos/TrabajoForm';
 
-import TarifasClientesList from './pages/TarifasClientes/TarifasClientesList';
-import TarifaClienteForm from './pages/TarifasClientes/TarifaClienteForm';
+import TrabajosClientesList from './pages/TrabajosClientes/TrabajosClientesList';
+import TrabajoClienteForm from './pages/TrabajosClientes/TrabajoClienteForm';
 
 import LocalizacionesList from './pages/Localizaciones/LocalizacionesList';
 import LocalizacionForm from './pages/Localizaciones/LocalizacionForm';
@@ -52,13 +52,13 @@ const [auth, setAuth] = useState(!!localStorage.getItem('token'));
         <Route path="/estados/crear" element={<EstadoForm />} />
         <Route path="/estados/editar/:id" element={<EstadoForm />} />
 
-        <Route path="/tarifas" element={<TarifasList />} />
-        <Route path="/tarifas/crear" element={<TarifaForm />} />
-        <Route path="/tarifas/editar/:id" element={<TarifaForm />} />
+        <Route path="/trabajos" element={<TrabajosList />} />
+        <Route path="/trabajos/crear" element={<TrabajoForm />} />
+        <Route path="/trabajos/editar/:id" element={<TrabajoForm />} />
 
-        <Route path="/tarifas-clientes" element={<TarifasClientesList />} />
-        <Route path="/tarifas-clientes/crear" element={<TarifaClienteForm />} />
-        <Route path="/tarifas-clientes/editar/:id" element={<TarifaClienteForm />} />
+        <Route path="/trabajos-clientes" element={<TrabajosClientesList />} />
+        <Route path="/trabajos-clientes/crear" element={<TrabajoClienteForm />} />
+        <Route path="/trabajos-clientes/editar/:id" element={<TrabajoClienteForm />} />
 
         <Route path="/localizaciones" element={<LocalizacionesList />} />
         <Route path="/localizaciones/crear" element={<LocalizacionForm />} />

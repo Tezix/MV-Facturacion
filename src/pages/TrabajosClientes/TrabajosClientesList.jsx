@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
-import { API } from "../../api/axios";
-import { Link } from "react-router-dom";
+import { useEffect, useState } from 'react';
+import { API } from '../../api/axios';
+import { Link } from 'react-router-dom';
 import {
   Typography,
   Button,
@@ -12,22 +12,22 @@ import {
   Paper,
   Box,
   CircularProgress,
-} from "@mui/material";
+} from '@mui/material';
 
-const TarifasList = () => {
-  const [tarifas, setTarifas] = useState([]);
+export default function TrabajoClienteList() {
+  const [trabajosClientes, setTrabajosClientes] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    API.get("tarifas/")
-      .then((res) => setTarifas(res.data))
+    API.get('trabajos_clientes/')
+      .then((res) => setTrabajosClientes(res.data))
       .finally(() => setLoading(false));
   }, []);
 
   const handleDelete = async (id) => {
-    if (window.confirm("¿Eliminar esta tarifa?")) {
-      await API.delete(`tarifas/${id}/`);
-      setTarifas(tarifas.filter((t) => t.id !== id));
+    if (window.confirm('¿Eliminar esta trabajo de cliente?')) {
+      await API.delete(`trabajos_clientes/${id}/`);
+      setTrabajosClientes(trabajosClientes.filter((tc) => tc.id !== id));
     }
   };
 
@@ -35,7 +35,7 @@ const TarifasList = () => {
     return (
       <Box p={4} display="flex" flexDirection="column" alignItems="center">
         <Typography variant="body1" fontWeight="bold">
-          Cargando tarifas...
+          Cargando trabajos clientes...
         </Typography>
         <CircularProgress size={24} sx={{ mt: 2 }} />
       </Box>
@@ -45,16 +45,14 @@ const TarifasList = () => {
   return (
     <Box p={3}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h4" component="h1">
-          Tarifas
-        </Typography>
+        <Typography variant="h4">Trabajos por Cliente</Typography>
         <Button
           variant="contained"
           color="success"
           component={Link}
-          to="/tarifas/crear"
+          to="/trabajos-clientes/crear"
         >
-          Nueva Tarifa
+          Nueva Trabajo Cliente
         </Button>
       </Box>
 
@@ -62,18 +60,22 @@ const TarifasList = () => {
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell><strong>Nombre Reparación</strong></TableCell>
+              <TableCell><strong>Cliente</strong></TableCell>
+              <TableCell><strong>Reparacion</strong></TableCell>
+              <TableCell><strong>Precio (€)</strong></TableCell>
               <TableCell><strong>Acciones</strong></TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {tarifas.map((tarifa) => (
-              <TableRow key={tarifa.id}>
-                <TableCell>{tarifa.nombre_reparacion}</TableCell>
+            {trabajosClientes.map((tc) => (
+              <TableRow key={tc.id}>
+                <TableCell>{tc.cliente_nombre || tc.cliente}</TableCell>
+                <TableCell>{tc.trabajo_nombre || tc.trabajo}</TableCell>
+                <TableCell>{tc.precio}</TableCell>
                 <TableCell>
                   <Button
                     component={Link}
-                    to={`/tarifas/editar/${tarifa.id}`}
+                    to={`/trabajos-clientes/editar/${tc.id}`}
                     variant="outlined"
                     color="primary"
                     size="small"
@@ -82,7 +84,7 @@ const TarifasList = () => {
                     Editar
                   </Button>
                   <Button
-                    onClick={() => handleDelete(tarifa.id)}
+                    onClick={() => handleDelete(tc.id)}
                     variant="outlined"
                     color="error"
                     size="small"
@@ -92,10 +94,10 @@ const TarifasList = () => {
                 </TableCell>
               </TableRow>
             ))}
-            {tarifas.length === 0 && (
+            {trabajosClientes.length === 0 && (
               <TableRow>
-                <TableCell colSpan={3} align="center" sx={{ py: 4 }}>
-                  No hay tarifas disponibles.
+                <TableCell colSpan={4} align="center" sx={{ py: 4 }}>
+                  No hay trabajos registradas.
                 </TableCell>
               </TableRow>
             )}
@@ -104,6 +106,4 @@ const TarifasList = () => {
       </Paper>
     </Box>
   );
-};
-
-export default TarifasList;
+}
