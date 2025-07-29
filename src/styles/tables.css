@@ -1,0 +1,15 @@
+table, .MuiTable-root {
+  width: 100% !important;
+  min-width: 95vw !important;
+  table-layout: auto;
+}
+
+.MuiTableContainer-root {
+  width: 100% !important;
+  min-width: 100% !important;
+}
+
+/* Formulario ocupa 50% del ancho de la ventana */
+form {
+  width: 50vw !important;
+}

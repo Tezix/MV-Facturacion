@@ -12,7 +12,15 @@ import {
   Paper,
   Box,
   CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
 } from '@mui/material';
+import IconButton from '@mui/material/IconButton';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faTrash, faPencilAlt } from '@fortawesome/free-solid-svg-icons';
 
 
 export default function EstadosList() {
@@ -25,19 +33,21 @@ export default function EstadosList() {
       .finally(() => setLoading(false));
   }, []);
 
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, estadoId: null });
   const handleDelete = async (id) => {
-    if (window.confirm('¿Eliminar este estado?')) {
+    try {
       await API.delete(`estados/${id}/`);
       setEstados(estados.filter((e) => e.id !== id));
+    } catch {
+      alert('Error al eliminar el estado');
+    } finally {
+      setDeleteDialog({ open: false, estadoId: null });
     }
   };
 
   if (loading) {
     return (
       <Box p={4} display="flex" flexDirection="column" alignItems="center">
-        <Typography variant="body1" fontWeight="bold">
-          Cargando estados...
-        </Typography>
         <CircularProgress size={24} sx={{ mt: 2 }} />
       </Box>
     );
@@ -74,24 +84,45 @@ export default function EstadosList() {
                 <TableCell>{estado.nombre}</TableCell>
                 <TableCell>{estado.descripcion}</TableCell>
                 <TableCell>
-                  <Button
+                  <IconButton
                     component={Link}
                     to={`/estados/editar/${estado.id}`}
-                    variant="outlined"
                     color="primary"
                     size="small"
                     sx={{ mr: 1 }}
                   >
-                    Editar
-                  </Button>
-                  <Button
-                    onClick={() => handleDelete(estado.id)}
-                    variant="outlined"
+                    <FontAwesomeIcon icon={faPencilAlt} />
+                  </IconButton>
+                  <IconButton
+                    onClick={() => setDeleteDialog({ open: true, estadoId: estado.id })}
                     color="error"
                     size="small"
                   >
-                    Eliminar
-                  </Button>
+                    <FontAwesomeIcon icon={faTrash} />
+                  </IconButton>
+      <Dialog
+        open={deleteDialog.open}
+        onClose={() => setDeleteDialog({ open: false, estadoId: null })}
+      >
+        <DialogTitle>Confirmar eliminación</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            ¿Estás seguro de que quieres eliminar este estado? Esta acción no se puede deshacer.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialog({ open: false, estadoId: null })} color="inherit">
+            Cancelar
+          </Button>
+          <Button
+            onClick={() => handleDelete(deleteDialog.estadoId)}
+            color="error"
+            variant="contained"
+          >
+            Eliminar
+          </Button>
+        </DialogActions>
+      </Dialog>
                 </TableCell>
               </TableRow>
             ))}

@@ -55,7 +55,6 @@ const TrabajoClienteForm = () => {
   if (loading) {
     return (
       <Box p={4} display="flex" flexDirection="column" alignItems="center">
-        <Typography variant="body1" fontWeight="bold">Cargando datos de trabajo cliente...</Typography>
         <CircularProgress size={24} sx={{ mt: 2 }} />
       </Box>
     );

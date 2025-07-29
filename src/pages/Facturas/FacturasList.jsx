@@ -12,7 +12,15 @@ import {
   Paper,
   Box,
   CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
 } from '@mui/material';
+import IconButton from '@mui/material/IconButton';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faTrash, faPencilAlt } from '@fortawesome/free-solid-svg-icons';
 
 
 export default function FacturasList() {
@@ -25,19 +33,21 @@ export default function FacturasList() {
       .finally(() => setLoading(false));
   }, []);
 
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, facturaId: null });
   const handleDelete = async (id) => {
-    if (window.confirm('¿Eliminar esta factura?')) {
+    try {
       await API.delete(`facturas/${id}/`);
       setFacturas(facturas.filter((f) => f.id !== id));
+    } catch {
+      alert('Error al eliminar la factura');
+    } finally {
+      setDeleteDialog({ open: false, facturaId: null });
     }
   };
 
   if (loading) {
     return (
       <Box p={4} display="flex" flexDirection="column" alignItems="center">
-        <Typography variant="body1" fontWeight="bold">
-          Cargando facturas...
-        </Typography>
         <CircularProgress size={24} sx={{ mt: 2 }} />
       </Box>
     );
@@ -68,7 +78,7 @@ export default function FacturasList() {
               <TableCell><strong>Fecha</strong></TableCell>
               <TableCell><strong>Estado</strong></TableCell>
               <TableCell><strong>Total</strong></TableCell>
-              <TableCell><strong>Reparaciones Asociados</strong></TableCell>
+              <TableCell><strong>Reparaciones</strong></TableCell>
               <TableCell><strong>Acciones</strong></TableCell>
             </TableRow>
           </TableHead>
@@ -86,24 +96,45 @@ export default function FacturasList() {
                     : '—'}
                 </TableCell>
                 <TableCell>
-                  <Button
+                  <IconButton
                     component={Link}
                     to={`/facturas/editar/${factura.id}`}
-                    variant="outlined"
                     color="primary"
                     size="small"
                     sx={{ mr: 1 }}
                   >
-                    Editar
-                  </Button>
-                  <Button
-                    onClick={() => handleDelete(factura.id)}
-                    variant="outlined"
+                    <FontAwesomeIcon icon={faPencilAlt} />
+                  </IconButton>
+                  <IconButton
+                    onClick={() => setDeleteDialog({ open: true, facturaId: factura.id })}
                     color="error"
                     size="small"
                   >
-                    Eliminar
-                  </Button>
+                    <FontAwesomeIcon icon={faTrash} />
+                  </IconButton>
+      <Dialog
+        open={deleteDialog.open}
+        onClose={() => setDeleteDialog({ open: false, facturaId: null })}
+      >
+        <DialogTitle>Confirmar eliminación</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            ¿Estás seguro de que quieres eliminar esta factura? Esta acción no se puede deshacer.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialog({ open: false, facturaId: null })} color="inherit">
+            Cancelar
+          </Button>
+          <Button
+            onClick={() => handleDelete(deleteDialog.facturaId)}
+            color="error"
+            variant="contained"
+          >
+            Eliminar
+          </Button>
+        </DialogActions>
+      </Dialog>
                 </TableCell>
               </TableRow>
             ))}

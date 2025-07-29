@@ -12,7 +12,15 @@ import {
   Paper,
   Box,
   CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
 } from '@mui/material';
+import IconButton from '@mui/material/IconButton';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faTrash, faPencilAlt } from '@fortawesome/free-solid-svg-icons';
 
 export default function TrabajoClienteList() {
   const [trabajosClientes, setTrabajosClientes] = useState([]);
@@ -24,19 +32,21 @@ export default function TrabajoClienteList() {
       .finally(() => setLoading(false));
   }, []);
 
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, trabajoClienteId: null });
   const handleDelete = async (id) => {
-    if (window.confirm('¿Eliminar esta trabajo de cliente?')) {
+    try {
       await API.delete(`trabajos_clientes/${id}/`);
       setTrabajosClientes(trabajosClientes.filter((tc) => tc.id !== id));
+    } catch {
+      alert('Error al eliminar el trabajo de cliente');
+    } finally {
+      setDeleteDialog({ open: false, trabajoClienteId: null });
     }
   };
 
   if (loading) {
     return (
       <Box p={4} display="flex" flexDirection="column" alignItems="center">
-        <Typography variant="body1" fontWeight="bold">
-          Cargando trabajos clientes...
-        </Typography>
         <CircularProgress size={24} sx={{ mt: 2 }} />
       </Box>
     );
@@ -45,14 +55,14 @@ export default function TrabajoClienteList() {
   return (
     <Box p={3}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h4">Trabajos por Cliente</Typography>
+        <Typography variant="h4">Precios Especiales</Typography>
         <Button
           variant="contained"
           color="success"
           component={Link}
           to="/trabajos-clientes/crear"
         >
-          Nueva Trabajo Cliente
+          Nuevo Precio Especial
         </Button>
       </Box>
 
@@ -73,24 +83,45 @@ export default function TrabajoClienteList() {
                 <TableCell>{tc.trabajo_nombre || tc.trabajo}</TableCell>
                 <TableCell>{tc.precio}</TableCell>
                 <TableCell>
-                  <Button
+                  <IconButton
                     component={Link}
                     to={`/trabajos-clientes/editar/${tc.id}`}
-                    variant="outlined"
                     color="primary"
                     size="small"
                     sx={{ mr: 1 }}
                   >
-                    Editar
-                  </Button>
-                  <Button
-                    onClick={() => handleDelete(tc.id)}
-                    variant="outlined"
+                    <FontAwesomeIcon icon={faPencilAlt} />
+                  </IconButton>
+                  <IconButton
+                    onClick={() => setDeleteDialog({ open: true, trabajoClienteId: tc.id })}
                     color="error"
                     size="small"
                   >
-                    Eliminar
-                  </Button>
+                    <FontAwesomeIcon icon={faTrash} />
+                  </IconButton>
+      <Dialog
+        open={deleteDialog.open}
+        onClose={() => setDeleteDialog({ open: false, trabajoClienteId: null })}
+      >
+        <DialogTitle>Confirmar eliminación</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            ¿Estás seguro de que quieres eliminar este trabajo de cliente? Esta acción no se puede deshacer.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialog({ open: false, trabajoClienteId: null })} color="inherit">
+            Cancelar
+          </Button>
+          <Button
+            onClick={() => handleDelete(deleteDialog.trabajoClienteId)}
+            color="error"
+            variant="contained"
+          >
+            Eliminar
+          </Button>
+        </DialogActions>
+      </Dialog>
                 </TableCell>
               </TableRow>
             ))}

@@ -12,7 +12,15 @@ import {
   Paper,
   Box,
   CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
 } from '@mui/material';
+import IconButton from '@mui/material/IconButton';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faTrash, faPencilAlt } from '@fortawesome/free-solid-svg-icons';
 
 
 export default function ClientesList() {
@@ -25,20 +33,21 @@ export default function ClientesList() {
       .finally(() => setLoading(false));
   }, []);
 
-  const deleteCliente = (id) => {
-    if (window.confirm('¿Eliminar este cliente?')) {
-      API.delete(`clientes/${id}/`).then(() => {
-        setClientes(clientes.filter((c) => c.id !== id));
-      });
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, clienteId: null });
+  const deleteCliente = async (id) => {
+    try {
+      await API.delete(`clientes/${id}/`);
+      setClientes(clientes.filter((c) => c.id !== id));
+    } catch {
+      alert('Error al eliminar el cliente');
+    } finally {
+      setDeleteDialog({ open: false, clienteId: null });
     }
   };
 
   if (loading) {
     return (
       <Box p={4} display="flex" flexDirection="column" alignItems="center">
-        <Typography variant="body1" fontWeight="bold">
-          Cargando clientes...
-        </Typography>
         <CircularProgress size={24} sx={{ mt: 2 }} />
       </Box>
     );
@@ -77,24 +86,45 @@ export default function ClientesList() {
                 <TableCell>{cliente.cif}</TableCell>
                 <TableCell>{cliente.email}</TableCell>
                 <TableCell>
-                  <Button
+                  <IconButton
                     component={Link}
                     to={`/clientes/editar/${cliente.id}`}
-                    variant="outlined"
                     color="primary"
                     size="small"
                     sx={{ mr: 1 }}
                   >
-                    Editar
-                  </Button>
-                  <Button
-                    onClick={() => deleteCliente(cliente.id)}
-                    variant="outlined"
+                    <FontAwesomeIcon icon={faPencilAlt} />
+                  </IconButton>
+                  <IconButton
+                    onClick={() => setDeleteDialog({ open: true, clienteId: cliente.id })}
                     color="error"
                     size="small"
                   >
-                    Eliminar
-                  </Button>
+                    <FontAwesomeIcon icon={faTrash} />
+                  </IconButton>
+      <Dialog
+        open={deleteDialog.open}
+        onClose={() => setDeleteDialog({ open: false, clienteId: null })}
+      >
+        <DialogTitle>Confirmar eliminación</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            ¿Estás seguro de que quieres eliminar este cliente? Esta acción no se puede deshacer.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialog({ open: false, clienteId: null })} color="inherit">
+            Cancelar
+          </Button>
+          <Button
+            onClick={() => deleteCliente(deleteDialog.clienteId)}
+            color="error"
+            variant="contained"
+          >
+            Eliminar
+          </Button>
+        </DialogActions>
+      </Dialog>
                 </TableCell>
               </TableRow>
             ))}

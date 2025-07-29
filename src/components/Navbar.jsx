@@ -1,17 +1,18 @@
 import { AppBar, Toolbar, Button, Box, Menu, MenuItem, Typography } from '@mui/material';
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
+import './Navbar.css';
 
 const mainLinks = [
+  { label: 'Reparaciones', path: '/reparaciones' },
   { label: 'Facturas', path: '/facturas' },
   { label: 'Proformas', path: '/proformas' },
-  { label: 'Reparaciones', path: '/reparaciones' },
 ];
 
 const dropdownLinks = [
   { label: 'Clientes', path: '/clientes' },
-  { label: 'Trabajos', path: '/trabajos' },
-  { label: 'Trabajos Clientes', path: '/trabajos-clientes' },
+  { label: 'Precios Trabajos', path: '/trabajos' },
+  { label: 'Precios especiales', path: '/trabajos-clientes' },
   { label: 'Localizaciones', path: '/localizaciones' },
   { label: 'Estados', path: '/estados' },
 ];
@@ -28,9 +29,16 @@ export default function Navbar() {
   };
 
   return (
-    <AppBar position="static" elevation={3} sx={{ backgroundColor: "black", borderRadius: "10px" }}>
-      <Toolbar sx={{ display: 'flex', justifyContent: 'space-between' }}>
-        <Box sx={{ display: 'flex', gap: 1 }}>
+    <AppBar position="fixed" elevation={3} sx={{ backgroundColor: "black", width: "100%", top: 0, left: 0, borderRadius: 0 }}>
+      <Toolbar sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Box
+            component="img"
+            src="/favicon.webp"
+            alt="Logo"
+            className="logo-img"
+            sx={{ backgroundColor: 'white', borderRadius: '50%', padding: 1 }}
+          />
           {mainLinks.map(({ label, path }) => (
             <Button
               key={path}
@@ -49,8 +57,8 @@ export default function Navbar() {
               {label}
             </Button>
           ))}
-
-          {/* Dropdown para "Otros" */}
+        </Box>
+        <Box>
           <Button
             color="inherit"
             onClick={handleClick}

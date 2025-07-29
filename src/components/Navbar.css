@@ -1,0 +1,15 @@
+.fixed-navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  z-index: 1000;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+/* Logo image size */
+.logo-img {
+  width: 30px;
+  height: 30px;
+}
+

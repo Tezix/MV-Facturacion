@@ -41,9 +41,6 @@ const EstadoForm = () => {
   if (id && !form.nombre) {
     return (
       <Box p={4} textAlign="center">
-        <Typography variant="body1" fontWeight="bold">
-          Cargando...
-        </Typography>
         <CircularProgress sx={{ mt: 2 }} />
       </Box>
     );

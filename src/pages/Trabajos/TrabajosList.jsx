@@ -12,7 +12,15 @@ import {
   Paper,
   Box,
   CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
 } from "@mui/material";
+import IconButton from '@mui/material/IconButton';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faTrash, faPencilAlt } from '@fortawesome/free-solid-svg-icons';
 
 const TrabajosList = () => {
   const [trabajos, setTrabajos] = useState([]);
@@ -24,19 +32,21 @@ const TrabajosList = () => {
       .finally(() => setLoading(false));
   }, []);
 
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, trabajoId: null });
   const handleDelete = async (id) => {
-    if (window.confirm("¿Eliminar esta trabajo?")) {
+    try {
       await API.delete(`trabajos/${id}/`);
       setTrabajos(trabajos.filter((t) => t.id !== id));
+    } catch {
+      alert("Error al eliminar el trabajo");
+    } finally {
+      setDeleteDialog({ open: false, trabajoId: null });
     }
   };
 
   if (loading) {
     return (
       <Box p={4} display="flex" flexDirection="column" alignItems="center">
-        <Typography variant="body1" fontWeight="bold">
-          Cargando trabajos...
-        </Typography>
         <CircularProgress size={24} sx={{ mt: 2 }} />
       </Box>
     );
@@ -46,7 +56,7 @@ const TrabajosList = () => {
     <Box p={3}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h4" component="h1">
-          Trabajos
+          Precios Trabajos
         </Typography>
         <Button
           variant="contained"
@@ -54,7 +64,7 @@ const TrabajosList = () => {
           component={Link}
           to="/trabajos/crear"
         >
-          Nueva Trabajo
+          Nuevo Trabajo
         </Button>
       </Box>
 
@@ -73,24 +83,45 @@ const TrabajosList = () => {
                 <TableCell>{trabajo.nombre_reparacion}</TableCell>
                 <TableCell>{Number(trabajo.precio).toLocaleString("es-ES", { style: "currency", currency: "EUR" })}</TableCell>
                 <TableCell>
-                  <Button
+                  <IconButton
                     component={Link}
                     to={`/trabajos/editar/${trabajo.id}`}
-                    variant="outlined"
                     color="primary"
                     size="small"
                     sx={{ mr: 1 }}
                   >
-                    Editar
-                  </Button>
-                  <Button
-                    onClick={() => handleDelete(trabajo.id)}
-                    variant="outlined"
+                    <FontAwesomeIcon icon={faPencilAlt} />
+                  </IconButton>
+                  <IconButton
+                    onClick={() => setDeleteDialog({ open: true, trabajoId: trabajo.id })}
                     color="error"
                     size="small"
                   >
-                    Eliminar
-                  </Button>
+                    <FontAwesomeIcon icon={faTrash} />
+                  </IconButton>
+      <Dialog
+        open={deleteDialog.open}
+        onClose={() => setDeleteDialog({ open: false, trabajoId: null })}
+      >
+        <DialogTitle>Confirmar eliminación</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            ¿Estás seguro de que quieres eliminar este trabajo? Esta acción no se puede deshacer.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialog({ open: false, trabajoId: null })} color="inherit">
+            Cancelar
+          </Button>
+          <Button
+            onClick={() => handleDelete(deleteDialog.trabajoId)}
+            color="error"
+            variant="contained"
+          >
+            Eliminar
+          </Button>
+        </DialogActions>
+      </Dialog>
                 </TableCell>
               </TableRow>
             ))}

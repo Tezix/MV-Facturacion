@@ -46,9 +46,6 @@ const ClienteForm = () => {
   if (id && !form.nombre) {
     return (
       <Box p={4}>
-        <Typography variant="body1" fontWeight="bold">
-          Cargando...
-        </Typography>
         <CircularProgress size={24} sx={{ mt: 2 }} />
       </Box>
     );

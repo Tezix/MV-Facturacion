@@ -11,7 +11,15 @@ import {
   TableBody,
   Paper,
   Box,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
 } from '@mui/material';
+import IconButton from '@mui/material/IconButton';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faTrash, faPencilAlt } from '@fortawesome/free-solid-svg-icons';
 
 export default function ReparacionList() {
   const [reparaciones, setReparaciones] = useState([]);
@@ -20,15 +28,17 @@ export default function ReparacionList() {
     API.get('reparaciones/agrupados/').then((res) => setReparaciones(res.data));
   }, []);
 
-  const handleDelete = async (id) => {
-    // Buscar el grupo correspondiente
-    const grupos = await API.get('reparaciones/agrupados/').then(res => res.data);
-    const grupo = grupos.find(g => g.reparacion_ids.includes(Number(id)));
-    if (grupo && window.confirm('¿Eliminar todos los reparaciones de este grupo?')) {
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, grupo: null });
+  const handleDelete = async (grupo) => {
+    try {
       await Promise.all(grupo.reparacion_ids.map(tid => API.delete(`reparaciones/${tid}/`)));
       // Refrescar la lista agrupada
       const nuevos = await API.get('reparaciones/agrupados/').then(res => res.data);
       setReparaciones(nuevos);
+    } catch {
+      alert('Error al eliminar las reparaciones del grupo');
+    } finally {
+      setDeleteDialog({ open: false, grupo: null });
     }
   };
 
@@ -67,7 +77,7 @@ export default function ReparacionList() {
                 <TableCell>{t.num_reparacion || '—'}</TableCell>
                 <TableCell>{t.num_pedido || '—'}</TableCell>
                 <TableCell>{t.factura_numero || t.factura || '—'}</TableCell>
-                <TableCell>{t.proforma || '—'}</TableCell>
+                <TableCell>{t.proforma_numero || t.proforma || '—'}</TableCell>
                 <TableCell>
                   {t.localizacion
                     ? `${t.localizacion.direccion}, ${t.localizacion.numero}, ${t.localizacion.localidad}`
@@ -79,25 +89,46 @@ export default function ReparacionList() {
                     : '—'}
                 </TableCell>
                 <TableCell>
-                  <Button
+                  <IconButton
                     component={Link}
                     to={`/reparaciones/editar/${t.reparacion_ids[0]}`}
-                    variant="outlined"
                     color="primary"
                     size="small"
                     sx={{ mr: 1 }}
                   >
-                    Editar
-                  </Button>
+                    <FontAwesomeIcon icon={faPencilAlt} />
+                  </IconButton>
                   {/* Eliminar solo el primer reparacion del grupo, o puedes adaptar para eliminar todos */}
-                  <Button
-                    onClick={() => handleDelete(t.reparacion_ids[0])}
-                    variant="outlined"
+                  <IconButton
+                    onClick={() => setDeleteDialog({ open: true, grupo: t })}
                     color="error"
                     size="small"
                   >
-                    Eliminar
-                  </Button>
+                    <FontAwesomeIcon icon={faTrash} />
+                  </IconButton>
+      <Dialog
+        open={deleteDialog.open}
+        onClose={() => setDeleteDialog({ open: false, grupo: null })}
+      >
+        <DialogTitle>Confirmar eliminación</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            ¿Estás seguro de que quieres eliminar todas las reparaciones de este grupo? Esta acción no se puede deshacer.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialog({ open: false, grupo: null })} color="inherit">
+            Cancelar
+          </Button>
+          <Button
+            onClick={() => handleDelete(deleteDialog.grupo)}
+            color="error"
+            variant="contained"
+          >
+            Eliminar
+          </Button>
+        </DialogActions>
+      </Dialog>
                 </TableCell>
               </TableRow>
             ))}

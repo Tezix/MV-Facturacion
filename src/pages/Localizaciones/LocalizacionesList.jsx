@@ -12,7 +12,15 @@ import {
   Paper,
   Box,
   CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
 } from '@mui/material';
+import IconButton from '@mui/material/IconButton';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faTrash, faPencilAlt } from '@fortawesome/free-solid-svg-icons';
 
 
 export default function LocalizacionReparacionList() {
@@ -25,19 +33,21 @@ export default function LocalizacionReparacionList() {
       .finally(() => setLoading(false));
   }, []);
 
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, localizacionId: null });
   const handleDelete = async (id) => {
-    if (window.confirm('¿Eliminar esta localización?')) {
+    try {
       await API.delete(`localizaciones_reparaciones/${id}/`);
       setLocalizaciones(localizaciones.filter((l) => l.id !== id));
+    } catch {
+      alert('Error al eliminar la localización');
+    } finally {
+      setDeleteDialog({ open: false, localizacionId: null });
     }
   };
 
   if (loading) {
     return (
       <Box p={4} display="flex" flexDirection="column" alignItems="center">
-        <Typography variant="body1" fontWeight="bold">
-          Cargando localizaciones...
-        </Typography>
         <CircularProgress size={24} sx={{ mt: 2 }} />
       </Box>
     );
@@ -46,7 +56,7 @@ export default function LocalizacionReparacionList() {
   return (
     <Box p={3}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h4">Localizaciones de Reparacion</Typography>
+        <Typography variant="h4">Localizaciones</Typography>
         <Button
           variant="contained"
           color="success"
@@ -74,24 +84,45 @@ export default function LocalizacionReparacionList() {
                 <TableCell>{loc.numero}</TableCell>
                 <TableCell>{loc.localidad}</TableCell>
                 <TableCell>
-                  <Button
+                  <IconButton
                     component={Link}
                     to={`/localizaciones/editar/${loc.id}`}
-                    variant="outlined"
                     color="primary"
                     size="small"
                     sx={{ mr: 1 }}
                   >
-                    Editar
-                  </Button>
-                  <Button
-                    onClick={() => handleDelete(loc.id)}
-                    variant="outlined"
+                    <FontAwesomeIcon icon={faPencilAlt} />
+                  </IconButton>
+                  <IconButton
+                    onClick={() => setDeleteDialog({ open: true, localizacionId: loc.id })}
                     color="error"
                     size="small"
                   >
-                    Eliminar
-                  </Button>
+                    <FontAwesomeIcon icon={faTrash} />
+                  </IconButton>
+      <Dialog
+        open={deleteDialog.open}
+        onClose={() => setDeleteDialog({ open: false, localizacionId: null })}
+      >
+        <DialogTitle>Confirmar eliminación</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            ¿Estás seguro de que quieres eliminar esta localización? Esta acción no se puede deshacer.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialog({ open: false, localizacionId: null })} color="inherit">
+            Cancelar
+          </Button>
+          <Button
+            onClick={() => handleDelete(deleteDialog.localizacionId)}
+            color="error"
+            variant="contained"
+          >
+            Eliminar
+          </Button>
+        </DialogActions>
+      </Dialog>
                 </TableCell>
               </TableRow>
             ))}
