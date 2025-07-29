@@ -21,7 +21,7 @@ const LocalizacionReparacionForm = () => {
 
   useEffect(() => {
     if (id) {
-      API.get(`localizaciones_Reparaciones/${id}/`).then((res) => setForm(res.data));
+      API.get(`localizaciones_reparaciones/${id}/`).then((res) => setForm(res.data));
     }
   }, [id]);
 
@@ -32,9 +32,9 @@ const LocalizacionReparacionForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (id) {
-      await API.put(`localizaciones_Reparaciones/${id}/`, form);
+      await API.put(`localizaciones_reparaciones/${id}/`, form);
     } else {
-      await API.post('localizaciones_Reparaciones/', form);
+      await API.post('localizaciones_reparaciones/', form);
     }
     navigate('/localizaciones');
   };
