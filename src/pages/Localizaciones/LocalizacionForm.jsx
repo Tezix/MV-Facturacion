@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { API } from '../../api/axios';
 import {
   Box,
@@ -14,32 +14,73 @@ const LocalizacionReparacionForm = () => {
     direccion: '',
     numero: '',
     localidad: '',
+    ascensor: false,
   });
   const [saving, setSaving] = useState(false);
 
   const navigate = useNavigate();
   const { id } = useParams();
+  const location = useLocation();
 
   useEffect(() => {
     if (id) {
-      API.get(`localizaciones_reparaciones/${id}/`).then((res) => setForm(res.data));
+      API.get(`localizaciones_reparaciones/${id}/`).then((res) => {
+        setForm({
+          direccion: res.data.direccion || '',
+          numero: res.data.numero || '',
+          localidad: res.data.localidad || '',
+          ascensor: res.data.ascensor ?? false,
+        });
+      });
+    } else {
+      // Si hay query param direccion, autocompletar
+      const params = new URLSearchParams(location.search);
+      const direccion = params.get('direccion') || '';
+      if (direccion) {
+        setForm((prev) => ({ ...prev, direccion }));
+      }
     }
-  }, [id]);
+  }, [id, location.search]);
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    // Siempre tratar ascensor como string
+    setForm({
+      ...form,
+      [name]: name === 'ascensor' ? String(value) : value,
+    });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
     try {
-      if (id) {
-        await API.put(`localizaciones_reparaciones/${id}/`, form);
-      } else {
-        await API.post('localizaciones_reparaciones/', form);
+      // No enviar ascensor si está vacío o es booleano (por error)
+      const data = { ...form };
+      if (
+        data.ascensor === '' ||
+        data.ascensor === undefined ||
+        typeof data.ascensor === 'boolean'
+      ) {
+        delete data.ascensor;
       }
-      navigate('/localizaciones');
+      if (id) {
+        await API.put(`localizaciones_reparaciones/${id}/`, data);
+        navigate('/localizaciones');
+      } else {
+        // Crear y obtener el id de la nueva localización
+        const res = await API.post('localizaciones_reparaciones/', data);
+        // Si venimos de Reparacion, volver y pasar el id
+        if (location.state && location.state.fromReparacion) {
+          // Si venimos de Reparacion, volver siempre a crear nueva reparacion y preseleccionar la localizacion
+          navigate('/reparaciones/crear', {
+            state: { nuevaLocalizacionId: res.data.id },
+            replace: true
+          });
+        } else {
+          navigate('/localizaciones');
+        }
+      }
     } finally {
       setSaving(false);
     }
@@ -95,6 +136,14 @@ const LocalizacionReparacionForm = () => {
         value={form.localidad}
         onChange={handleChange}
         required
+        fullWidth
+      />
+
+      <TextField
+        label="Ascensor"
+        name="ascensor"
+        value={form.ascensor || ''}
+        onChange={handleChange}
         fullWidth
       />
 

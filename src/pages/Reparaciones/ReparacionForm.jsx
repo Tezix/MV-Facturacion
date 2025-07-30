@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { API } from '../../api/axios';
 import {
   Box,
@@ -31,6 +31,7 @@ const ReparacionForm = () => {
 
   const navigate = useNavigate();
   const { id } = useParams();
+  const location = useLocation();
 
   useEffect(() => {
     if (id) {
@@ -48,6 +49,7 @@ const ReparacionForm = () => {
             factura: grupo.factura,
             proforma: grupo.proforma,
             localizacion: grupo.localizacion.id,
+            localizacionInput: `${grupo.localizacion.direccion}, ${grupo.localizacion.numero} ${grupo.localizacion.ascensor || ''}, ${grupo.localizacion.localidad}`,
           }));
           setTrabajosSeleccionadas(grupo.trabajos);
         }
@@ -56,6 +58,13 @@ const ReparacionForm = () => {
     API.get('localizaciones_reparaciones/').then((res) => setLocalizaciones(res.data));
     API.get('trabajos/').then((res) => setTrabajos(res.data));
   }, [id]);
+
+  // Si volvemos de crear una localización, seleccionarla automáticamente
+  useEffect(() => {
+    if (location.state && location.state.nuevaLocalizacionId) {
+      setForm((prev) => ({ ...prev, localizacion: location.state.nuevaLocalizacionId }));
+    }
+  }, [location.state]);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -119,6 +128,58 @@ const ReparacionForm = () => {
         {id ? 'Editar' : 'Crear'} Reparacion
       </Typography>
 
+      <Box display="flex" alignItems="center" gap={1}>
+        <Box flex={1}>
+          <Autocomplete
+            options={localizaciones}
+            getOptionLabel={(option) =>
+              option && typeof option === 'object'
+                ? `${option.direccion}, ${option.numero} ${option.ascensor || ''}, ${option.localidad}`
+                : (typeof option === 'string' ? option : '')
+            }
+            value={
+              localizaciones.find((loc) => loc.id === form.localizacion) || null
+            }
+            onChange={(_, newValue) => {
+              setForm((prev) => ({
+                ...prev,
+                localizacion: newValue ? newValue.id : '',
+                localizacionInput: newValue && typeof newValue === 'object'
+                  ? `${newValue.direccion}, ${newValue.numero} ${newValue.ascensor || ''}, ${newValue.localidad}`
+                  : prev.localizacionInput
+              }));
+            }}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Localización"
+                required
+                fullWidth
+              />
+            )}
+            isOptionEqualToValue={(option, value) => option.id === value.id}
+            inputValue={form.localizacionInput || ''}
+            onInputChange={(_, newInputValue) => {
+              setForm((prev) => ({ ...prev, localizacionInput: newInputValue }));
+            }}
+            freeSolo
+          />
+        </Box>
+        <Button
+          variant="outlined"
+          color="primary"
+          onClick={() => {
+            // Usar la ruta correcta para crear localización
+            const direccion = form.localizacionInput || '';
+            navigate(`/localizaciones/crear?direccion=${encodeURIComponent(direccion)}`, {
+              state: { fromReparacion: true, reparacionId: id }
+            });
+          }}
+        >
+          Nueva
+        </Button>
+      </Box>
+
       <TextField
         name="fecha"
         label="Fecha"
@@ -145,25 +206,6 @@ const ReparacionForm = () => {
         onChange={handleChange}
         fullWidth
       />
-
-
-      <FormControl fullWidth required>
-        <InputLabel id="localizacion-label">Localización</InputLabel>
-        <Select
-          labelId="localizacion-label"
-          name="localizacion"
-          value={form.localizacion || ''}
-          label="Localización"
-          onChange={handleChange}
-        >
-          {localizaciones.map((loc) => (
-            <MenuItem key={loc.id} value={loc.id}>
-              {loc.direccion}, {loc.numero}, {loc.localidad}
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
-
 
       <Autocomplete
         multiple
