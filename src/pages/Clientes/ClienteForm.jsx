@@ -22,6 +22,7 @@ const ClienteForm = () => {
 
   const { id } = useParams();
   const navigate = useNavigate();
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -35,12 +36,17 @@ const ClienteForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (id) {
-      await API.put(`clientes/${id}/`, form);
-    } else {
-      await API.post('clientes/', form);
+    setSaving(true);
+    try {
+      if (id) {
+        await API.put(`clientes/${id}/`, form);
+      } else {
+        await API.post('clientes/', form);
+      }
+      navigate('/clientes');
+    } finally {
+      setSaving(false);
     }
-    navigate('/clientes');
   };
 
   if (id && !form.nombre) {
@@ -80,8 +86,15 @@ const ClienteForm = () => {
         />
       ))}
 
-      <Button variant="contained" color="primary" type="submit">
-        Guardar
+      <Button variant="contained" color="primary" type="submit" disabled={saving} sx={{ position: 'relative' }}>
+        {saving ? (
+          <>
+            <CircularProgress size={24} color="inherit" sx={{ position: 'absolute', left: '50%', top: '50%', marginTop: '-12px', marginLeft: '-12px' }} />
+            <span style={{ opacity: 0 }}>Guardar</span>
+          </>
+        ) : (
+          'Guardar'
+        )}
       </Button>
     </Box>
   );

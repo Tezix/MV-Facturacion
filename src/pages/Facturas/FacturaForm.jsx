@@ -27,6 +27,7 @@ const FacturaForm = () => {
   const [clientes, setClientes] = useState([]);
   const [estados, setEstados] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [reparaciones, setReparaciones] = useState([]);
   const [reparacionesSeleccionados, setReparacionesSeleccionados] = useState([]);
   const navigate = useNavigate();
@@ -88,30 +89,35 @@ const FacturaForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    let facturaId = id;
-    // Asegurarse de enviar solo los ids en el form
-    const formToSend = {
-      ...form,
-      cliente: typeof form.cliente === 'object' && form.cliente !== null ? form.cliente.id : form.cliente,
-      estado: typeof form.estado === 'object' && form.estado !== null ? form.estado.id : form.estado,
-    };
-    // Eliminar numero_factura y total si por alguna razón están presentes
-    delete formToSend.numero_factura;
-    delete formToSend.total;
-    if (id) {
-      await API.put(`facturas/${id}/`, formToSend);
-    } else {
-      const res = await API.post('facturas/', formToSend);
-      facturaId = res.data.id;
+    setSaving(true);
+    try {
+      let facturaId = id;
+      // Asegurarse de enviar solo los ids en el form
+      const formToSend = {
+        ...form,
+        cliente: typeof form.cliente === 'object' && form.cliente !== null ? form.cliente.id : form.cliente,
+        estado: typeof form.estado === 'object' && form.estado !== null ? form.estado.id : form.estado,
+      };
+      // Eliminar numero_factura y total si por alguna razón están presentes
+      delete formToSend.numero_factura;
+      delete formToSend.total;
+      if (id) {
+        await API.put(`facturas/${id}/`, formToSend);
+      } else {
+        const res = await API.post('facturas/', formToSend);
+        facturaId = res.data.id;
+      }
+      // Asignar todos los reparacion_ids de los grupos seleccionados a la factura
+      if (reparacionesSeleccionados.length > 0) {
+        const allReparacionIds = reparacionesSeleccionados.flatMap(g => Array.isArray(g.reparacion_ids) ? g.reparacion_ids : []);
+        await API.post(`facturas/${facturaId}/asignar-reparaciones/`, {
+          reparaciones: allReparacionIds
+        });
+      }
+      navigate('/facturas');
+    } finally {
+      setSaving(false);
     }
-    // Asignar todos los reparacion_ids de los grupos seleccionados a la factura
-    if (reparacionesSeleccionados.length > 0) {
-      const allReparacionIds = reparacionesSeleccionados.flatMap(g => Array.isArray(g.reparacion_ids) ? g.reparacion_ids : []);
-      await API.post(`facturas/${facturaId}/asignar-reparaciones/`, {
-        reparaciones: allReparacionIds
-      });
-    }
-    navigate('/facturas');
   };
 
   if (loading) {
@@ -171,11 +177,13 @@ const FacturaForm = () => {
           <MenuItem value="">
             <em>-- Selecciona --</em>
           </MenuItem>
-          {estados.map((e) => (
-            <MenuItem key={e.id} value={e.id}>
-              {e.nombre}
-            </MenuItem>
-          ))}
+          {estados
+            .filter((e) => e.nombre === "Enviada" || e.nombre === "Pagada" || e.nombre === "Pendiente pago")
+            .map((e) => (
+              <MenuItem key={e.id} value={e.id}>
+                {e.nombre}
+              </MenuItem>
+            ))}
         </Select>
       </FormControl>
 
@@ -225,8 +233,15 @@ const FacturaForm = () => {
         )}
       />
 
-      <Button type="submit" variant="contained" color="primary">
-        Guardar
+      <Button type="submit" variant="contained" color="primary" disabled={saving} sx={{ position: 'relative' }}>
+        {saving ? (
+          <>
+            <CircularProgress size={24} color="inherit" sx={{ position: 'absolute', left: '50%', top: '50%', marginTop: '-12px', marginLeft: '-12px' }} />
+            <span style={{ opacity: 0 }}>Guardar</span>
+          </>
+        ) : (
+          'Guardar'
+        )}
       </Button>
     </Box>
   );

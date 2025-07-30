@@ -27,6 +27,7 @@ const ReparacionForm = () => {
   const [localizaciones, setLocalizaciones] = useState([]);
   const [trabajos, setTrabajos] = useState([]);
   const [trabajosSeleccionadas, setTrabajosSeleccionadas] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
   const { id } = useParams();
@@ -66,26 +67,31 @@ const ReparacionForm = () => {
       alert('Debes seleccionar al menos una trabajo.');
       return;
     }
-    const payload = {
-      ...form,
-      localizacion_id: form.localizacion,
-      trabajos: trabajosSeleccionadas.map((t) => t.id),
-    };
-    delete payload.localizacion;
-    if (id) {
-      // Obtener el grupo de reparaciones a editar
-      const grupos = await API.get('reparaciones/agrupados/').then(res => res.data);
-      const grupo = grupos.find(g => g.reparacion_ids.includes(Number(id)));
-      if (grupo) {
-        // Eliminar todos los reparaciones del grupo
-        await Promise.all(grupo.reparacion_ids.map(tid => API.delete(`reparaciones/${tid}/`)));
+    setLoading(true);
+    try {
+      const payload = {
+        ...form,
+        localizacion_id: form.localizacion,
+        trabajos: trabajosSeleccionadas.map((t) => t.id),
+      };
+      delete payload.localizacion;
+      if (id) {
+        // Obtener el grupo de reparaciones a editar
+        const grupos = await API.get('reparaciones/agrupados/').then(res => res.data);
+        const grupo = grupos.find(g => g.reparacion_ids.includes(Number(id)));
+        if (grupo) {
+          // Eliminar todos los reparaciones del grupo
+          await Promise.all(grupo.reparacion_ids.map(tid => API.delete(`reparaciones/${tid}/`)));
+        }
+        // Crear los nuevos reparaciones con las trabajos seleccionadas
+        await API.post('reparaciones/', payload);
+      } else {
+        await API.post('reparaciones/', payload);
       }
-      // Crear los nuevos reparaciones con las trabajos seleccionadas
-      await API.post('reparaciones/', payload);
-    } else {
-      await API.post('reparaciones/', payload);
+      navigate('/reparaciones');
+    } finally {
+      setLoading(false);
     }
-    navigate('/reparaciones');
   };
 
   if (id && !form.fecha) {
@@ -175,8 +181,15 @@ const ReparacionForm = () => {
         )}
       />
 
-      <Button type="submit" variant="contained" color="primary">
-        Guardar
+      <Button type="submit" variant="contained" color="primary" disabled={loading} sx={{ position: 'relative' }}>
+        {loading ? (
+          <>
+            <CircularProgress size={24} color="inherit" sx={{ position: 'absolute', left: '50%', top: '50%', marginTop: '-12px', marginLeft: '-12px' }} />
+            <span style={{ opacity: 0 }}>Guardar</span>
+          </>
+        ) : (
+          'Guardar'
+        )}
       </Button>
     </Box>
   );

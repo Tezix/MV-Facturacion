@@ -20,9 +20,20 @@ import {
 } from "@mui/material";
 import IconButton from '@mui/material/IconButton';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTrash, faPencilAlt } from '@fortawesome/free-solid-svg-icons';
+import { faTrash, faPencilAlt, faFilePdf } from '@fortawesome/free-solid-svg-icons';
+import { saveAs } from 'file-saver';
 
 const ProformasList = () => {
+  // Export proforma PDF
+  const handleExport = async (id) => {
+    try {
+      const response = await API.get(`proformas/${id}/exportar/`, { responseType: 'blob' });
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      saveAs(blob, `proforma_${id}.pdf`);
+    } catch {
+      alert('Error al exportar PDF');
+    }
+  };
   const [proformas, setProformas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [convertingId, setConvertingId] = useState(null);
@@ -124,6 +135,9 @@ const ProformasList = () => {
                   )}
                 </TableCell>
                 <TableCell>
+                  <IconButton onClick={() => handleExport(proforma.id)} color="primary" size="small" sx={{ mr: 1 }}>
+                    <FontAwesomeIcon icon={faFilePdf} />
+                  </IconButton>
                   <IconButton
                     component={Link}
                     to={`/proformas/editar/${proforma.id}`}
@@ -141,17 +155,17 @@ const ProformasList = () => {
                   >
                     <FontAwesomeIcon icon={faTrash} />
                   </IconButton>
-                                    {!proforma.factura && (
-                  <Button
-                    onClick={() => setConfirmDialog({ open: true, proformaId: proforma.id })}
-                    variant="contained"
-                    color="success"
-                    size="small"
-                    disabled={convertingId === proforma.id}
-                  >
-                    {convertingId === proforma.id ? "Convirtiendo..." : "Convertir a Factura"}
-                  </Button>
-                                    )}
+                  {!proforma.factura && (
+                    <Button
+                      onClick={() => setConfirmDialog({ open: true, proformaId: proforma.id })}
+                      variant="contained"
+                      color="success"
+                      size="small"
+                      disabled={convertingId === proforma.id}
+                    >
+                      {convertingId === proforma.id ? "Convirtiendo..." : "Convertir a Factura"}
+                    </Button>
+                  )}
                 </TableCell>
       {/* Dialogo de confirmación para eliminar */}
       <Dialog

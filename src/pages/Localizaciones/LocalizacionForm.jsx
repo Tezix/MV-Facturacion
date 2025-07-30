@@ -15,6 +15,7 @@ const LocalizacionReparacionForm = () => {
     numero: '',
     localidad: '',
   });
+  const [saving, setSaving] = useState(false);
 
   const navigate = useNavigate();
   const { id } = useParams();
@@ -31,12 +32,17 @@ const LocalizacionReparacionForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (id) {
-      await API.put(`localizaciones_reparaciones/${id}/`, form);
-    } else {
-      await API.post('localizaciones_reparaciones/', form);
+    setSaving(true);
+    try {
+      if (id) {
+        await API.put(`localizaciones_reparaciones/${id}/`, form);
+      } else {
+        await API.post('localizaciones_reparaciones/', form);
+      }
+      navigate('/localizaciones');
+    } finally {
+      setSaving(false);
     }
-    navigate('/localizaciones');
   };
 
   if (id && !form.direccion) {
@@ -92,8 +98,15 @@ const LocalizacionReparacionForm = () => {
         fullWidth
       />
 
-      <Button type="submit" variant="contained" color="primary">
-        Guardar
+      <Button type="submit" variant="contained" color="primary" disabled={saving} sx={{ position: 'relative' }}>
+        {saving ? (
+          <>
+            <CircularProgress size={24} color="inherit" sx={{ position: 'absolute', left: '50%', top: '50%', marginTop: '-12px', marginLeft: '-12px' }} />
+            <span style={{ opacity: 0 }}>Guardar</span>
+          </>
+        ) : (
+          'Guardar'
+        )}
       </Button>
     </Box>
   );

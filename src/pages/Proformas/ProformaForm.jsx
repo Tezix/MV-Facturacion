@@ -26,6 +26,7 @@ const ProformaForm = () => {
   const [reparaciones, setReparaciones] = useState([]);
   const [reparacionesSeleccionados, setReparacionesSeleccionados] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const navigate = useNavigate();
   const { id } = useParams();
 
@@ -85,30 +86,35 @@ const ProformaForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    let proformaId = id;
-    // Asegurarse de enviar solo los ids en el form
-    const formToSend = {
-      ...form,
-      cliente: typeof form.cliente === 'object' && form.cliente !== null ? form.cliente.id : form.cliente,
-      estado: typeof form.estado === 'object' && form.estado !== null ? form.estado.id : form.estado,
-    };
-    // Eliminar numero_proforma y total si por alguna razón están presentes
-    delete formToSend.numero_proforma;
-    delete formToSend.total;
-    if (id) {
-      await API.put(`proformas/${id}/`, formToSend);
-    } else {
-      const res = await API.post('proformas/', formToSend);
-      proformaId = res.data.id;
+    setSaving(true);
+    try {
+      let proformaId = id;
+      // Asegurarse de enviar solo los ids en el form
+      const formToSend = {
+        ...form,
+        cliente: typeof form.cliente === 'object' && form.cliente !== null ? form.cliente.id : form.cliente,
+        estado: typeof form.estado === 'object' && form.estado !== null ? form.estado.id : form.estado,
+      };
+      // Eliminar numero_proforma y total si por alguna razón están presentes
+      delete formToSend.numero_proforma;
+      delete formToSend.total;
+      if (id) {
+        await API.put(`proformas/${id}/`, formToSend);
+      } else {
+        const res = await API.post('proformas/', formToSend);
+        proformaId = res.data.id;
+      }
+      // Asignar todos los reparacion_ids de los grupos seleccionados a la proforma
+      if (reparacionesSeleccionados.length > 0) {
+        const allReparacionIds = reparacionesSeleccionados.flatMap(g => Array.isArray(g.reparacion_ids) ? g.reparacion_ids : []);
+        await API.post(`proformas/${proformaId}/asignar-reparaciones/`, {
+          reparaciones: allReparacionIds
+        });
+      }
+      navigate('/proformas');
+    } finally {
+      setSaving(false);
     }
-    // Asignar todos los reparacion_ids de los grupos seleccionados a la proforma
-    if (reparacionesSeleccionados.length > 0) {
-      const allReparacionIds = reparacionesSeleccionados.flatMap(g => Array.isArray(g.reparacion_ids) ? g.reparacion_ids : []);
-      await API.post(`proformas/${proformaId}/asignar-reparaciones/`, {
-        reparaciones: allReparacionIds
-      });
-    }
-    navigate('/proformas');
   };
 
   if (loading) {
@@ -168,11 +174,13 @@ const ProformaForm = () => {
           <MenuItem value="">
             <em>-- Selecciona --</em>
           </MenuItem>
-          {estados.map((e) => (
-            <MenuItem key={e.id} value={e.id}>
-              {e.nombre}
-            </MenuItem>
-          ))}
+          {estados
+            .filter((e) => e.nombre === "Enviada" || e.nombre === "Aceptada")
+            .map((e) => (
+              <MenuItem key={e.id} value={e.id}>
+                {e.nombre}
+              </MenuItem>
+            ))}
         </Select>
       </FormControl>
 
@@ -218,8 +226,15 @@ const ProformaForm = () => {
         )}
       />
 
-      <Button type="submit" variant="contained" color="success">
-        Guardar
+      <Button type="submit" variant="contained" color="success" disabled={saving} sx={{ position: 'relative' }}>
+        {saving ? (
+          <>
+            <CircularProgress size={24} color="inherit" sx={{ position: 'absolute', left: '50%', top: '50%', marginTop: '-12px', marginLeft: '-12px' }} />
+            <span style={{ opacity: 0 }}>Guardar</span>
+          </>
+        ) : (
+          'Guardar'
+        )}
       </Button>
     </Box>
   );

@@ -14,6 +14,7 @@ const TrabajoForm = () => {
     nombre_reparacion: "",
     precio: "",
   });
+  const [saving, setSaving] = useState(false);
 
   const navigate = useNavigate();
   const { id } = useParams();
@@ -30,12 +31,17 @@ const TrabajoForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (id) {
-      await API.put(`trabajos/${id}/`, form);
-    } else {
-      await API.post("trabajos/", form);
+    setSaving(true);
+    try {
+      if (id) {
+        await API.put(`trabajos/${id}/`, form);
+      } else {
+        await API.post("trabajos/", form);
+      }
+      navigate("/trabajos");
+    } finally {
+      setSaving(false);
     }
-    navigate("/trabajos");
   };
 
   if (id && !form.nombre_reparacion) {
@@ -86,8 +92,15 @@ const TrabajoForm = () => {
         placeholder="Ej: 100.00"
       />
 
-      <Button type="submit" variant="contained" color="primary">
-        Guardar
+      <Button type="submit" variant="contained" color="primary" disabled={saving} sx={{ position: 'relative' }}>
+        {saving ? (
+          <>
+            <CircularProgress size={24} color="inherit" sx={{ position: 'absolute', left: '50%', top: '50%', marginTop: '-12px', marginLeft: '-12px' }} />
+            <span style={{ opacity: 0 }}>Guardar</span>
+          </>
+        ) : (
+          'Guardar'
+        )}
       </Button>
     </Box>
   );

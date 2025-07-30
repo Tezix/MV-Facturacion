@@ -19,6 +19,7 @@ const TrabajoClienteForm = () => {
     trabajo: '',
     precio: '',
   });
+  const [saving, setSaving] = useState(false);
 
   const [clientes, setClientes] = useState([]);
   const [trabajos, setTrabajos] = useState([]);
@@ -44,12 +45,17 @@ const TrabajoClienteForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (id) {
-      await API.put(`trabajos_clientes/${id}/`, form);
-    } else {
-      await API.post('trabajos_clientes/', form);
+    setSaving(true);
+    try {
+      if (id) {
+        await API.put(`trabajos_clientes/${id}/`, form);
+      } else {
+        await API.post('trabajos_clientes/', form);
+      }
+      navigate('/trabajos-clientes');
+    } finally {
+      setSaving(false);
     }
-    navigate('/trabajos-clientes');
   };
 
   if (loading) {
@@ -123,8 +129,15 @@ const TrabajoClienteForm = () => {
         required
       />
 
-      <Button type="submit" variant="contained" color="primary">
-        Guardar
+      <Button type="submit" variant="contained" color="primary" disabled={saving} sx={{ position: 'relative' }}>
+        {saving ? (
+          <>
+            <CircularProgress size={24} color="inherit" sx={{ position: 'absolute', left: '50%', top: '50%', marginTop: '-12px', marginLeft: '-12px' }} />
+            <span style={{ opacity: 0 }}>Guardar</span>
+          </>
+        ) : (
+          'Guardar'
+        )}
       </Button>
     </Box>
   );
