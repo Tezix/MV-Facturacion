@@ -20,7 +20,8 @@ import {
 } from '@mui/material';
 import IconButton from '@mui/material/IconButton';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTrash, faPencilAlt } from '@fortawesome/free-solid-svg-icons';
+import { faTrash, faPencilAlt, faFilePdf } from '@fortawesome/free-solid-svg-icons';
+import { saveAs } from 'file-saver';
 
 
 export default function FacturasList() {
@@ -42,6 +43,17 @@ export default function FacturasList() {
       alert('Error al eliminar la factura');
     } finally {
       setDeleteDialog({ open: false, facturaId: null });
+    }
+  };
+  
+  // Export factura PDF
+  const handleExport = async (id) => {
+    try {
+      const response = await API.get(`facturas/${id}/exportar/`, { responseType: 'blob' });
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      saveAs(blob, `factura_${id}.pdf`);
+    } catch {
+      alert('Error al exportar PDF');
     }
   };
 
@@ -104,6 +116,9 @@ export default function FacturasList() {
                   )}
                 </TableCell>
                 <TableCell>
+                  <IconButton onClick={() => handleExport(factura.id)} color="primary" size="small" sx={{ mr: 1 }}>
+                    <FontAwesomeIcon icon={faFilePdf} />
+                  </IconButton>
                   <IconButton
                     component={Link}
                     to={`/facturas/editar/${factura.id}`}
