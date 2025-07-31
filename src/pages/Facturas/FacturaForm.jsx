@@ -11,6 +11,7 @@ import {
   Button,
   Typography,
   CircularProgress,
+  Tooltip
         } from '@mui/material';
         import {
           Autocomplete,
@@ -187,6 +188,11 @@ const FacturaForm = () => {
     }
   };
 
+
+  // Validación de campos requeridos
+  const requiredFieldsFilled =
+    form.cliente && form.estado && form.fecha;
+
   if (loading) {
     return (
       <Box p={4} display="flex" flexDirection="column" alignItems="center">
@@ -271,6 +277,7 @@ const FacturaForm = () => {
 
 
 
+
       <Box display="flex" alignItems="center" gap={1}>
         <Box flex={1}>
           <Autocomplete
@@ -304,21 +311,57 @@ const FacturaForm = () => {
             )}
           />
         </Box>
-        <Button variant="outlined" color="primary" onClick={handleNuevaReparacion} disabled={saving}>
-          Nueva
-        </Button>
+        <Tooltip
+          title={
+            !requiredFieldsFilled
+              ? 'Completa todos los campos obligatorios para habilitar este botón'
+              : ''
+          }
+          arrow
+          disableHoverListener={requiredFieldsFilled}
+        >
+          <span>
+            <Button
+              variant="outlined"
+              color="primary"
+              onClick={handleNuevaReparacion}
+              disabled={saving || !requiredFieldsFilled}
+            >
+              Nueva
+            </Button>
+          </span>
+        </Tooltip>
       </Box>
 
-      <Button type="submit" variant="contained" color="primary" disabled={saving} sx={{ position: 'relative' }}>
-        {saving ? (
-          <>
-            <CircularProgress size={24} color="inherit" sx={{ position: 'absolute', left: '50%', top: '50%', marginTop: '-12px', marginLeft: '-12px' }} />
-            <span style={{ opacity: 0 }}>Guardar</span>
-          </>
-        ) : (
-          'Guardar'
-        )}
-      </Button>
+      <Tooltip
+        title={
+          !requiredFieldsFilled
+            ? 'Completa todos los campos obligatorios para habilitar este botón'
+            : ''
+        }
+        arrow
+        disableHoverListener={requiredFieldsFilled}
+      >
+        <span>
+          <Button
+            type="submit"
+            variant="contained"
+            color="primary"
+            disabled={saving || !requiredFieldsFilled}
+            sx={{ position: 'relative' }}
+            fullWidth
+          >
+            {saving ? (
+              <>
+                <CircularProgress size={24} color="inherit" sx={{ position: 'absolute', left: '50%', top: '50%', marginTop: '-12px', marginLeft: '-12px' }} />
+                <span style={{ opacity: 0 }}>Guardar</span>
+              </>
+            ) : (
+              'Guardar'
+            )}
+          </Button>
+        </span>
+      </Tooltip>
     </Box>
   );
 };

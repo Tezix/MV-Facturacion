@@ -195,16 +195,16 @@ export default function ReparacionList() {
                 <TableCell>{t.factura_numero || t.factura || '—'}</TableCell>
                 <TableCell>{t.proforma_numero || t.proforma || '—'}</TableCell>
                 <TableCell>
-                  {t.localizacion
-                    ? `${t.localizacion.direccion}, ${t.localizacion.numero}, ${t.localizacion.localidad}`
-                    : '—'}
+                    {t.localizacion
+                      ? `${t.localizacion.direccion}, ${t.localizacion.numero}, ${t.localizacion.localidad}, ${t.localizacion.ascensor}${t.localizacion.escalera ? ', ' + t.localizacion.escalera : ''}`
+                      : '—'}
                 </TableCell>
                 <TableCell>
                   {t.trabajos && t.trabajos.length > 0 ? (
                     <Box>
                       {t.trabajos.map((trabajo, index) => (
                         <Typography key={index} variant="body2">
-                          {trabajo.nombre_reparacion}
+                         - {trabajo.nombre_reparacion}
                         </Typography>
                       ))}
                     </Box>

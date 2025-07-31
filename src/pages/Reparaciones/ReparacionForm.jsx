@@ -117,9 +117,13 @@ const ReparacionForm = () => {
           nuevaReparacionId = res.data.id;
         }
       }
-      // Si venimos de una factura, volver a la factura y pasar el id de la nueva reparación
+      // Si venimos de una factura o proforma, volver y pasar el id de la nueva reparación
       if (location.state && location.state.fromFactura && location.state.facturaId) {
         navigate(`/facturas/editar/${location.state.facturaId}`, {
+          state: { nuevaReparacionId: nuevaReparacionId }
+        });
+      } else if (location.state && location.state.fromProforma && location.state.proformaId) {
+        navigate(`/proformas/editar/${location.state.proformaId}`, {
           state: { nuevaReparacionId: nuevaReparacionId }
         });
       } else {
@@ -198,13 +202,20 @@ const ReparacionForm = () => {
                   onClick={() => {
                     // Usar la ruta correcta para crear localización
                     const direccion = form.localizacionInput || '';
-                    // Si venimos de una factura, pasar también ese seguimiento
+                    // Si venimos de una factura o proforma, pasar también ese seguimiento
                     let extraState = { fromReparacion: true, reparacionId: id };
                     if (location.state && location.state.fromFactura && location.state.facturaId) {
                       extraState = {
                         ...extraState,
                         fromFactura: true,
                         facturaId: location.state.facturaId,
+                        returnTo: location.state.returnTo || undefined
+                      };
+                    } else if (location.state && location.state.fromProforma && location.state.proformaId) {
+                      extraState = {
+                        ...extraState,
+                        fromProforma: true,
+                        proformaId: location.state.proformaId,
                         returnTo: location.state.returnTo || undefined
                       };
                     }

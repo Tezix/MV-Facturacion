@@ -20,7 +20,7 @@ import {
 } from "@mui/material";
 import IconButton from '@mui/material/IconButton';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTrash, faPencilAlt, faFilePdf } from '@fortawesome/free-solid-svg-icons';
+import { faTrash, faPencilAlt, faFilePdf, faInfoCircle } from '@fortawesome/free-solid-svg-icons';
 import { saveAs } from 'file-saver';
 
 const ProformasList = () => {
@@ -48,6 +48,8 @@ const ProformasList = () => {
   const [confirmDialog, setConfirmDialog] = useState({ open: false, proformaId: null });
   // State for showing success after conversion
   const [successDialog, setSuccessDialog] = useState({ open: false, facturaNumero: '' });
+  // Estado para el popup de detalle de reparación
+  const [detalleReparacion, setDetalleReparacion] = useState({ open: false, reparacion: null });
 
   const handleConvertToFactura = async (id) => {
     setConvertingId(id);
@@ -92,8 +94,9 @@ const ProformasList = () => {
     if (filters.estado && !((proforma.estado_nombre || proforma.estado || '').toLowerCase().includes(filters.estado.toLowerCase()))) return false;
     if (filters.total && !(String(proforma.total || '').toLowerCase().includes(filters.total.toLowerCase()))) return false;
     if (filters.reparaciones) {
+      // Buscar en localizaciones y trabajos de cada reparación
       const repStr = proforma.reparaciones && proforma.reparaciones.length > 0
-        ? proforma.reparaciones.map(t => `${t.localizacion} - ${t.trabajo}`).join(' ').toLowerCase()
+        ? proforma.reparaciones.map(r => `${r.localizacion} ${r.trabajos ? r.trabajos.map(t => t.nombre_reparacion).join(' ') : ''}`).join(' ').toLowerCase()
         : '';
       if (!repStr.includes(filters.reparaciones.toLowerCase())) return false;
     }
@@ -206,16 +209,65 @@ const ProformasList = () => {
                 <TableCell>
                   {proforma.reparaciones && proforma.reparaciones.length > 0 ? (
                     <Box>
-                      {proforma.reparaciones.map((t, index) => (
-                        <Typography key={index} variant="body2">
-                          {`${t.localizacion} - ${t.trabajo}`}
-                        </Typography>
+                      {proforma.reparaciones.map((r, index) => (
+                        <Box key={index} display="flex" alignItems="center" mb={0.5}>
+                          <Typography variant="body2" sx={{ mr: 1 }}>
+                            {r.localizacion}
+                          </Typography>
+                          <IconButton
+                            size="small"
+                            color="info"
+                            onClick={() => setDetalleReparacion({ open: true, reparacion: r })}
+                          >
+                            <FontAwesomeIcon icon={faInfoCircle} />
+                          </IconButton>
+                        </Box>
                       ))}
                     </Box>
                   ) : (
                     '—'
                   )}
                 </TableCell>
+      {/* Popup de detalle de reparación */}
+      <Dialog
+        open={detalleReparacion.open}
+        onClose={() => setDetalleReparacion({ open: false, reparacion: null })}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Detalle de Reparación</DialogTitle>
+        <DialogContent>
+          {detalleReparacion.reparacion && (
+            <>
+              <DialogContentText>
+                <strong>Localización:</strong> {detalleReparacion.reparacion.localizacion}<br />
+                <strong>Fecha:</strong> {detalleReparacion.reparacion.fecha || '—'}<br />
+                <strong>Nº Reparación:</strong> {detalleReparacion.reparacion.num_reparacion || '—'}<br />
+                <strong>Nº Pedido:</strong> {detalleReparacion.reparacion.num_pedido || '—'}<br />
+              </DialogContentText>
+              <Box mt={2}>
+                <Typography variant="subtitle1"><strong>Trabajos:</strong></Typography>
+                {detalleReparacion.reparacion.trabajos && detalleReparacion.reparacion.trabajos.length > 0 ? (
+                  <ul style={{ marginTop: 4 }}>
+                    {detalleReparacion.reparacion.trabajos.map((trabajo, idx) => (
+                      <li key={idx}>
+                        {trabajo.nombre_reparacion} ({trabajo.precio} €)
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <Typography variant="body2">No hay trabajos registrados.</Typography>
+                )}
+              </Box>
+            </>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDetalleReparacion({ open: false, reparacion: null })} color="primary">
+            Cerrar
+          </Button>
+        </DialogActions>
+      </Dialog>
                 <TableCell>
                   <IconButton onClick={() => handleExport(proforma.id)} color="primary" size="small" sx={{ mr: 1 }}>
                     <FontAwesomeIcon icon={faFilePdf} />

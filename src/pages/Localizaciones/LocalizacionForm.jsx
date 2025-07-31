@@ -95,6 +95,13 @@ const LocalizacionReparacionForm = () => {
               facturaId: location.state.facturaId,
               returnTo: location.state.returnTo || undefined
             };
+          } else if (location.state.fromProforma && location.state.proformaId) {
+            reparacionState = {
+              ...reparacionState,
+              fromProforma: true,
+              proformaId: location.state.proformaId,
+              returnTo: location.state.returnTo || undefined
+            };
           }
           navigate('/reparaciones/crear', {
             state: reparacionState,

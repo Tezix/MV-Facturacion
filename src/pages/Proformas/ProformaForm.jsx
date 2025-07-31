@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { API } from "../../api/axios";
 import {
   Box,
@@ -12,7 +12,8 @@ import {
   FormControl,
   CircularProgress,
   Autocomplete,
-  Chip
+  Chip,
+  Tooltip
 } from "@mui/material";
 
 const ProformaForm = () => {
@@ -29,14 +30,16 @@ const ProformaForm = () => {
   const [saving, setSaving] = useState(false);
   const navigate = useNavigate();
   const { id } = useParams();
+  const location = useLocation();
 
   useEffect(() => {
-    Promise.all([
-      API.get("clientes/"),
-      API.get("estados/"),
-      API.get("reparaciones/agrupados/"),
-      id ? API.get(`proformas/${id}/`) : Promise.resolve(null)
-    ]).then(([clientesRes, estadosRes, reparacionesAgrupadosRes, proformaRes]) => {
+    const fetchData = async () => {
+      const [clientesRes, estadosRes, reparacionesAgrupadosRes, proformaRes] = await Promise.all([
+        API.get("clientes/"),
+        API.get("estados/"),
+        API.get("reparaciones/agrupados/"),
+        id ? API.get(`proformas/${id}/`) : Promise.resolve(null)
+      ]);
       setClientes(clientesRes.data);
       setEstados(estadosRes.data);
       let reparacionesGrupos = [];
@@ -73,7 +76,39 @@ const ProformaForm = () => {
         });
         // Seleccionar automáticamente los grupos de reparaciones que tengan la propiedad proforma igual al id de la proforma
         if (id) {
-          const gruposSeleccionados = reparacionesGrupos.filter(grupo => grupo.proforma === Number(id));
+          let gruposSeleccionados = reparacionesGrupos.filter(grupo => grupo.proforma === Number(id));
+          // Si venimos de crear una nueva reparación, añadirla a los seleccionados
+          if (location.state && location.state.nuevaReparacionId) {
+            let nueva = reparacionesGrupos.find(g => g.reparacion_ids.includes(location.state.nuevaReparacionId));
+            // Si la nueva reparación no está en la lista, recargar el grupo desde la API
+            if (!nueva) {
+              // Buscar la nueva reparación en el endpoint agrupado y añadirla
+              const nuevosGrupos = (await API.get('reparaciones/agrupados/')).data.map(grupo => ({
+                id: grupo.reparacion_ids[0],
+                fecha: grupo.fecha,
+                num_reparacion: grupo.num_reparacion,
+                num_pedido: grupo.num_pedido,
+                localizacion: grupo.localizacion,
+                trabajo: Array.isArray(grupo.trabajos) && grupo.trabajos.length > 0 ? grupo.trabajos[0] : null,
+                factura: grupo.factura,
+                proforma: grupo.proforma,
+                reparacion_ids: grupo.reparacion_ids,
+              }));
+              nueva = nuevosGrupos.find(g => g.reparacion_ids.includes(location.state.nuevaReparacionId));
+              if (nueva && !gruposSeleccionados.some(g => g.id === nueva.id)) {
+                gruposSeleccionados = [...gruposSeleccionados, nueva];
+                // También actualizar la lista de reparaciones para que aparezca en el autocomplete
+                setReparaciones(prev => {
+                  if (!prev.some(g => g.id === nueva.id)) {
+                    return [...prev, nueva];
+                  }
+                  return prev;
+                });
+              }
+            } else if (!gruposSeleccionados.some(g => g.id === nueva.id)) {
+              gruposSeleccionados = [...gruposSeleccionados, nueva];
+            }
+          }
           setReparacionesSeleccionados(gruposSeleccionados);
         }
       } else {
@@ -90,8 +125,58 @@ const ProformaForm = () => {
           fecha: todayStr
         }));
       }
-    }).finally(() => setLoading(false));
-  }, [id]);
+      // Limpiar el state de navegación para evitar selección múltiple accidental
+      // window.history.replaceState({}, document.title);
+      setLoading(false);
+    };
+    fetchData();
+  }, [id, location.state]);
+  // Validación de campos requeridos
+  const requiredFieldsFilled = form.cliente && form.estado && form.fecha;
+
+  // Guardar la proforma y navegar a crear nueva reparación
+  const handleNuevaReparacion = async () => {
+    setSaving(true);
+    let proformaId = id;
+    try {
+      // Si la proforma no existe aún, crearla primero
+      if (!proformaId) {
+        // Asegurarse de enviar solo los ids en el form
+        const formToSend = {
+          ...form,
+          cliente: typeof form.cliente === 'object' && form.cliente !== null ? form.cliente.id : form.cliente,
+          estado: typeof form.estado === 'object' && form.estado !== null ? form.estado.id : form.estado,
+        };
+        delete formToSend.numero_proforma;
+        delete formToSend.total;
+        const res = await API.post('proformas/', formToSend);
+        proformaId = res.data.id;
+      } else {
+        // Si ya existe, guardar cambios antes de salir
+        const formToSend = {
+          ...form,
+          cliente: typeof form.cliente === 'object' && form.cliente !== null ? form.cliente.id : form.cliente,
+          estado: typeof form.estado === 'object' && form.estado !== null ? form.estado.id : form.estado,
+        };
+        delete formToSend.numero_proforma;
+        delete formToSend.total;
+        await API.put(`proformas/${proformaId}/`, formToSend);
+      }
+      // Asignar reparaciones seleccionadas actuales
+      if (reparacionesSeleccionados.length > 0) {
+        const allReparacionIds = reparacionesSeleccionados.flatMap(g => Array.isArray(g.reparacion_ids) ? g.reparacion_ids : []);
+        await API.post(`proformas/${proformaId}/asignar-reparaciones/`, {
+          reparaciones: allReparacionIds
+        });
+      }
+      // Navegar a crear nueva reparación, pasando el id de la proforma y la ruta de retorno
+      navigate(`/reparaciones/crear`, {
+        state: { fromProforma: true, proformaId: proformaId, returnTo: `/proformas/editar/${proformaId}` }
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -209,47 +294,91 @@ const ProformaForm = () => {
         InputLabelProps={{ shrink: true }}
       />
 
-      <Autocomplete
-        multiple
-        options={reparaciones}
-        getOptionLabel={(option) => {
-          if (!option) return '';
-          const fecha = option.fecha || '';
-          const numReparacion = option.num_reparacion || '';
-          const loc = option.localizacion || {};
-          const direccion = loc.direccion || '';
-          const numero = loc.numero !== undefined && loc.numero !== null ? loc.numero : '';
-          return `${fecha} - ${numReparacion} - ${direccion} ${numero}`;
-        }}
-        value={reparacionesSeleccionados}
-        onChange={(_, newValue) => setReparacionesSeleccionados(newValue)}
-        renderTags={(value, getTagProps) =>
-          value.map((option, index) => {
-            const fecha = option.fecha || '';
-            const numReparacion = option.num_reparacion || '';
-            const loc = option.localizacion || {};
-            const direccion = loc.direccion || '';
-            const numero = loc.numero !== undefined && loc.numero !== null ? loc.numero : '';
-            return (
-              <Chip label={`${fecha} - ${numReparacion} - ${direccion} ${numero}`} {...getTagProps({ index })} key={option.id} />
-            );
-          })
-        }
-        renderInput={(params) => (
-          <TextField {...params} label="Reparaciones a asociar" placeholder="Selecciona reparaciones" fullWidth />
-        )}
-      />
 
-      <Button type="submit" variant="contained" color="success" disabled={saving} sx={{ position: 'relative' }}>
-        {saving ? (
-          <>
-            <CircularProgress size={24} color="inherit" sx={{ position: 'absolute', left: '50%', top: '50%', marginTop: '-12px', marginLeft: '-12px' }} />
-            <span style={{ opacity: 0 }}>Guardar</span>
-          </>
-        ) : (
-          'Guardar'
-        )}
-      </Button>
+      <Box display="flex" alignItems="center" gap={1}>
+        <Box flex={1}>
+          <Autocomplete
+            multiple
+            options={reparaciones}
+            getOptionLabel={(option) => {
+              if (!option) return '';
+              const fecha = option.fecha || '';
+              const numReparacion = option.num_reparacion || '';
+              const loc = option.localizacion || {};
+              const direccion = loc.direccion || '';
+              const numero = loc.numero !== undefined && loc.numero !== null ? loc.numero : '';
+              return `${fecha} - ${numReparacion} - ${direccion} ${numero}`;
+            }}
+            value={reparacionesSeleccionados}
+            onChange={(_, newValue) => setReparacionesSeleccionados(newValue)}
+            renderTags={(value, getTagProps) =>
+              value.map((option, index) => {
+                const fecha = option.fecha || '';
+                const numReparacion = option.num_reparacion || '';
+                const loc = option.localizacion || {};
+                const direccion = loc.direccion || '';
+                const numero = loc.numero !== undefined && loc.numero !== null ? loc.numero : '';
+                return (
+                  <Chip label={`${fecha} - ${numReparacion} - ${direccion} ${numero}`} {...getTagProps({ index })} key={option.id} />
+                );
+              })
+            }
+            renderInput={(params) => (
+              <TextField {...params} label="Reparaciones a asociar" placeholder="Selecciona reparaciones" fullWidth />
+            )}
+          />
+        </Box>
+        <Tooltip
+          title={
+            !requiredFieldsFilled
+              ? 'Completa todos los campos obligatorios para habilitar este botón'
+              : ''
+          }
+          arrow
+          disableHoverListener={requiredFieldsFilled}
+        >
+          <span>
+            <Button
+              variant="outlined"
+              color="primary"
+              onClick={handleNuevaReparacion}
+              disabled={saving || !requiredFieldsFilled}
+            >
+              Nueva
+            </Button>
+          </span>
+        </Tooltip>
+      </Box>
+
+      <Tooltip
+        title={
+          !requiredFieldsFilled
+            ? 'Completa todos los campos obligatorios para habilitar este botón'
+            : ''
+        }
+        arrow
+        disableHoverListener={requiredFieldsFilled}
+      >
+        <span>
+          <Button
+            type="submit"
+            variant="contained"
+            color="success"
+            disabled={saving || !requiredFieldsFilled}
+            sx={{ position: 'relative' }}
+            fullWidth
+          >
+            {saving ? (
+              <>
+                <CircularProgress size={24} color="inherit" sx={{ position: 'absolute', left: '50%', top: '50%', marginTop: '-12px', marginLeft: '-12px' }} />
+                <span style={{ opacity: 0 }}>Guardar</span>
+              </>
+            ) : (
+              'Guardar'
+            )}
+          </Button>
+        </span>
+      </Tooltip>
     </Box>
   );
 };

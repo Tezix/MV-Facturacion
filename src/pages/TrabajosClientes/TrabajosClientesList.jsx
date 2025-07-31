@@ -85,7 +85,7 @@ export default function TrabajoClienteList() {
             <TableRow>
               <TableCell><strong>Cliente</strong></TableCell>
               <TableCell><strong>Reparacion</strong></TableCell>
-              <TableCell><strong>Precio (€)</strong></TableCell>
+              <TableCell><strong>Precio</strong></TableCell>
               <TableCell><strong>Acciones</strong></TableCell>
             </TableRow>
             {/* Fila de filtros */}
@@ -125,7 +125,7 @@ export default function TrabajoClienteList() {
               <TableRow key={tc.id}>
                 <TableCell>{tc.cliente_nombre || tc.cliente}</TableCell>
                 <TableCell>{tc.trabajo_nombre || tc.trabajo}</TableCell>
-                <TableCell>{tc.precio}</TableCell>
+                <TableCell>{Number(tc.precio).toLocaleString("es-ES", { style: "currency", currency: "EUR" })}</TableCell>
                 <TableCell>
                   <IconButton
                     component={Link}
