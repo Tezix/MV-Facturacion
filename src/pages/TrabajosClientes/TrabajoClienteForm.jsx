@@ -12,6 +12,7 @@ import {
   Typography,
   CircularProgress,
 } from '@mui/material';
+import Autocomplete from '@mui/material/Autocomplete';
 
 const TrabajoClienteForm = () => {
   const [form, setForm] = useState({
@@ -93,41 +94,47 @@ const TrabajoClienteForm = () => {
         {id ? 'Editar' : 'Crear'} Trabajo por Cliente
       </Typography>
 
-      <FormControl fullWidth required>
-        <InputLabel id="cliente-label">Cliente</InputLabel>
-        <Select
-          labelId="cliente-label"
-          name="cliente"
-          value={form.cliente}
-          onChange={handleChange}
-          label="Cliente"
-        >
-          <MenuItem value=""><em>-- Selecciona --</em></MenuItem>
-          {clientes.map((c) => (
-            <MenuItem key={c.id} value={c.id}>
-              {c.nombre}
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
+      <Autocomplete
+        fullWidth
+        required
+        options={clientes}
+        getOptionLabel={(option) => option?.nombre || ''}
+        value={clientes.find((c) => c.id === form.cliente) || null}
+        onChange={(_, newValue) => {
+          setForm({ ...form, cliente: newValue ? newValue.id : '' });
+        }}
+        renderInput={(params) => (
+          <TextField
+            {...params}
+            label="Cliente"
+            name="cliente"
+            required
+          />
+        )}
+        isOptionEqualToValue={(option, value) => option.id === value.id}
+        noOptionsText="No hay coincidencias"
+      />
 
-      <FormControl fullWidth required>
-        <InputLabel id="trabajo-label">Reparacion</InputLabel>
-        <Select
-          labelId="trabajo-label"
-          name="trabajo"
-          value={form.trabajo}
-          onChange={handleChange}
-          label="Reparacion"
-        >
-          <MenuItem value=""><em>-- Selecciona --</em></MenuItem>
-          {trabajos.map((t) => (
-            <MenuItem key={t.id} value={t.id}>
-              {t.nombre_reparacion}
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
+      <Autocomplete
+        fullWidth
+        required
+        options={trabajos}
+        getOptionLabel={(option) => option?.nombre_reparacion || ''}
+        value={trabajos.find((t) => t.id === form.trabajo) || null}
+        onChange={(_, newValue) => {
+          setForm({ ...form, trabajo: newValue ? newValue.id : '' });
+        }}
+        renderInput={(params) => (
+          <TextField
+            {...params}
+            label="Reparación"
+            name="trabajo"
+            required
+          />
+        )}
+        isOptionEqualToValue={(option, value) => option.id === value.id}
+        noOptionsText="No hay coincidencias"
+      />
 
       <TextField
         name="precio"

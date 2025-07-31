@@ -26,6 +26,13 @@ import { faTrash, faPencilAlt } from '@fortawesome/free-solid-svg-icons';
 export default function LocalizacionReparacionList() {
   const [localizaciones, setLocalizaciones] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState({
+    direccion: '',
+    numero: '',
+    localidad: '',
+    ascensor: '',
+    escalera: '',
+  });
 
   useEffect(() => {
     API.get('localizaciones_reparaciones/')
@@ -44,6 +51,16 @@ export default function LocalizacionReparacionList() {
       setDeleteDialog({ open: false, localizacionId: null });
     }
   };
+
+  // Filtrado local
+  const filteredLocalizaciones = localizaciones.filter(loc => {
+    if (filters.direccion && !(loc.direccion || '').toLowerCase().includes(filters.direccion.toLowerCase())) return false;
+    if (filters.numero && !(String(loc.numero || '').toLowerCase().includes(filters.numero.toLowerCase()))) return false;
+    if (filters.localidad && !(loc.localidad || '').toLowerCase().includes(filters.localidad.toLowerCase())) return false;
+    if (filters.ascensor && !(String(loc.ascensor ?? '').toLowerCase().includes(filters.ascensor.toLowerCase()))) return false;
+    if (filters.escalera && !(String(loc.escalera ?? '').toLowerCase().includes(filters.escalera.toLowerCase()))) return false;
+    return true;
+  });
 
   if (loading) {
     return (
@@ -78,9 +95,58 @@ export default function LocalizacionReparacionList() {
               <TableCell><strong>Escalera</strong></TableCell>
               <TableCell><strong>Acciones</strong></TableCell>
             </TableRow>
+            {/* Fila de filtros */}
+            <TableRow>
+              <TableCell>
+                <input
+                  type="text"
+                  placeholder="Filtrar..."
+                  value={filters.direccion}
+                  onChange={e => setFilters(f => ({ ...f, direccion: e.target.value }))}
+                  style={{ width: '100%' }}
+                />
+              </TableCell>
+              <TableCell>
+                <input
+                  type="text"
+                  placeholder="Filtrar..."
+                  value={filters.numero}
+                  onChange={e => setFilters(f => ({ ...f, numero: e.target.value }))}
+                  style={{ width: '100%' }}
+                />
+              </TableCell>
+              <TableCell>
+                <input
+                  type="text"
+                  placeholder="Filtrar..."
+                  value={filters.localidad}
+                  onChange={e => setFilters(f => ({ ...f, localidad: e.target.value }))}
+                  style={{ width: '100%' }}
+                />
+              </TableCell>
+              <TableCell>
+                <input
+                  type="text"
+                  placeholder="Filtrar..."
+                  value={filters.ascensor}
+                  onChange={e => setFilters(f => ({ ...f, ascensor: e.target.value }))}
+                  style={{ width: '100%' }}
+                />
+              </TableCell>
+              <TableCell>
+                <input
+                  type="text"
+                  placeholder="Filtrar..."
+                  value={filters.escalera}
+                  onChange={e => setFilters(f => ({ ...f, escalera: e.target.value }))}
+                  style={{ width: '100%' }}
+                />
+              </TableCell>
+              <TableCell />
+            </TableRow>
           </TableHead>
           <TableBody>
-            {localizaciones.map((loc) => (
+            {filteredLocalizaciones.map((loc) => (
               <TableRow key={loc.id}>
                 <TableCell>{loc.direccion}</TableCell>
                 <TableCell>{loc.numero}</TableCell>

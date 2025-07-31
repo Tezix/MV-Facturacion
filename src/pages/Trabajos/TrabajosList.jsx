@@ -25,6 +25,10 @@ import { faTrash, faPencilAlt } from '@fortawesome/free-solid-svg-icons';
 const TrabajosList = () => {
   const [trabajos, setTrabajos] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState({
+    nombre: '',
+    precio: '',
+  });
 
   useEffect(() => {
     API.get("trabajos/")
@@ -43,6 +47,13 @@ const TrabajosList = () => {
       setDeleteDialog({ open: false, trabajoId: null });
     }
   };
+
+  // Filtrado local
+  const filteredTrabajos = trabajos.filter(trabajo => {
+    if (filters.nombre && !(trabajo.nombre_reparacion || '').toLowerCase().includes(filters.nombre.toLowerCase())) return false;
+    if (filters.precio && !(String(trabajo.precio || '').toLowerCase().includes(filters.precio.toLowerCase()))) return false;
+    return true;
+  });
 
   if (loading) {
     return (
@@ -76,9 +87,31 @@ const TrabajosList = () => {
               <TableCell><strong>Precio</strong></TableCell>
               <TableCell><strong>Acciones</strong></TableCell>
             </TableRow>
+            {/* Fila de filtros */}
+            <TableRow>
+              <TableCell>
+                <input
+                  type="text"
+                  placeholder="Filtrar..."
+                  value={filters.nombre}
+                  onChange={e => setFilters(f => ({ ...f, nombre: e.target.value }))}
+                  style={{ width: '100%' }}
+                />
+              </TableCell>
+              <TableCell>
+                <input
+                  type="text"
+                  placeholder="Filtrar..."
+                  value={filters.precio}
+                  onChange={e => setFilters(f => ({ ...f, precio: e.target.value }))}
+                  style={{ width: '100%' }}
+                />
+              </TableCell>
+              <TableCell />
+            </TableRow>
           </TableHead>
           <TableBody>
-            {trabajos.map((trabajo) => (
+            {filteredTrabajos.map((trabajo) => (
               <TableRow key={trabajo.id}>
                 <TableCell>{trabajo.nombre_reparacion}</TableCell>
                 <TableCell>{Number(trabajo.precio).toLocaleString("es-ES", { style: "currency", currency: "EUR" })}</TableCell>

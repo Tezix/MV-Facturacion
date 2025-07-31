@@ -27,6 +27,14 @@ import { saveAs } from 'file-saver';
 export default function FacturasList() {
   const [facturas, setFacturas] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState({
+    numero: '',
+    cliente: '',
+    fecha: '',
+    estado: '',
+    total: '',
+    reparaciones: '',
+  });
 
   useEffect(() => {
     API.get('facturas/con-reparaciones/')
@@ -56,6 +64,22 @@ export default function FacturasList() {
       alert('Error al exportar PDF');
     }
   };
+
+  // Filtrado local
+  const filteredFacturas = facturas.filter(factura => {
+    if (filters.numero && !(String(factura.numero_factura || '').toLowerCase().includes(filters.numero.toLowerCase()))) return false;
+    if (filters.cliente && !((factura.cliente_nombre || factura.cliente || '').toLowerCase().includes(filters.cliente.toLowerCase()))) return false;
+    if (filters.fecha && !(String(factura.fecha || '').toLowerCase().includes(filters.fecha.toLowerCase()))) return false;
+    if (filters.estado && !((factura.estado_nombre || factura.estado || '').toLowerCase().includes(filters.estado.toLowerCase()))) return false;
+    if (filters.total && !(String(factura.total || '').toLowerCase().includes(filters.total.toLowerCase()))) return false;
+    if (filters.reparaciones) {
+      const repStr = factura.reparaciones && factura.reparaciones.length > 0
+        ? factura.reparaciones.map(t => `${t.localizacion} - ${t.trabajo}`).join(' ').toLowerCase()
+        : '';
+      if (!repStr.includes(filters.reparaciones.toLowerCase())) return false;
+    }
+    return true;
+  });
 
   if (loading) {
     return (
@@ -93,9 +117,67 @@ export default function FacturasList() {
               <TableCell><strong>Reparaciones</strong></TableCell>
               <TableCell><strong>Acciones</strong></TableCell>
             </TableRow>
+            {/* Fila de filtros */}
+            <TableRow>
+              <TableCell>
+                <input
+                  type="text"
+                  placeholder="Filtrar..."
+                  value={filters.numero}
+                  onChange={e => setFilters(f => ({ ...f, numero: e.target.value }))}
+                  style={{ width: '100%' }}
+                />
+              </TableCell>
+              <TableCell>
+                <input
+                  type="text"
+                  placeholder="Filtrar..."
+                  value={filters.cliente}
+                  onChange={e => setFilters(f => ({ ...f, cliente: e.target.value }))}
+                  style={{ width: '100%' }}
+                />
+              </TableCell>
+              <TableCell>
+                <input
+                  type="text"
+                  placeholder="Filtrar..."
+                  value={filters.fecha}
+                  onChange={e => setFilters(f => ({ ...f, fecha: e.target.value }))}
+                  style={{ width: '100%' }}
+                />
+              </TableCell>
+              <TableCell>
+                <input
+                  type="text"
+                  placeholder="Filtrar..."
+                  value={filters.estado}
+                  onChange={e => setFilters(f => ({ ...f, estado: e.target.value }))}
+                  style={{ width: '100%' }}
+                />
+              </TableCell>
+              <TableCell>
+                <input
+                  type="text"
+                  placeholder="Filtrar..."
+                  value={filters.total}
+                  onChange={e => setFilters(f => ({ ...f, total: e.target.value }))}
+                  style={{ width: '100%' }}
+                />
+              </TableCell>
+              <TableCell>
+                <input
+                  type="text"
+                  placeholder="Filtrar..."
+                  value={filters.reparaciones}
+                  onChange={e => setFilters(f => ({ ...f, reparaciones: e.target.value }))}
+                  style={{ width: '100%' }}
+                />
+              </TableCell>
+              <TableCell />
+            </TableRow>
           </TableHead>
           <TableBody>
-            {facturas.map((factura) => (
+            {filteredFacturas.map((factura) => (
               <TableRow key={factura.id}>
                 <TableCell>{factura.numero_factura}</TableCell>
                 <TableCell>{factura.cliente_nombre || factura.cliente}</TableCell>
@@ -161,7 +243,7 @@ export default function FacturasList() {
                 </TableCell>
               </TableRow>
             ))}
-            {facturas.length === 0 && (
+            {filteredFacturas.length === 0 && (
               <TableRow>
                 <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
                   No hay facturas registradas.

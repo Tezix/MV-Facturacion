@@ -25,6 +25,11 @@ import { faTrash, faPencilAlt } from '@fortawesome/free-solid-svg-icons';
 export default function TrabajoClienteList() {
   const [trabajosClientes, setTrabajosClientes] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState({
+    cliente: '',
+    reparacion: '',
+    precio: '',
+  });
 
   useEffect(() => {
     API.get('trabajos_clientes/')
@@ -43,6 +48,14 @@ export default function TrabajoClienteList() {
       setDeleteDialog({ open: false, trabajoClienteId: null });
     }
   };
+
+  // Filtrado local
+  const filteredTrabajosClientes = trabajosClientes.filter(tc => {
+    if (filters.cliente && !((tc.cliente_nombre || tc.cliente || '').toLowerCase().includes(filters.cliente.toLowerCase()))) return false;
+    if (filters.reparacion && !((tc.trabajo_nombre || tc.trabajo || '').toLowerCase().includes(filters.reparacion.toLowerCase()))) return false;
+    if (filters.precio && !(String(tc.precio || '').toLowerCase().includes(filters.precio.toLowerCase()))) return false;
+    return true;
+  });
 
   if (loading) {
     return (
@@ -75,9 +88,40 @@ export default function TrabajoClienteList() {
               <TableCell><strong>Precio (€)</strong></TableCell>
               <TableCell><strong>Acciones</strong></TableCell>
             </TableRow>
+            {/* Fila de filtros */}
+            <TableRow>
+              <TableCell>
+                <input
+                  type="text"
+                  placeholder="Filtrar..."
+                  value={filters.cliente}
+                  onChange={e => setFilters(f => ({ ...f, cliente: e.target.value }))}
+                  style={{ width: '100%' }}
+                />
+              </TableCell>
+              <TableCell>
+                <input
+                  type="text"
+                  placeholder="Filtrar..."
+                  value={filters.reparacion}
+                  onChange={e => setFilters(f => ({ ...f, reparacion: e.target.value }))}
+                  style={{ width: '100%' }}
+                />
+              </TableCell>
+              <TableCell>
+                <input
+                  type="text"
+                  placeholder="Filtrar..."
+                  value={filters.precio}
+                  onChange={e => setFilters(f => ({ ...f, precio: e.target.value }))}
+                  style={{ width: '100%' }}
+                />
+              </TableCell>
+              <TableCell />
+            </TableRow>
           </TableHead>
           <TableBody>
-            {trabajosClientes.map((tc) => (
+            {filteredTrabajosClientes.map((tc) => (
               <TableRow key={tc.id}>
                 <TableCell>{tc.cliente_nombre || tc.cliente}</TableCell>
                 <TableCell>{tc.trabajo_nombre || tc.trabajo}</TableCell>

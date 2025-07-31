@@ -76,6 +76,19 @@ const ProformaForm = () => {
           const gruposSeleccionados = reparacionesGrupos.filter(grupo => grupo.proforma === Number(id));
           setReparacionesSeleccionados(gruposSeleccionados);
         }
+      } else {
+        // Si no hay proforma cargada (creación), setear estado por defecto a "Creada" y fecha a hoy
+        const creada = estadosRes.data.find(e => e.nombre === "Creada");
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        const todayStr = `${yyyy}-${mm}-${dd}`;
+        setForm(f => ({
+          ...f,
+          estado: creada ? creada.id : f.estado,
+          fecha: todayStr
+        }));
       }
     }).finally(() => setLoading(false));
   }, [id]);
@@ -142,25 +155,26 @@ const ProformaForm = () => {
         {id ? 'Editar' : 'Crear'} Proforma
       </Typography>
 
-      <FormControl fullWidth required>
-        <InputLabel id="cliente-label">Cliente</InputLabel>
-        <Select
-          labelId="cliente-label"
-          name="cliente"
-          value={form.cliente}
-          onChange={handleChange}
-          label="Cliente"
-        >
-          <MenuItem value="">
-            <em>-- Selecciona --</em>
-          </MenuItem>
-          {clientes.map((c) => (
-            <MenuItem key={c.id} value={c.id}>
-              {c.nombre}
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
+      <Autocomplete
+        fullWidth
+        required
+        options={clientes}
+        getOptionLabel={(option) => option?.nombre || ''}
+        value={clientes.find((c) => c.id === form.cliente) || null}
+        onChange={(_, newValue) => {
+          setForm({ ...form, cliente: newValue ? newValue.id : '' });
+        }}
+        renderInput={(params) => (
+          <TextField
+            {...params}
+            label="Cliente"
+            name="cliente"
+            required
+          />
+        )}
+        isOptionEqualToValue={(option, value) => option.id === value.id}
+        noOptionsText="No hay coincidencias"
+      />
 
       <FormControl fullWidth required>
         <InputLabel id="estado-label">Estado</InputLabel>
@@ -175,7 +189,7 @@ const ProformaForm = () => {
             <em>-- Selecciona --</em>
           </MenuItem>
           {estados
-            .filter((e) => e.nombre === "Enviada" || e.nombre === "Aceptada")
+            .filter((e) => e.nombre === "Enviada" || e.nombre === "Aceptada" || e.nombre === "Creada")
             .map((e) => (
               <MenuItem key={e.id} value={e.id}>
                 {e.nombre}

@@ -25,6 +25,15 @@ import { faTrash, faPencilAlt } from '@fortawesome/free-solid-svg-icons';
 export default function ReparacionList() {
   const [reparaciones, setReparaciones] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState({
+    fecha: '',
+    num_reparacion: '',
+    num_pedido: '',
+    factura: '',
+    proforma: '',
+    localizacion: '',
+    trabajo: '',
+  });
 
   useEffect(() => {
     API.get('reparaciones/agrupados/')
@@ -45,6 +54,35 @@ export default function ReparacionList() {
       setDeleteDialog({ open: false, grupo: null });
     }
   };
+
+  // Filtrado local de la lista
+  const filteredReparaciones = reparaciones.filter((t) => {
+    // Fecha (permite buscar por substring)
+    if (filters.fecha && !(t.fecha || '').toLowerCase().includes(filters.fecha.toLowerCase())) return false;
+    // Nº Reparación
+    if (filters.num_reparacion && !(String(t.num_reparacion || '').toLowerCase().includes(filters.num_reparacion.toLowerCase()))) return false;
+    // Nº Pedido
+    if (filters.num_pedido && !(String(t.num_pedido || '').toLowerCase().includes(filters.num_pedido.toLowerCase()))) return false;
+    // Factura
+    if (filters.factura && !((t.factura_numero || t.factura || '').toLowerCase().includes(filters.factura.toLowerCase()))) return false;
+    // Proforma
+    if (filters.proforma && !((t.proforma_numero || t.proforma || '').toLowerCase().includes(filters.proforma.toLowerCase()))) return false;
+    // Localización
+    if (filters.localizacion) {
+      const loc = t.localizacion
+        ? `${t.localizacion.direccion}, ${t.localizacion.numero}, ${t.localizacion.localidad}`
+        : '';
+      if (!loc.toLowerCase().includes(filters.localizacion.toLowerCase())) return false;
+    }
+    // Trabajo (busca en todos los trabajos del grupo)
+    if (filters.trabajo) {
+      const trabajos = t.trabajos && t.trabajos.length > 0
+        ? t.trabajos.map(tr => tr.nombre_reparacion).join(' ').toLowerCase()
+        : '';
+      if (!trabajos.includes(filters.trabajo.toLowerCase())) return false;
+    }
+    return true;
+  });
 
   if (loading) {
     return (
@@ -80,9 +118,76 @@ export default function ReparacionList() {
               <TableCell><strong>Trabajo</strong></TableCell>
               <TableCell><strong>Acciones</strong></TableCell>
             </TableRow>
+            {/* Fila de filtros */}
+            <TableRow>
+              <TableCell>
+                <input
+                  type="text"
+                  placeholder="Filtrar..."
+                  value={filters.fecha}
+                  onChange={e => setFilters(f => ({ ...f, fecha: e.target.value }))}
+                  style={{ width: '100%' }}
+                />
+              </TableCell>
+              <TableCell>
+                <input
+                  type="text"
+                  placeholder="Filtrar..."
+                  value={filters.num_reparacion}
+                  onChange={e => setFilters(f => ({ ...f, num_reparacion: e.target.value }))}
+                  style={{ width: '100%' }}
+                />
+              </TableCell>
+              <TableCell>
+                <input
+                  type="text"
+                  placeholder="Filtrar..."
+                  value={filters.num_pedido}
+                  onChange={e => setFilters(f => ({ ...f, num_pedido: e.target.value }))}
+                  style={{ width: '100%' }}
+                />
+              </TableCell>
+              <TableCell>
+                <input
+                  type="text"
+                  placeholder="Filtrar..."
+                  value={filters.factura}
+                  onChange={e => setFilters(f => ({ ...f, factura: e.target.value }))}
+                  style={{ width: '100%' }}
+                />
+              </TableCell>
+              <TableCell>
+                <input
+                  type="text"
+                  placeholder="Filtrar..."
+                  value={filters.proforma}
+                  onChange={e => setFilters(f => ({ ...f, proforma: e.target.value }))}
+                  style={{ width: '100%' }}
+                />
+              </TableCell>
+              <TableCell>
+                <input
+                  type="text"
+                  placeholder="Filtrar..."
+                  value={filters.localizacion}
+                  onChange={e => setFilters(f => ({ ...f, localizacion: e.target.value }))}
+                  style={{ width: '100%' }}
+                />
+              </TableCell>
+              <TableCell>
+                <input
+                  type="text"
+                  placeholder="Filtrar..."
+                  value={filters.trabajo}
+                  onChange={e => setFilters(f => ({ ...f, trabajo: e.target.value }))}
+                  style={{ width: '100%' }}
+                />
+              </TableCell>
+              <TableCell />
+            </TableRow>
           </TableHead>
           <TableBody>
-            {reparaciones.map((t, idx) => (
+            {filteredReparaciones.map((t, idx) => (
               <TableRow key={idx}>
                 <TableCell>{t.fecha}</TableCell>
                 <TableCell>{t.num_reparacion || '—'}</TableCell>
@@ -151,7 +256,7 @@ export default function ReparacionList() {
                 </TableCell>
               </TableRow>
             ))}
-            {reparaciones.length === 0 && (
+            {filteredReparaciones.length === 0 && (
               <TableRow>
                 <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
                   No hay reparaciones registrados.

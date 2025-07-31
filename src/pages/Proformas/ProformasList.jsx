@@ -36,6 +36,14 @@ const ProformasList = () => {
   };
   const [proformas, setProformas] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState({
+    numero: '',
+    cliente: '',
+    fecha: '',
+    estado: '',
+    total: '',
+    reparaciones: '',
+  });
   const [convertingId, setConvertingId] = useState(null);
   const [confirmDialog, setConfirmDialog] = useState({ open: false, proformaId: null });
   // State for showing success after conversion
@@ -76,6 +84,22 @@ const ProformasList = () => {
     }
   };
 
+  // Filtrado local
+  const filteredProformas = proformas.filter(proforma => {
+    if (filters.numero && !(String(proforma.numero_proforma || '').toLowerCase().includes(filters.numero.toLowerCase()))) return false;
+    if (filters.cliente && !((proforma.cliente_nombre || proforma.cliente || '').toLowerCase().includes(filters.cliente.toLowerCase()))) return false;
+    if (filters.fecha && !(String(proforma.fecha || '').toLowerCase().includes(filters.fecha.toLowerCase()))) return false;
+    if (filters.estado && !((proforma.estado_nombre || proforma.estado || '').toLowerCase().includes(filters.estado.toLowerCase()))) return false;
+    if (filters.total && !(String(proforma.total || '').toLowerCase().includes(filters.total.toLowerCase()))) return false;
+    if (filters.reparaciones) {
+      const repStr = proforma.reparaciones && proforma.reparaciones.length > 0
+        ? proforma.reparaciones.map(t => `${t.localizacion} - ${t.trabajo}`).join(' ').toLowerCase()
+        : '';
+      if (!repStr.includes(filters.reparaciones.toLowerCase())) return false;
+    }
+    return true;
+  });
+
   if (loading) {
     return (
       <Box p={4} display="flex" flexDirection="column" alignItems="center">
@@ -112,9 +136,67 @@ const ProformasList = () => {
               <TableCell><strong>Reparaciones</strong></TableCell>
               <TableCell><strong>Acciones</strong></TableCell>
             </TableRow>
+            {/* Fila de filtros */}
+            <TableRow>
+              <TableCell>
+                <input
+                  type="text"
+                  placeholder="Filtrar..."
+                  value={filters.numero}
+                  onChange={e => setFilters(f => ({ ...f, numero: e.target.value }))}
+                  style={{ width: '100%' }}
+                />
+              </TableCell>
+              <TableCell>
+                <input
+                  type="text"
+                  placeholder="Filtrar..."
+                  value={filters.cliente}
+                  onChange={e => setFilters(f => ({ ...f, cliente: e.target.value }))}
+                  style={{ width: '100%' }}
+                />
+              </TableCell>
+              <TableCell>
+                <input
+                  type="text"
+                  placeholder="Filtrar..."
+                  value={filters.fecha}
+                  onChange={e => setFilters(f => ({ ...f, fecha: e.target.value }))}
+                  style={{ width: '100%' }}
+                />
+              </TableCell>
+              <TableCell>
+                <input
+                  type="text"
+                  placeholder="Filtrar..."
+                  value={filters.estado}
+                  onChange={e => setFilters(f => ({ ...f, estado: e.target.value }))}
+                  style={{ width: '100%' }}
+                />
+              </TableCell>
+              <TableCell>
+                <input
+                  type="text"
+                  placeholder="Filtrar..."
+                  value={filters.total}
+                  onChange={e => setFilters(f => ({ ...f, total: e.target.value }))}
+                  style={{ width: '100%' }}
+                />
+              </TableCell>
+              <TableCell>
+                <input
+                  type="text"
+                  placeholder="Filtrar..."
+                  value={filters.reparaciones}
+                  onChange={e => setFilters(f => ({ ...f, reparaciones: e.target.value }))}
+                  style={{ width: '100%' }}
+                />
+              </TableCell>
+              <TableCell />
+            </TableRow>
           </TableHead>
           <TableBody>
-            {proformas.map((proforma) => (
+            {filteredProformas.map((proforma) => (
               <TableRow key={proforma.id}>
                 <TableCell>{proforma.numero_proforma}</TableCell>
                 <TableCell>{proforma.cliente_nombre || proforma.cliente}</TableCell>

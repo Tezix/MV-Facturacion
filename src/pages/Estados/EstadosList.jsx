@@ -26,6 +26,10 @@ import { faTrash, faPencilAlt } from '@fortawesome/free-solid-svg-icons';
 export default function EstadosList() {
   const [estados, setEstados] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState({
+    nombre: '',
+    descripcion: '',
+  });
 
   useEffect(() => {
     API.get('estados/')
@@ -44,6 +48,13 @@ export default function EstadosList() {
       setDeleteDialog({ open: false, estadoId: null });
     }
   };
+
+  // Filtrado local
+  const filteredEstados = estados.filter(estado => {
+    if (filters.nombre && !(estado.nombre || '').toLowerCase().includes(filters.nombre.toLowerCase())) return false;
+    if (filters.descripcion && !(estado.descripcion || '').toLowerCase().includes(filters.descripcion.toLowerCase())) return false;
+    return true;
+  });
 
   if (loading) {
     return (
@@ -77,9 +88,31 @@ export default function EstadosList() {
               <TableCell><strong>Descripción</strong></TableCell>
               <TableCell><strong>Acciones</strong></TableCell>
             </TableRow>
+            {/* Fila de filtros */}
+            <TableRow>
+              <TableCell>
+                <input
+                  type="text"
+                  placeholder="Filtrar..."
+                  value={filters.nombre}
+                  onChange={e => setFilters(f => ({ ...f, nombre: e.target.value }))}
+                  style={{ width: '100%' }}
+                />
+              </TableCell>
+              <TableCell>
+                <input
+                  type="text"
+                  placeholder="Filtrar..."
+                  value={filters.descripcion}
+                  onChange={e => setFilters(f => ({ ...f, descripcion: e.target.value }))}
+                  style={{ width: '100%' }}
+                />
+              </TableCell>
+              <TableCell />
+            </TableRow>
           </TableHead>
           <TableBody>
-            {estados.map((estado) => (
+            {filteredEstados.map((estado) => (
               <TableRow key={estado.id}>
                 <TableCell>{estado.nombre}</TableCell>
                 <TableCell>{estado.descripcion}</TableCell>

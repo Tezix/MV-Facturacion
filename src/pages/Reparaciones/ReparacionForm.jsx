@@ -16,8 +16,15 @@ import {
 } from '@mui/material';
 
 const ReparacionForm = () => {
+  const getTodayStr = () => {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  };
   const [form, setForm] = useState({
-    fecha: '',
+    fecha: getTodayStr(),
     num_reparacion: '',
     num_pedido: '',
     factura: '',
@@ -54,6 +61,9 @@ const ReparacionForm = () => {
           setTrabajosSeleccionadas(grupo.trabajos);
         }
       });
+    } else {
+      // Si es creación, setear fecha a hoy (por si el usuario vuelve a la página)
+      setForm((prev) => ({ ...prev, fecha: getTodayStr() }));
     }
     API.get('localizaciones_reparaciones/').then((res) => setLocalizaciones(res.data));
     API.get('trabajos/').then((res) => setTrabajos(res.data));

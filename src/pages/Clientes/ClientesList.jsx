@@ -26,6 +26,11 @@ import { faTrash, faPencilAlt } from '@fortawesome/free-solid-svg-icons';
 export default function ClientesList() {
   const [clientes, setClientes] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState({
+    nombre: '',
+    cif: '',
+    email: '',
+  });
 
   useEffect(() => {
     API.get('clientes/')
@@ -44,6 +49,14 @@ export default function ClientesList() {
       setDeleteDialog({ open: false, clienteId: null });
     }
   };
+
+  // Filtrado local
+  const filteredClientes = clientes.filter(cliente => {
+    if (filters.nombre && !(cliente.nombre || '').toLowerCase().includes(filters.nombre.toLowerCase())) return false;
+    if (filters.cif && !(cliente.cif || '').toLowerCase().includes(filters.cif.toLowerCase())) return false;
+    if (filters.email && !(cliente.email || '').toLowerCase().includes(filters.email.toLowerCase())) return false;
+    return true;
+  });
 
   if (loading) {
     return (
@@ -78,9 +91,40 @@ export default function ClientesList() {
               <TableCell><strong>Email</strong></TableCell>
               <TableCell><strong>Acciones</strong></TableCell>
             </TableRow>
+            {/* Fila de filtros */}
+            <TableRow>
+              <TableCell>
+                <input
+                  type="text"
+                  placeholder="Filtrar..."
+                  value={filters.nombre}
+                  onChange={e => setFilters(f => ({ ...f, nombre: e.target.value }))}
+                  style={{ width: '100%' }}
+                />
+              </TableCell>
+              <TableCell>
+                <input
+                  type="text"
+                  placeholder="Filtrar..."
+                  value={filters.cif}
+                  onChange={e => setFilters(f => ({ ...f, cif: e.target.value }))}
+                  style={{ width: '100%' }}
+                />
+              </TableCell>
+              <TableCell>
+                <input
+                  type="text"
+                  placeholder="Filtrar..."
+                  value={filters.email}
+                  onChange={e => setFilters(f => ({ ...f, email: e.target.value }))}
+                  style={{ width: '100%' }}
+                />
+              </TableCell>
+              <TableCell />
+            </TableRow>
           </TableHead>
           <TableBody>
-            {clientes.map((cliente) => (
+            {filteredClientes.map((cliente) => (
               <TableRow key={cliente.id}>
                 <TableCell>{cliente.nombre}</TableCell>
                 <TableCell>{cliente.cif}</TableCell>
