@@ -15,8 +15,19 @@ const LocalizacionReparacionForm = () => {
     numero: '',
     localidad: '',
     ascensor: false,
+    escalera: '',
   });
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      await API.delete(`localizaciones_reparaciones/${id}/`);
+      navigate('/localizaciones');
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const navigate = useNavigate();
   const { id } = useParams();
@@ -30,6 +41,7 @@ const LocalizacionReparacionForm = () => {
           numero: res.data.numero || '',
           localidad: res.data.localidad || '',
           ascensor: res.data.ascensor ?? false,
+          escalera: res.data.escalera || '',
         });
       });
     } else {
@@ -44,10 +56,10 @@ const LocalizacionReparacionForm = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    // Siempre tratar ascensor como string
+    // Siempre tratar ascensor y escalera como string
     setForm({
       ...form,
-      [name]: name === 'ascensor' ? String(value) : value,
+      [name]: (name === 'ascensor' || name === 'escalera') ? String(value) : value,
     });
   };
 
@@ -55,7 +67,7 @@ const LocalizacionReparacionForm = () => {
     e.preventDefault();
     setSaving(true);
     try {
-      // No enviar ascensor si está vacío o es booleano (por error)
+      // No enviar ascensor/escalera si están vacíos o ascensor es booleano (por error)
       const data = { ...form };
       if (
         data.ascensor === '' ||
@@ -64,17 +76,28 @@ const LocalizacionReparacionForm = () => {
       ) {
         delete data.ascensor;
       }
+      if (data.escalera === '' || data.escalera === undefined) {
+        delete data.escalera;
+      }
       if (id) {
         await API.put(`localizaciones_reparaciones/${id}/`, data);
         navigate('/localizaciones');
       } else {
         // Crear y obtener el id de la nueva localización
         const res = await API.post('localizaciones_reparaciones/', data);
-        // Si venimos de Reparacion, volver y pasar el id
+        // Si venimos de Reparacion, volver y pasar el id y el seguimiento de factura si existe
         if (location.state && location.state.fromReparacion) {
-          // Si venimos de Reparacion, volver siempre a crear nueva reparacion y preseleccionar la localizacion
+          let reparacionState = { nuevaLocalizacionId: res.data.id };
+          if (location.state.fromFactura && location.state.facturaId) {
+            reparacionState = {
+              ...reparacionState,
+              fromFactura: true,
+              facturaId: location.state.facturaId,
+              returnTo: location.state.returnTo || undefined
+            };
+          }
           navigate('/reparaciones/crear', {
-            state: { nuevaLocalizacionId: res.data.id },
+            state: reparacionState,
             replace: true
           });
         } else {
@@ -139,10 +162,19 @@ const LocalizacionReparacionForm = () => {
         fullWidth
       />
 
+
       <TextField
         label="Ascensor"
         name="ascensor"
         value={form.ascensor || ''}
+        onChange={handleChange}
+        fullWidth
+      />
+
+      <TextField
+        label="Escalera"
+        name="escalera"
+        value={form.escalera || ''}
         onChange={handleChange}
         fullWidth
       />
@@ -157,6 +189,24 @@ const LocalizacionReparacionForm = () => {
           'Guardar'
         )}
       </Button>
+      {id && (
+        <Button
+          variant="outlined"
+          color="error"
+          onClick={handleDelete}
+          disabled={deleting}
+          sx={{ position: 'relative' }}
+        >
+          {deleting ? (
+            <>
+              <CircularProgress size={24} color="inherit" sx={{ position: 'absolute', left: '50%', top: '50%', marginTop: '-12px', marginLeft: '-12px' }} />
+              <span style={{ opacity: 0 }}>Eliminar</span>
+            </>
+          ) : (
+            'Eliminar'
+          )}
+        </Button>
+      )}
     </Box>
   );
 };

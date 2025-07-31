@@ -23,6 +23,16 @@ const ClienteForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      await API.delete(`clientes/${id}/`);
+      navigate('/clientes');
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   useEffect(() => {
     if (id) {
@@ -96,6 +106,24 @@ const ClienteForm = () => {
           'Guardar'
         )}
       </Button>
+      {id && (
+        <Button
+          variant="outlined"
+          color="error"
+          onClick={handleDelete}
+          disabled={deleting}
+          sx={{ position: 'relative' }}
+        >
+          {deleting ? (
+            <>
+              <CircularProgress size={24} color="inherit" sx={{ position: 'absolute', left: '50%', top: '50%', marginTop: '-12px', marginLeft: '-12px' }} />
+              <span style={{ opacity: 0 }}>Eliminar</span>
+            </>
+          ) : (
+            'Eliminar'
+          )}
+        </Button>
+      )}
     </Box>
   );
 };

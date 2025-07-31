@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { API } from '../../api/axios';
 import {
   Box,
@@ -32,6 +32,7 @@ const FacturaForm = () => {
   const [reparacionesSeleccionados, setReparacionesSeleccionados] = useState([]);
   const navigate = useNavigate();
   const { id } = useParams();
+  const location = useLocation();
 
   useEffect(() => {
     Promise.all([
@@ -65,23 +66,76 @@ const FacturaForm = () => {
       setReparaciones(reparacionesGrupos);
       if (facturaRes) {
         const facturaData = facturaRes.data;
-      // Excluir numero_factura y total del form
-      const restFacturaData = { ...facturaData };
-      delete restFacturaData.numero_factura;
-      delete restFacturaData.total;
-      setForm({
-        ...restFacturaData,
-        cliente: facturaData.cliente && typeof facturaData.cliente === 'object' ? facturaData.cliente.id : facturaData.cliente,
-        estado: facturaData.estado && typeof facturaData.estado === 'object' ? facturaData.estado.id : facturaData.estado,
-      });
+        // Excluir numero_factura y total del form
+        const restFacturaData = { ...facturaData };
+        delete restFacturaData.numero_factura;
+        delete restFacturaData.total;
+        setForm({
+          ...restFacturaData,
+          cliente: facturaData.cliente && typeof facturaData.cliente === 'object' ? facturaData.cliente.id : facturaData.cliente,
+          estado: facturaData.estado && typeof facturaData.estado === 'object' ? facturaData.estado.id : facturaData.estado,
+        });
         // Seleccionar automáticamente los grupos de reparaciones que tengan la propiedad factura igual al id de la factura
         if (id) {
-          const gruposSeleccionados = reparacionesGrupos.filter(grupo => grupo.factura === Number(id));
+          let gruposSeleccionados = reparacionesGrupos.filter(grupo => grupo.factura === Number(id));
+          // Si venimos de crear una nueva reparación, añadirla a los seleccionados
+          if (location.state && location.state.nuevaReparacionId) {
+            const nueva = reparacionesGrupos.find(g => g.reparacion_ids.includes(location.state.nuevaReparacionId));
+            if (nueva && !gruposSeleccionados.some(g => g.id === nueva.id)) {
+              gruposSeleccionados = [...gruposSeleccionados, nueva];
+            }
+          }
           setReparacionesSeleccionados(gruposSeleccionados);
         }
       }
     }).finally(() => setLoading(false));
-  }, [id]);
+    // Limpiar el state de navegación para evitar selección múltiple accidental
+    // eslint-disable-next-line
+    // window.history.replaceState({}, document.title);
+  }, [id, location.state]);
+  // Guardar la factura y navegar a crear nueva reparación
+  const handleNuevaReparacion = async () => {
+    setSaving(true);
+    let facturaId = id;
+    try {
+      // Si la factura no existe aún, crearla primero
+      if (!facturaId) {
+        // Asegurarse de enviar solo los ids en el form
+        const formToSend = {
+          ...form,
+          cliente: typeof form.cliente === 'object' && form.cliente !== null ? form.cliente.id : form.cliente,
+          estado: typeof form.estado === 'object' && form.estado !== null ? form.estado.id : form.estado,
+        };
+        delete formToSend.numero_factura;
+        delete formToSend.total;
+        const res = await API.post('facturas/', formToSend);
+        facturaId = res.data.id;
+      } else {
+        // Si ya existe, guardar cambios antes de salir
+        const formToSend = {
+          ...form,
+          cliente: typeof form.cliente === 'object' && form.cliente !== null ? form.cliente.id : form.cliente,
+          estado: typeof form.estado === 'object' && form.estado !== null ? form.estado.id : form.estado,
+        };
+        delete formToSend.numero_factura;
+        delete formToSend.total;
+        await API.put(`facturas/${facturaId}/`, formToSend);
+      }
+      // Asignar reparaciones seleccionadas actuales
+      if (reparacionesSeleccionados.length > 0) {
+        const allReparacionIds = reparacionesSeleccionados.flatMap(g => Array.isArray(g.reparacion_ids) ? g.reparacion_ids : []);
+        await API.post(`facturas/${facturaId}/asignar-reparaciones/`, {
+          reparaciones: allReparacionIds
+        });
+      }
+      // Navegar a crear nueva reparación, pasando el id de la factura y la ruta de retorno
+      navigate(`/reparaciones/crear`, {
+        state: { fromFactura: true, facturaId: facturaId, returnTo: `/facturas/editar/${facturaId}` }
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -202,36 +256,44 @@ const FacturaForm = () => {
 
 
 
-      <Autocomplete
-        multiple
-        options={reparaciones}
-        getOptionLabel={(option) => {
-          if (!option) return '';
-          const fecha = option.fecha || '';
-          const numReparacion = option.num_reparacion || '';
-          const loc = option.localizacion || {};
-          const direccion = loc.direccion || '';
-          const numero = loc.numero !== undefined && loc.numero !== null ? loc.numero : '';
-          return `${fecha} - ${numReparacion} - ${direccion} ${numero}`;
-        }}
-        value={reparacionesSeleccionados}
-        onChange={(_, newValue) => setReparacionesSeleccionados(newValue)}
-        renderTags={(value, getTagProps) =>
-          value.map((option, index) => {
-            const fecha = option.fecha || '';
-            const numReparacion = option.num_reparacion || '';
-            const loc = option.localizacion || {};
-            const direccion = loc.direccion || '';
-            const numero = loc.numero !== undefined && loc.numero !== null ? loc.numero : '';
-            return (
-              <Chip label={`${fecha} - ${numReparacion} - ${direccion} ${numero}`} {...getTagProps({ index })} key={option.id} />
-            );
-          })
-        }
-        renderInput={(params) => (
-          <TextField {...params} label="Reparaciones a asociar" placeholder="Selecciona reparaciones" fullWidth />
-        )}
-      />
+
+      <Box display="flex" alignItems="center" gap={1}>
+        <Box flex={1}>
+          <Autocomplete
+            multiple
+            options={reparaciones}
+            getOptionLabel={(option) => {
+              if (!option) return '';
+              const fecha = option.fecha || '';
+              const numReparacion = option.num_reparacion || '';
+              const loc = option.localizacion || {};
+              const direccion = loc.direccion || '';
+              const numero = loc.numero !== undefined && loc.numero !== null ? loc.numero : '';
+              return `${fecha} - ${numReparacion} - ${direccion} ${numero}`;
+            }}
+            value={reparacionesSeleccionados}
+            onChange={(_, newValue) => setReparacionesSeleccionados(newValue)}
+            renderTags={(value, getTagProps) =>
+              value.map((option, index) => {
+                const fecha = option.fecha || '';
+                const numReparacion = option.num_reparacion || '';
+                const loc = option.localizacion || {};
+                const direccion = loc.direccion || '';
+                const numero = loc.numero !== undefined && loc.numero !== null ? loc.numero : '';
+                return (
+                  <Chip label={`${fecha} - ${numReparacion} - ${direccion} ${numero}`} {...getTagProps({ index })} key={option.id} />
+                );
+              })
+            }
+            renderInput={(params) => (
+              <TextField {...params} label="Reparaciones a asociar" placeholder="Selecciona reparaciones" fullWidth />
+            )}
+          />
+        </Box>
+        <Button variant="outlined" color="primary" onClick={handleNuevaReparacion} disabled={saving}>
+          Nueva
+        </Button>
+      </Box>
 
       <Button type="submit" variant="contained" color="primary" disabled={saving} sx={{ position: 'relative' }}>
         {saving ? (

@@ -75,6 +75,7 @@ export default function LocalizacionReparacionList() {
               <TableCell><strong>Número</strong></TableCell>
               <TableCell><strong>Localidad</strong></TableCell>
               <TableCell><strong>Ascensor</strong></TableCell>
+              <TableCell><strong>Escalera</strong></TableCell>
               <TableCell><strong>Acciones</strong></TableCell>
             </TableRow>
           </TableHead>
@@ -85,6 +86,7 @@ export default function LocalizacionReparacionList() {
                 <TableCell>{loc.numero}</TableCell>
                 <TableCell>{loc.localidad}</TableCell>
                 <TableCell>{loc.ascensor ?? ''}</TableCell>
+                <TableCell>{loc.escalera ?? ''}</TableCell>
                 <TableCell>
                   <IconButton
                     component={Link}
@@ -130,7 +132,7 @@ export default function LocalizacionReparacionList() {
             ))}
             {localizaciones.length === 0 && (
               <TableRow>
-                <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
+                <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
                   No hay localizaciones registradas.
                 </TableCell>
               </TableRow>
