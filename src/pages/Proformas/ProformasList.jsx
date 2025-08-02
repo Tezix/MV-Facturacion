@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { API } from "../../api/axios";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Typography,
   Button,
@@ -42,6 +42,17 @@ const ProformasList = () => {
   const [emailDialog, setEmailDialog] = useState({ open: false, proformaId: null });
   const [sendingEmail, setSendingEmail] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Mostrar snackbar si viene de una creación
+  useEffect(() => {
+    if (location.state && location.state.snackbar) {
+      setSnackbar(location.state.snackbar);
+      // Limpiar el state para que no se repita al refrescar
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, location.pathname, navigate]);
   const [estados, setEstados] = useState([]);
   useEffect(() => {
     API.get('estados/').then(res => setEstados(res.data));
@@ -132,15 +143,20 @@ const ProformasList = () => {
       .finally(() => setLoading(false));
   }, []);
 
+  // Estado para saber si está eliminando una proforma específica
+  const [deletingId, setDeletingId] = useState(null);
   const [deleteDialog, setDeleteDialog] = useState({ open: false, proformaId: null });
   const handleDelete = async (id) => {
+    setDeletingId(id);
     try {
       await API.delete(`proformas/${id}/`);
       setProformas(proformas.filter((p) => p.id !== id));
+      setSnackbar({ open: true, message: 'Proforma eliminada correctamente', severity: 'success' });
     } catch {
-      alert("Error al eliminar la proforma");
+      setSnackbar({ open: true, message: 'Error al eliminar la proforma', severity: 'error' });
     } finally {
       setDeleteDialog({ open: false, proformaId: null });
+      setDeletingId(null);
     }
   };
 
@@ -488,15 +504,17 @@ const ProformasList = () => {
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteDialog({ open: false, proformaId: null })} color="inherit">
+          <Button onClick={() => setDeleteDialog({ open: false, proformaId: null })} color="inherit" disabled={deletingId !== null}>
             Cancelar
           </Button>
           <Button
             onClick={() => handleDelete(deleteDialog.proformaId)}
             color="error"
             variant="contained"
+            disabled={deletingId !== null}
+            startIcon={deletingId !== null ? <CircularProgress size={18} color="inherit" /> : null}
           >
-            Eliminar
+            {deletingId !== null ? 'Eliminando...' : 'Eliminar'}
           </Button>
         </DialogActions>
       </Dialog>

@@ -57,12 +57,15 @@ export default function ClientesList() {
     setMenuAnchorEl(null);
     setMenuCliente(null);
   };
+  // Estado para saber si está eliminando un cliente específico
+  const [deletingId, setDeletingId] = useState(null);
   // Dialog de borrado
   const [deleteDialog, setDeleteDialog] = useState({ open: false, clienteId: null });
   // Snackbar
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
   const deleteCliente = async (id) => {
+    setDeletingId(id);
     try {
       await API.delete(`clientes/${id}/`);
       setClientes(clientes.filter((c) => c.id !== id));
@@ -71,6 +74,7 @@ export default function ClientesList() {
       setSnackbar({ open: true, message: 'Error al eliminar el cliente', severity: 'error' });
     } finally {
       setDeleteDialog({ open: false, clienteId: null });
+      setDeletingId(null);
     }
   };
 
@@ -207,15 +211,17 @@ export default function ClientesList() {
             </DialogContentText>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setDeleteDialog({ open: false, clienteId: null })} color="inherit">
+            <Button onClick={() => setDeleteDialog({ open: false, clienteId: null })} color="inherit" disabled={deletingId !== null}>
               Cancelar
             </Button>
             <Button
               onClick={() => deleteCliente(deleteDialog.clienteId)}
               color="error"
               variant="contained"
+              disabled={deletingId !== null}
+              startIcon={deletingId !== null ? <CircularProgress size={18} color="inherit" /> : null}
             >
-              Eliminar
+              {deletingId !== null ? 'Eliminando...' : 'Eliminar'}
             </Button>
           </DialogActions>
         </Dialog>

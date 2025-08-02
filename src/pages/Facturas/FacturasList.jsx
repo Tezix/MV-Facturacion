@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { API } from '../../api/axios';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Typography,
   Button,
@@ -65,6 +65,17 @@ export default function FacturasList() {
   const [emailDialog, setEmailDialog] = useState({ open: false, facturaId: null });
   const [sendingEmail, setSendingEmail] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Mostrar snackbar si viene de una creación
+  useEffect(() => {
+    if (location.state && location.state.snackbar) {
+      setSnackbar(location.state.snackbar);
+      // Limpiar el state para que no se repita al refrescar
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, location.pathname, navigate]);
 
   useEffect(() => {
     API.get('facturas/con-reparaciones/')
@@ -76,15 +87,20 @@ export default function FacturasList() {
     API.get('estados/').then((res) => setEstados(res.data));
   }, []);
 
+  // Estado para saber si está eliminando una factura específica
+  const [deletingId, setDeletingId] = useState(null);
   const [deleteDialog, setDeleteDialog] = useState({ open: false, facturaId: null });
   const handleDelete = async (id) => {
+    setDeletingId(id);
     try {
       await API.delete(`facturas/${id}/`);
       setFacturas(facturas.filter((f) => f.id !== id));
+      setSnackbar({ open: true, message: 'Factura eliminada correctamente', severity: 'success' });
     } catch {
-      alert('Error al eliminar la factura');
+      setSnackbar({ open: true, message: 'Error al eliminar la factura', severity: 'error' });
     } finally {
       setDeleteDialog({ open: false, facturaId: null });
+      setDeletingId(null);
     }
   };
   
@@ -453,15 +469,17 @@ export default function FacturasList() {
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteDialog({ open: false, facturaId: null })} color="inherit">
+          <Button onClick={() => setDeleteDialog({ open: false, facturaId: null })} color="inherit" disabled={deletingId !== null}>
             Cancelar
           </Button>
           <Button
             onClick={() => handleDelete(deleteDialog.facturaId)}
             color="error"
             variant="contained"
+            disabled={deletingId !== null}
+            startIcon={deletingId !== null ? <CircularProgress size={18} color="inherit" /> : null}
           >
-            Eliminar
+            {deletingId !== null ? 'Eliminando...' : 'Eliminar'}
           </Button>
         </DialogActions>
       </Dialog>

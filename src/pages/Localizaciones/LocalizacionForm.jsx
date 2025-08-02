@@ -79,12 +79,13 @@ const LocalizacionReparacionForm = () => {
       if (data.escalera === '' || data.escalera === undefined) {
         delete data.escalera;
       }
+      let isCreacion = false;
       if (id) {
         await API.put(`localizaciones_reparaciones/${id}/`, data);
-        navigate('/localizaciones');
       } else {
         // Crear y obtener el id de la nueva localización
         const res = await API.post('localizaciones_reparaciones/', data);
+        isCreacion = true;
         // Si venimos de Reparacion, volver y pasar el id y el seguimiento de factura si existe
         if (location.state && location.state.fromReparacion) {
           let reparacionState = { nuevaLocalizacionId: res.data.id };
@@ -107,9 +108,13 @@ const LocalizacionReparacionForm = () => {
             state: reparacionState,
             replace: true
           });
-        } else {
-          navigate('/localizaciones');
+          return;
         }
+      }
+      if (isCreacion) {
+        navigate('/localizaciones', { state: { snackbar: { open: true, message: 'Localización creada correctamente', severity: 'success' } } });
+      } else {
+        navigate('/localizaciones', { state: { snackbar: { open: true, message: 'Localización actualizada correctamente', severity: 'success' } } });
       }
     } finally {
       setSaving(false);

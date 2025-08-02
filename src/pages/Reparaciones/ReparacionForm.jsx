@@ -37,6 +37,7 @@ const ReparacionForm = () => {
   const [trabajosSeleccionadas, setTrabajosSeleccionadas] = useState([]);
   const [loading, setLoading] = useState(false); // loading de submit
   const [fetching, setFetching] = useState(true); // loading de datos iniciales
+  // Eliminado Snackbar local, ahora se maneja en la lista
 
   const navigate = useNavigate();
   const { id } = useParams();
@@ -113,6 +114,7 @@ const ReparacionForm = () => {
       // Eliminar localizacionInput si existe
       if (payload.localizacionInput) delete payload.localizacionInput;
       let nuevaReparacionId = null;
+      let isCreacion = false;
       if (id) {
         // Obtener el grupo de reparaciones a editar
         const grupos = await API.get('reparaciones/agrupados/').then(res => res.data);
@@ -129,6 +131,7 @@ const ReparacionForm = () => {
       } else {
         // Crear y obtener el id de la nueva reparación
         const res = await API.post('reparaciones/', payload);
+        isCreacion = true;
         if (res.data && Array.isArray(res.data) && res.data.length > 0) {
           nuevaReparacionId = res.data[0].id;
         } else if (res.data && res.data.id) {
@@ -145,7 +148,12 @@ const ReparacionForm = () => {
           state: { nuevaReparacionId: nuevaReparacionId }
         });
       } else {
-        navigate('/reparaciones');
+        // Pasar mensaje de éxito a la lista tras crear o editar
+        if (isCreacion) {
+          navigate('/reparaciones', { state: { snackbar: { open: true, message: 'Reparación creada correctamente', severity: 'success' } } });
+        } else {
+          navigate('/reparaciones', { state: { snackbar: { open: true, message: 'Reparación actualizada correctamente', severity: 'success' } } });
+        }
       }
     } finally {
       setLoading(false);
@@ -161,156 +169,159 @@ const ReparacionForm = () => {
   }
 
   return (
-    <Box
-      component="form"
-      onSubmit={handleSubmit}
-      sx={{
-        p: 3,
-        maxWidth: 600,
-        mx: 'auto',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 3,
-      }}
-    >
-      <Typography variant="h5" fontWeight="bold">
-        {id ? 'Editar' : 'Crear'} Reparacion
-      </Typography>
+    <>
+      <Box
+        component="form"
+        onSubmit={handleSubmit}
+        sx={{
+          p: 3,
+          maxWidth: 600,
+          mx: 'auto',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 3,
+        }}
+      >
+        <Typography variant="h5" fontWeight="bold">
+          {id ? 'Editar' : 'Crear'} Reparacion
+        </Typography>
 
-      <Box display="flex" alignItems="center" gap={1}>
-        <Box flex={1}>
-          <Autocomplete
-            options={localizaciones}
-            getOptionLabel={(option) =>
-              option && typeof option === 'object'
-                ? `${option.direccion}, ${option.numero}, Esc ${option.escalera || ''} Asc ${option.ascensor || ''}, ${option.localidad}`
-                : (typeof option === 'string' ? option : '')
-            }
-            value={
-              localizaciones.find((loc) => loc.id === form.localizacion) || null
-            }
-            onChange={(_, newValue) => {
-              setForm((prev) => ({
-                ...prev,
-                localizacion: newValue ? newValue.id : '',
-                localizacionInput: newValue && typeof newValue === 'object'
-                  ? `${newValue.direccion}, ${newValue.numero}, Esc ${newValue.escalera || ''} Asc ${newValue.ascensor || ''}, ${newValue.localidad}`
-                  : prev.localizacionInput
-              }));
+        <Box display="flex" alignItems="center" gap={1}>
+          <Box flex={1}>
+            <Autocomplete
+              options={localizaciones}
+              getOptionLabel={(option) =>
+                option && typeof option === 'object'
+                  ? `${option.direccion}, ${option.numero}, Esc ${option.escalera || ''} Asc ${option.ascensor || ''}, ${option.localidad}`
+                  : (typeof option === 'string' ? option : '')
+              }
+              value={
+                localizaciones.find((loc) => loc.id === form.localizacion) || null
+              }
+              onChange={(_, newValue) => {
+                setForm((prev) => ({
+                  ...prev,
+                  localizacion: newValue ? newValue.id : '',
+                  localizacionInput: newValue && typeof newValue === 'object'
+                    ? `${newValue.direccion}, ${newValue.numero}, Esc ${newValue.escalera || ''} Asc ${newValue.ascensor || ''}, ${newValue.localidad}`
+                    : prev.localizacionInput
+                }));
+              }}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Localización"
+                  required
+                  fullWidth
+                />
+              )}
+              isOptionEqualToValue={(option, value) => option.id === value.id}
+              inputValue={form.localizacionInput || ''}
+              onInputChange={(_, newInputValue) => {
+                setForm((prev) => ({ ...prev, localizacionInput: newInputValue }));
+              }}
+              freeSolo
+            />
+          </Box>
+          <Button
+            variant="outlined"
+            color="primary"
+            onClick={() => {
+              // Usar la ruta correcta para crear localización
+              const direccion = form.localizacionInput || '';
+              // Si venimos de una factura o proforma, pasar también ese seguimiento
+              let extraState = { fromReparacion: true, reparacionId: id };
+              if (location.state && location.state.fromFactura && location.state.facturaId) {
+                extraState = {
+                  ...extraState,
+                  fromFactura: true,
+                  facturaId: location.state.facturaId,
+                  returnTo: location.state.returnTo || undefined
+                };
+              } else if (location.state && location.state.fromProforma && location.state.proformaId) {
+                extraState = {
+                  ...extraState,
+                  fromProforma: true,
+                  proformaId: location.state.proformaId,
+                  returnTo: location.state.returnTo || undefined
+                };
+              }
+              navigate(`/localizaciones/crear?direccion=${encodeURIComponent(direccion)}`, {
+                state: extraState
+              });
             }}
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                label="Localización"
-                required
-                fullWidth
-              />
-            )}
-            isOptionEqualToValue={(option, value) => option.id === value.id}
-            inputValue={form.localizacionInput || ''}
-            onInputChange={(_, newInputValue) => {
-              setForm((prev) => ({ ...prev, localizacionInput: newInputValue }));
-            }}
-            freeSolo
-          />
+          >
+            Nueva
+          </Button>
         </Box>
-                <Button
-                  variant="outlined"
-                  color="primary"
-                  onClick={() => {
-                    // Usar la ruta correcta para crear localización
-                    const direccion = form.localizacionInput || '';
-                    // Si venimos de una factura o proforma, pasar también ese seguimiento
-                    let extraState = { fromReparacion: true, reparacionId: id };
-                    if (location.state && location.state.fromFactura && location.state.facturaId) {
-                      extraState = {
-                        ...extraState,
-                        fromFactura: true,
-                        facturaId: location.state.facturaId,
-                        returnTo: location.state.returnTo || undefined
-                      };
-                    } else if (location.state && location.state.fromProforma && location.state.proformaId) {
-                      extraState = {
-                        ...extraState,
-                        fromProforma: true,
-                        proformaId: location.state.proformaId,
-                        returnTo: location.state.returnTo || undefined
-                      };
-                    }
-                    navigate(`/localizaciones/crear?direccion=${encodeURIComponent(direccion)}`, {
-                      state: extraState
-                    });
-                  }}
-                >
-                  Nueva
-                </Button>
+
+        <TextField
+          name="fecha"
+          label="Fecha"
+          type="date"
+          value={form.fecha}
+          onChange={handleChange}
+          InputLabelProps={{ shrink: true }}
+          fullWidth
+          required
+        />
+
+        <TextField
+          name="num_reparacion"
+          label="Nº Reparación"
+          value={form.num_reparacion || ''}
+          onChange={handleChange}
+          fullWidth
+        />
+
+        <TextField
+          name="num_pedido"
+          label="Nº Pedido"
+          value={form.num_pedido || ''}
+          onChange={handleChange}
+          fullWidth
+        />
+
+        <Autocomplete
+          multiple
+          options={trabajos}
+          getOptionLabel={(option) => option.nombre_reparacion}
+          value={trabajosSeleccionadas}
+          onChange={(_, newValue) => setTrabajosSeleccionadas(newValue)}
+          renderTags={(value, getTagProps) =>
+            value.map((option, index) => (
+              <Chip label={option.nombre_reparacion} {...getTagProps({ index })} key={option.id} />
+            ))
+          }
+          renderInput={(params) => (
+            <TextField {...params} label="Trabajos" placeholder="Selecciona trabajos" fullWidth />
+          )}
+        />
+
+        <TextField
+          name="comentarios"
+          label="Comentarios"
+          value={form.comentarios || ''}
+          onChange={handleChange}
+          fullWidth
+          multiline
+          minRows={2}
+          maxRows={6}
+        />
+
+        <Button type="submit" variant="contained" color="primary" disabled={loading} sx={{ position: 'relative' }}>
+          {loading ? (
+            <>
+              <CircularProgress size={24} color="inherit" sx={{ position: 'absolute', left: '50%', top: '50%', marginTop: '-12px', marginLeft: '-12px' }} />
+              <span style={{ opacity: 0 }}>Guardar</span>
+            </>
+          ) : (
+            'Guardar'
+          )}
+        </Button>
       </Box>
-
-      <TextField
-        name="fecha"
-        label="Fecha"
-        type="date"
-        value={form.fecha}
-        onChange={handleChange}
-        InputLabelProps={{ shrink: true }}
-        fullWidth
-        required
-      />
-
-      <TextField
-        name="num_reparacion"
-        label="Nº Reparación"
-        value={form.num_reparacion || ''}
-        onChange={handleChange}
-        fullWidth
-      />
-
-      <TextField
-        name="num_pedido"
-        label="Nº Pedido"
-        value={form.num_pedido || ''}
-        onChange={handleChange}
-        fullWidth
-      />
-
-      <Autocomplete
-        multiple
-        options={trabajos}
-        getOptionLabel={(option) => option.nombre_reparacion}
-        value={trabajosSeleccionadas}
-        onChange={(_, newValue) => setTrabajosSeleccionadas(newValue)}
-        renderTags={(value, getTagProps) =>
-          value.map((option, index) => (
-            <Chip label={option.nombre_reparacion} {...getTagProps({ index })} key={option.id} />
-          ))
-        }
-        renderInput={(params) => (
-          <TextField {...params} label="Trabajos" placeholder="Selecciona trabajos" fullWidth />
-        )}
-      />
-
-      <TextField
-        name="comentarios"
-        label="Comentarios"
-        value={form.comentarios || ''}
-        onChange={handleChange}
-        fullWidth
-        multiline
-        minRows={2}
-        maxRows={6}
-      />
-
-      <Button type="submit" variant="contained" color="primary" disabled={loading} sx={{ position: 'relative' }}>
-        {loading ? (
-          <>
-            <CircularProgress size={24} color="inherit" sx={{ position: 'absolute', left: '50%', top: '50%', marginTop: '-12px', marginLeft: '-12px' }} />
-            <span style={{ opacity: 0 }}>Guardar</span>
-          </>
-        ) : (
-          'Guardar'
-        )}
-      </Button>
-    </Box>
+      {/* Snackbar eliminado, ahora se muestra en la lista */}
+    </>
   );
 };
 

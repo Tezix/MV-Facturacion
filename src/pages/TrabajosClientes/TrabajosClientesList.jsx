@@ -49,6 +49,8 @@ export default function TrabajoClienteList() {
     setMenuAnchorEl(null);
     setMenuTrabajoCliente(null);
   };
+  // Estado para saber si está eliminando un trabajoCliente específico
+  const [deletingId, setDeletingId] = useState(null);
   // Dialog de borrado
   const [deleteDialog, setDeleteDialog] = useState({ open: false, trabajoClienteId: null });
   // Snackbar
@@ -61,6 +63,7 @@ export default function TrabajoClienteList() {
   }, []);
 
   const handleDelete = async (id) => {
+    setDeletingId(id);
     try {
       await API.delete(`trabajos_clientes/${id}/`);
       setTrabajosClientes(trabajosClientes.filter((tc) => tc.id !== id));
@@ -69,6 +72,7 @@ export default function TrabajoClienteList() {
       setSnackbar({ open: true, message: 'Error al eliminar el trabajo de cliente', severity: 'error' });
     } finally {
       setDeleteDialog({ open: false, trabajoClienteId: null });
+      setDeletingId(null);
     }
   };
 
@@ -203,15 +207,17 @@ export default function TrabajoClienteList() {
             </DialogContentText>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setDeleteDialog({ open: false, trabajoClienteId: null })} color="inherit">
+            <Button onClick={() => setDeleteDialog({ open: false, trabajoClienteId: null })} color="inherit" disabled={deletingId !== null}>
               Cancelar
             </Button>
             <Button
               onClick={() => handleDelete(deleteDialog.trabajoClienteId)}
               color="error"
               variant="contained"
+              disabled={deletingId !== null}
+              startIcon={deletingId !== null ? <CircularProgress size={18} color="inherit" /> : null}
             >
-              Eliminar
+              {deletingId !== null ? 'Eliminando...' : 'Eliminar'}
             </Button>
           </DialogActions>
         </Dialog>

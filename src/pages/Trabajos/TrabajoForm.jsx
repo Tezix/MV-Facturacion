@@ -43,12 +43,18 @@ const TrabajoForm = () => {
     e.preventDefault();
     setSaving(true);
     try {
+      let isCreacion = false;
       if (id) {
         await API.put(`trabajos/${id}/`, form);
       } else {
         await API.post("trabajos/", form);
+        isCreacion = true;
       }
-      navigate("/trabajos");
+      if (isCreacion) {
+        navigate('/trabajos', { state: { snackbar: { open: true, message: 'Trabajo creado correctamente', severity: 'success' } } });
+      } else {
+        navigate('/trabajos', { state: { snackbar: { open: true, message: 'Trabajo actualizado correctamente', severity: 'success' } } });
+      }
     } finally {
       setSaving(false);
     }

@@ -56,12 +56,15 @@ export default function EstadosList() {
     setMenuAnchorEl(null);
     setMenuEstado(null);
   };
+  // Estado para saber si está eliminando un estado específico
+  const [deletingId, setDeletingId] = useState(null);
   // Dialog de borrado
   const [deleteDialog, setDeleteDialog] = useState({ open: false, estadoId: null });
   // Snackbar
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
   const handleDelete = async (id) => {
+    setDeletingId(id);
     try {
       await API.delete(`estados/${id}/`);
       setEstados(estados.filter((e) => e.id !== id));
@@ -70,6 +73,7 @@ export default function EstadosList() {
       setSnackbar({ open: true, message: 'Error al eliminar el estado', severity: 'error' });
     } finally {
       setDeleteDialog({ open: false, estadoId: null });
+      setDeletingId(null);
     }
   };
 
@@ -188,15 +192,17 @@ export default function EstadosList() {
             </DialogContentText>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setDeleteDialog({ open: false, estadoId: null })} color="inherit">
+            <Button onClick={() => setDeleteDialog({ open: false, estadoId: null })} color="inherit" disabled={deletingId !== null}>
               Cancelar
             </Button>
             <Button
               onClick={() => handleDelete(deleteDialog.estadoId)}
               color="error"
               variant="contained"
+              disabled={deletingId !== null}
+              startIcon={deletingId !== null ? <CircularProgress size={18} color="inherit" /> : null}
             >
-              Eliminar
+              {deletingId !== null ? 'Eliminando...' : 'Eliminar'}
             </Button>
           </DialogActions>
         </Dialog>

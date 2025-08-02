@@ -58,12 +58,18 @@ const TrabajoClienteForm = () => {
     e.preventDefault();
     setSaving(true);
     try {
+      let isCreacion = false;
       if (id) {
         await API.put(`trabajos_clientes/${id}/`, form);
       } else {
         await API.post('trabajos_clientes/', form);
+        isCreacion = true;
       }
-      navigate('/trabajos-clientes');
+      if (isCreacion) {
+        navigate('/trabajos-clientes', { state: { snackbar: { open: true, message: 'Trabajo de cliente creado correctamente', severity: 'success' } } });
+      } else {
+        navigate('/trabajos-clientes', { state: { snackbar: { open: true, message: 'Trabajo de cliente actualizado correctamente', severity: 'success' } } });
+      }
     } finally {
       setSaving(false);
     }

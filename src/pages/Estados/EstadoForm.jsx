@@ -43,12 +43,18 @@ const EstadoForm = () => {
     e.preventDefault();
     setSaving(true);
     try {
+      let isCreacion = false;
       if (id) {
         await API.put(`estados/${id}/`, form);
       } else {
         await API.post('estados/', form);
+        isCreacion = true;
       }
-      navigate('/estados');
+      if (isCreacion) {
+        navigate('/estados', { state: { snackbar: { open: true, message: 'Estado creado correctamente', severity: 'success' } } });
+      } else {
+        navigate('/estados', { state: { snackbar: { open: true, message: 'Estado actualizado correctamente', severity: 'success' } } });
+      }
     } finally {
       setSaving(false);
     }

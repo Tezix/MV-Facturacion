@@ -48,12 +48,18 @@ const ClienteForm = () => {
     e.preventDefault();
     setSaving(true);
     try {
+      let isCreacion = false;
       if (id) {
         await API.put(`clientes/${id}/`, form);
       } else {
         await API.post('clientes/', form);
+        isCreacion = true;
       }
-      navigate('/clientes');
+      if (isCreacion) {
+        navigate('/clientes', { state: { snackbar: { open: true, message: 'Cliente creado correctamente', severity: 'success' } } });
+      } else {
+        navigate('/clientes', { state: { snackbar: { open: true, message: 'Cliente actualizado correctamente', severity: 'success' } } });
+      }
     } finally {
       setSaving(false);
     }

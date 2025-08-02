@@ -48,6 +48,8 @@ const TrabajosList = () => {
     setMenuAnchorEl(null);
     setMenuTrabajo(null);
   };
+  // Estado para saber si está eliminando un trabajo específico
+  const [deletingId, setDeletingId] = useState(null);
   // Dialog de borrado
   const [deleteDialog, setDeleteDialog] = useState({ open: false, trabajoId: null });
   // Snackbar
@@ -60,6 +62,7 @@ const TrabajosList = () => {
   }, []);
 
   const handleDelete = async (id) => {
+    setDeletingId(id);
     try {
       await API.delete(`trabajos/${id}/`);
       setTrabajos(trabajos.filter((t) => t.id !== id));
@@ -68,6 +71,7 @@ const TrabajosList = () => {
       setSnackbar({ open: true, message: 'Error al eliminar el trabajo', severity: 'error' });
     } finally {
       setDeleteDialog({ open: false, trabajoId: null });
+      setDeletingId(null);
     }
   };
 
@@ -193,15 +197,17 @@ const TrabajosList = () => {
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteDialog({ open: false, trabajoId: null })} color="inherit">
+          <Button onClick={() => setDeleteDialog({ open: false, trabajoId: null })} color="inherit" disabled={deletingId !== null}>
             Cancelar
           </Button>
           <Button
             onClick={() => handleDelete(deleteDialog.trabajoId)}
             color="error"
             variant="contained"
+            disabled={deletingId !== null}
+            startIcon={deletingId !== null ? <CircularProgress size={18} color="inherit" /> : null}
           >
-            Eliminar
+            {deletingId !== null ? 'Eliminando...' : 'Eliminar'}
           </Button>
         </DialogActions>
       </Dialog>

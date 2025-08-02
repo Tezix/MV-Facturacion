@@ -24,6 +24,7 @@ import {
   Tooltip,
   Snackbar,
   Alert,
+  CircularProgress,
 } from '@mui/material';
 import IconButton from '@mui/material/IconButton';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -41,6 +42,8 @@ export default function LocalizacionReparacionList() {
     escalera: '',
     ascensor: '',
   });
+  // Estado para saber si está eliminando
+  const [deleting, setDeleting] = useState(false);
   // Para menú de acciones
   const [menuAnchorEl, setMenuAnchorEl] = useState(null);
   const [menuLocalizacion, setMenuLocalizacion] = useState(null);
@@ -64,6 +67,7 @@ export default function LocalizacionReparacionList() {
   }, []);
 
   const handleDelete = async (id) => {
+    setDeleting(true);
     try {
       await API.delete(`localizaciones_reparaciones/${id}/`);
       setLocalizaciones(localizaciones.filter((l) => l.id !== id));
@@ -72,6 +76,7 @@ export default function LocalizacionReparacionList() {
       setSnackbar({ open: true, message: 'Error al eliminar la localización', severity: 'error' });
     } finally {
       setDeleteDialog({ open: false, localizacionId: null });
+      setDeleting(false);
     }
   };
 
@@ -242,15 +247,17 @@ export default function LocalizacionReparacionList() {
             </DialogContentText>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setDeleteDialog({ open: false, localizacionId: null })} color="inherit">
+            <Button onClick={() => setDeleteDialog({ open: false, localizacionId: null })} color="inherit" disabled={deleting}>
               Cancelar
             </Button>
             <Button
               onClick={() => handleDelete(deleteDialog.localizacionId)}
               color="error"
               variant="contained"
+              disabled={deleting}
+              startIcon={deleting ? <CircularProgress size={18} color="inherit" /> : null}
             >
-              Eliminar
+              {deleting ? 'Eliminando...' : 'Eliminar'}
             </Button>
           </DialogActions>
         </Dialog>

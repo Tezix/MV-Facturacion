@@ -165,6 +165,7 @@ const FacturaForm = () => {
     setSaving(true);
     try {
       let facturaId = id;
+      let isCreacion = false;
       // Asegurarse de enviar solo los ids en el form
       const formToSend = {
         ...form,
@@ -182,6 +183,7 @@ const FacturaForm = () => {
       } else {
         const res = await API.post('facturas/', formToSend);
         facturaId = res.data.id;
+        isCreacion = true;
       }
       // Asignar todos los reparacion_ids de los grupos seleccionados a la factura
       if (reparacionesSeleccionados.length > 0) {
@@ -190,7 +192,11 @@ const FacturaForm = () => {
           reparaciones: allReparacionIds
         });
       }
-      navigate('/facturas');
+      if (isCreacion) {
+        navigate('/facturas', { state: { snackbar: { open: true, message: 'Factura creada correctamente', severity: 'success' } } });
+      } else {
+        navigate('/facturas', { state: { snackbar: { open: true, message: 'Factura actualizada correctamente', severity: 'success' } } });
+      }
     } finally {
       setSaving(false);
     }

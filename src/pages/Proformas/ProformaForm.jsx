@@ -187,6 +187,7 @@ const ProformaForm = () => {
     setSaving(true);
     try {
       let proformaId = id;
+      let isCreacion = false;
       // Asegurarse de enviar solo los ids en el form
       const formToSend = {
         ...form,
@@ -201,6 +202,7 @@ const ProformaForm = () => {
       } else {
         const res = await API.post('proformas/', formToSend);
         proformaId = res.data.id;
+        isCreacion = true;
       }
       // Asignar todos los reparacion_ids de los grupos seleccionados a la proforma
       if (reparacionesSeleccionados.length > 0) {
@@ -209,7 +211,11 @@ const ProformaForm = () => {
           reparaciones: allReparacionIds
         });
       }
-      navigate('/proformas');
+      if (isCreacion) {
+        navigate('/proformas', { state: { snackbar: { open: true, message: 'Proforma creada correctamente', severity: 'success' } } });
+      } else {
+        navigate('/proformas', { state: { snackbar: { open: true, message: 'Proforma actualizada correctamente', severity: 'success' } } });
+      }
     } finally {
       setSaving(false);
     }

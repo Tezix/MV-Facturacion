@@ -30,6 +30,8 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash, faPencilAlt, faEllipsisV } from '@fortawesome/free-solid-svg-icons';
 import LoadingOverlay from '../../components/LoadingOverlay';
 
+import { useLocation, useNavigate } from 'react-router-dom';
+
 export default function ReparacionList() {
   const [reparaciones, setReparaciones] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -54,10 +56,23 @@ export default function ReparacionList() {
     setMenuAnchorEl(null);
     setMenuGrupo(null);
   };
+  // Estado para saber si está eliminando un grupo específico
+  const [deletingId, setDeletingId] = useState(null);
   // Dialog de borrado
   const [deleteDialog, setDeleteDialog] = useState({ open: false, grupo: null });
   // Snackbar
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Mostrar snackbar si viene de una creación
+  useEffect(() => {
+    if (location.state && location.state.snackbar) {
+      setSnackbar(location.state.snackbar);
+      // Limpiar el state para que no se repita al refrescar
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, location.pathname, navigate]);
 
   useEffect(() => {
     API.get('reparaciones/agrupados/')
@@ -66,6 +81,7 @@ export default function ReparacionList() {
   }, []);
 
   const handleDelete = async (grupo) => {
+    setDeletingId(grupo && grupo.reparacion_ids ? grupo.reparacion_ids[0] : null);
     try {
       await Promise.all(grupo.reparacion_ids.map(tid => API.delete(`reparaciones/${tid}/`)));
       // Refrescar la lista agrupada
@@ -76,6 +92,7 @@ export default function ReparacionList() {
       setSnackbar({ open: true, message: 'Error al eliminar las reparaciones del grupo', severity: 'error' });
     } finally {
       setDeleteDialog({ open: false, grupo: null });
+      setDeletingId(null);
     }
   };
 
@@ -345,15 +362,17 @@ export default function ReparacionList() {
             </DialogContentText>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setDeleteDialog({ open: false, grupo: null })} color="inherit">
+            <Button onClick={() => setDeleteDialog({ open: false, grupo: null })} color="inherit" disabled={deletingId !== null}>
               Cancelar
             </Button>
             <Button
               onClick={() => handleDelete(deleteDialog.grupo)}
               color="error"
               variant="contained"
+              disabled={deletingId !== null}
+              startIcon={deletingId !== null ? <CircularProgress size={18} color="inherit" /> : null}
             >
-              Eliminar
+              {deletingId !== null ? 'Eliminando...' : 'Eliminar'}
             </Button>
           </DialogActions>
         </Dialog>
