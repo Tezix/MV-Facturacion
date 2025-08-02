@@ -221,7 +221,7 @@ const FacturaForm = () => {
       onSubmit={handleSubmit}
       sx={{
         p: 3,
-        maxWidth: 600,
+        width: '70vw',
         mx: 'auto',
         display: 'flex',
         flexDirection: 'column',

@@ -78,7 +78,7 @@ const ClienteForm = () => {
       component="form"
       onSubmit={handleSubmit}
       sx={{
-        maxWidth: 600,
+        width: '70vw',
         mx: 'auto',
         p: 3,
         display: 'flex',

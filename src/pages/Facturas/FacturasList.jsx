@@ -521,9 +521,10 @@ export default function FacturasList() {
               color="primary"
               variant="contained"
               disabled={sendingEmail}
-              startIcon={sendingEmail ? <CircularProgress size={20} color="inherit" /> : null}
+              // Quitar el spinner y mostrar 'Enviando...' en vez de 'Enviar' cuando sendingEmail es true
+              startIcon={null}
             >
-              {!sendingEmail && 'Enviar'}
+              {sendingEmail ? 'Enviando...' : 'Enviar'}
             </Button>
           </DialogActions>
         </Dialog>

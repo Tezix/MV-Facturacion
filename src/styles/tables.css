@@ -9,7 +9,3 @@ table, .MuiTable-root {
   min-width: 100% !important;
 }
 
-/* Formulario ocupa 50% del ancho de la ventana */
-form {
-  width: 50vw !important;
-}

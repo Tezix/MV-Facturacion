@@ -235,11 +235,11 @@ const ProformaForm = () => {
       onSubmit={handleSubmit}
       sx={{
         p: 3,
-        maxWidth: 600,
         mx: 'auto',
         display: 'flex',
         flexDirection: 'column',
         gap: 3,
+        width: '70vw',
       }}
     >
       <Typography variant="h5" fontWeight="bold">
