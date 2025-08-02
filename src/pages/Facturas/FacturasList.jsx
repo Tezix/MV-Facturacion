@@ -20,10 +20,15 @@ import {
   Snackbar,
   Alert,
   Tooltip,
+  TextField,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText,
 } from '@mui/material';
 import IconButton from '@mui/material/IconButton';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTrash, faPencilAlt, faFilePdf, faInfoCircle, faEnvelope } from '@fortawesome/free-solid-svg-icons';
+import { faTrash, faPencilAlt, faFilePdf, faEnvelope, faEllipsisV } from '@fortawesome/free-solid-svg-icons';
 import { saveAs } from 'file-saver';
 import LoadingOverlay from '../../components/LoadingOverlay';
 import emailjs from '@emailjs/browser';
@@ -46,6 +51,17 @@ export default function FacturasList() {
   });
   // Estado para el popup de detalle de reparación
   const [detalleReparacion, setDetalleReparacion] = useState({ open: false, reparacion: null });
+  // Estado para el menú de acciones
+  const [menuAnchorEl, setMenuAnchorEl] = useState(null);
+  const [menuFacturaId, setMenuFacturaId] = useState(null);
+  const handleMenuOpen = (event, id) => {
+    setMenuAnchorEl(event.currentTarget);
+    setMenuFacturaId(id);
+  };
+  const handleMenuClose = () => {
+    setMenuAnchorEl(null);
+    setMenuFacturaId(null);
+  };
   const [emailDialog, setEmailDialog] = useState({ open: false, facturaId: null });
   const [sendingEmail, setSendingEmail] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
@@ -178,8 +194,9 @@ export default function FacturasList() {
             color="success"
             component={Link}
             to="/facturas/crear"
+            startIcon={<span style={{fontSize: 20, fontWeight: 'bold', lineHeight: 1}}>+</span>}
           >
-            Nueva Factura
+            Nueva
           </Button>
         </Box>
 
@@ -187,76 +204,175 @@ export default function FacturasList() {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell><strong>Número</strong></TableCell>
-                <TableCell><strong>Cliente</strong></TableCell>
-                <TableCell><strong>Fecha</strong></TableCell>
-                <TableCell><strong>Estado</strong></TableCell>
-                <TableCell><strong>Total</strong></TableCell>
-                <TableCell><strong>Reparaciones</strong></TableCell>
-                <TableCell><strong>Acciones</strong></TableCell>
-              </TableRow>
-              {/* Fila de filtros */}
-              <TableRow>
+                <TableCell />
                 <TableCell>
-                  <input
-                    type="text"
-                    placeholder="Filtrar..."
+                  <TextField
+                    label="Número"
+                    name="numero"
                     value={filters.numero}
                     onChange={e => setFilters(f => ({ ...f, numero: e.target.value }))}
-                    style={{ width: '100%' }}
+                    fullWidth
+                    size="small"
+                    InputProps={{
+                      sx: {
+                        '& .MuiInputBase-input': {
+                          color: '#181818',
+                        },
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          borderLeft: 'none',
+                          borderRight: 'none',
+                          borderTop: 'none',
+                        },
+                      },
+                    }}
                   />
                 </TableCell>
                 <TableCell>
-                  <input
-                    type="text"
-                    placeholder="Filtrar..."
+                  <TextField
+                    label="Cliente"
+                    name="cliente"
                     value={filters.cliente}
                     onChange={e => setFilters(f => ({ ...f, cliente: e.target.value }))}
-                    style={{ width: '100%' }}
+                    fullWidth
+                    size="small"
+                    InputProps={{
+                      sx: {
+                        '& .MuiInputBase-input': {
+                          color: '#181818',
+                        },
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          borderLeft: 'none',
+                          borderRight: 'none',
+                          borderTop: 'none',
+                        },
+                      },
+                    }}
                   />
                 </TableCell>
                 <TableCell>
-                  <input
-                    type="text"
-                    placeholder="Filtrar..."
+                  <TextField
+                    label="Fecha"
+                    name="fecha"
                     value={filters.fecha}
                     onChange={e => setFilters(f => ({ ...f, fecha: e.target.value }))}
-                    style={{ width: '100%' }}
+                    fullWidth
+                    size="small"
+                    InputProps={{
+                      sx: {
+                        '& .MuiInputBase-input': {
+                          color: '#181818',
+                        },
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          borderLeft: 'none',
+                          borderRight: 'none',
+                          borderTop: 'none',
+                        },
+                      },
+                    }}
                   />
                 </TableCell>
                 <TableCell>
-                  <input
-                    type="text"
-                    placeholder="Filtrar..."
+                  <TextField
+                    label="Estado"
+                    name="estado"
                     value={filters.estado}
                     onChange={e => setFilters(f => ({ ...f, estado: e.target.value }))}
-                    style={{ width: '100%' }}
+                    fullWidth
+                    size="small"
+                    InputProps={{
+                      sx: {
+                        '& .MuiInputBase-input': {
+                          color: '#181818',
+                        },
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          borderLeft: 'none',
+                          borderRight: 'none',
+                          borderTop: 'none',
+                        },
+                      },
+                    }}
                   />
                 </TableCell>
                 <TableCell>
-                  <input
-                    type="text"
-                    placeholder="Filtrar..."
+                  <TextField
+                    label="Total"
+                    name="total"
                     value={filters.total}
                     onChange={e => setFilters(f => ({ ...f, total: e.target.value }))}
-                    style={{ width: '100%' }}
+                    fullWidth
+                    size="small"
+                    InputProps={{
+                      sx: {
+                        '& .MuiInputBase-input': {
+                          color: '#181818',
+                        },
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          borderLeft: 'none',
+                          borderRight: 'none',
+                          borderTop: 'none',
+                        },
+                      },
+                    }}
                   />
                 </TableCell>
                 <TableCell>
-                  <input
-                    type="text"
-                    placeholder="Filtrar..."
+                  <TextField
+                    label="Reparaciones"
+                    name="reparaciones"
                     value={filters.reparaciones}
                     onChange={e => setFilters(f => ({ ...f, reparaciones: e.target.value }))}
-                    style={{ width: '100%' }}
+                    fullWidth
+                    size="small"
+                    InputProps={{
+                      sx: {
+                        '& .MuiInputBase-input': {
+                          color: '#181818',
+                        },
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          borderLeft: 'none',
+                          borderRight: 'none',
+                          borderTop: 'none',
+                        },
+                      },
+                    }}
                   />
                 </TableCell>
-                <TableCell />
               </TableRow>
             </TableHead>
             <TableBody>
               {filteredFacturas.map((factura) => (
                 <TableRow key={factura.id}>
+                  <TableCell>
+                    <Tooltip title="Acciones">
+                      <IconButton size="small" onClick={e => handleMenuOpen(e, factura.id)}>
+                        <FontAwesomeIcon icon={faEllipsisV} />
+                      </IconButton>
+                    </Tooltip>
+                    <Menu
+                      anchorEl={menuAnchorEl}
+                      open={Boolean(menuAnchorEl) && menuFacturaId === factura.id}
+                      onClose={handleMenuClose}
+                    >
+                      <MenuItem onClick={() => { handleExport(factura.id); handleMenuClose(); }}>
+                        <ListItemIcon><FontAwesomeIcon icon={faFilePdf} /></ListItemIcon>
+                        <ListItemText>Exportar PDF</ListItemText>
+                      </MenuItem>
+                      {factura.estado_nombre !== 'Enviada' && (
+                        <MenuItem onClick={() => { setEmailDialog({ open: true, facturaId: factura.id }); handleMenuClose(); }}>
+                          <ListItemIcon><FontAwesomeIcon icon={faEnvelope} /></ListItemIcon>
+                          <ListItemText>Enviar por email</ListItemText>
+                        </MenuItem>
+                      )}
+                      <MenuItem component={Link} to={`/facturas/editar/${factura.id}`} onClick={handleMenuClose}>
+                        <ListItemIcon><FontAwesomeIcon icon={faPencilAlt} /></ListItemIcon>
+                        <ListItemText>Editar</ListItemText>
+                      </MenuItem>
+                      <MenuItem onClick={() => { setDeleteDialog({ open: true, facturaId: factura.id }); handleMenuClose(); }}>
+                        <ListItemIcon><FontAwesomeIcon icon={faTrash} /></ListItemIcon>
+                        <ListItemText>Eliminar</ListItemText>
+                      </MenuItem>
+                    </Menu>
+                  </TableCell>
                   <TableCell>{factura.numero_factura}</TableCell>
                   <TableCell>{factura.cliente_nombre || factura.cliente}</TableCell>
                   <TableCell>{factura.fecha}</TableCell>
@@ -267,16 +383,16 @@ export default function FacturasList() {
                       <Box>
                         {factura.reparaciones.map((r, index) => (
                           <Box key={index} display="flex" alignItems="center" mb={0.5}>
-                            <Typography variant="body2" sx={{ mr: 1 }}>
-                              {r.localizacion}
-                            </Typography>
                             <IconButton
                               size="small"
                               color="info"
                               onClick={() => setDetalleReparacion({ open: true, reparacion: r })}
                             >
-                              <FontAwesomeIcon icon={faInfoCircle} />
+                              <span style={{ fontSize: 18, fontWeight: 'bold', lineHeight: 1 }}>+</span>
                             </IconButton>
+                            <Typography variant="body2" sx={{ mr: 1 }}>
+                              {r.localizacion}
+                            </Typography>
                           </Box>
                         ))}
                       </Box>
@@ -325,38 +441,7 @@ export default function FacturasList() {
         </DialogActions>
       </Dialog>
                   <TableCell>
-                    <Tooltip title="Exportar PDF">
-                      <IconButton onClick={() => handleExport(factura.id)} color="primary" size="small" sx={{ mr: 1 }}>
-                        <FontAwesomeIcon icon={faFilePdf} />
-                      </IconButton>
-                    </Tooltip>
-                    {factura.estado_nombre !== 'Enviada' && (
-                      <Tooltip title="Enviar por email">
-                        <IconButton onClick={() => setEmailDialog({ open: true, facturaId: factura.id })} color="success" size="small" sx={{ mr: 1 }}>
-                          <FontAwesomeIcon icon={faEnvelope} />
-                        </IconButton>
-                      </Tooltip>
-                    )}
-                    <Tooltip title="Editar factura">
-                      <IconButton
-                        component={Link}
-                        to={`/facturas/editar/${factura.id}`}
-                        color="primary"
-                        size="small"
-                        sx={{ mr: 1 }}
-                      >
-                        <FontAwesomeIcon icon={faPencilAlt} />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Eliminar factura">
-                      <IconButton
-                        onClick={() => setDeleteDialog({ open: true, facturaId: factura.id })}
-                        color="error"
-                        size="small"
-                      >
-                        <FontAwesomeIcon icon={faTrash} />
-                      </IconButton>
-                    </Tooltip>
+                  
       <Dialog
         open={deleteDialog.open}
         onClose={() => setDeleteDialog({ open: false, facturaId: null })}

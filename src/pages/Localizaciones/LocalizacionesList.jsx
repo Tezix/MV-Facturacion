@@ -16,10 +16,18 @@ import {
   DialogContent,
   DialogContentText,
   DialogActions,
+  TextField,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText,
+  Tooltip,
+  Snackbar,
+  Alert,
 } from '@mui/material';
 import IconButton from '@mui/material/IconButton';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTrash, faPencilAlt } from '@fortawesome/free-solid-svg-icons';
+import { faTrash, faPencilAlt, faEllipsisV } from '@fortawesome/free-solid-svg-icons';
 import LoadingOverlay from '../../components/LoadingOverlay';
 
 
@@ -33,6 +41,21 @@ export default function LocalizacionReparacionList() {
     escalera: '',
     ascensor: '',
   });
+  // Para menú de acciones
+  const [menuAnchorEl, setMenuAnchorEl] = useState(null);
+  const [menuLocalizacion, setMenuLocalizacion] = useState(null);
+  const handleMenuOpen = (event, loc) => {
+    setMenuAnchorEl(event.currentTarget);
+    setMenuLocalizacion(loc);
+  };
+  const handleMenuClose = () => {
+    setMenuAnchorEl(null);
+    setMenuLocalizacion(null);
+  };
+  // Dialog de borrado
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, localizacionId: null });
+  // Snackbar
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
   useEffect(() => {
     API.get('localizaciones_reparaciones/')
@@ -40,13 +63,13 @@ export default function LocalizacionReparacionList() {
       .finally(() => setLoading(false));
   }, []);
 
-  const [deleteDialog, setDeleteDialog] = useState({ open: false, localizacionId: null });
   const handleDelete = async (id) => {
     try {
       await API.delete(`localizaciones_reparaciones/${id}/`);
       setLocalizaciones(localizaciones.filter((l) => l.id !== id));
+      setSnackbar({ open: true, message: 'Localización eliminada correctamente', severity: 'success' });
     } catch {
-      alert('Error al eliminar la localización');
+      setSnackbar({ open: true, message: 'Error al eliminar la localización', severity: 'error' });
     } finally {
       setDeleteDialog({ open: false, localizacionId: null });
     }
@@ -72,8 +95,9 @@ export default function LocalizacionReparacionList() {
             color="success"
             component={Link}
             to="/localizaciones/crear"
+            startIcon={<span style={{fontSize: 20, fontWeight: 'bold', lineHeight: 1}}>+</span>}
           >
-            Nueva Localización
+            Nueva
           </Button>
         </Box>
 
@@ -81,115 +105,121 @@ export default function LocalizacionReparacionList() {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell><strong>Dirección</strong></TableCell>
-                <TableCell><strong>Número</strong></TableCell>
-                <TableCell><strong>Localidad</strong></TableCell>
-                <TableCell><strong>Escalera</strong></TableCell>
-                <TableCell><strong>Ascensor</strong></TableCell>
-                <TableCell><strong>Acciones</strong></TableCell>
-              </TableRow>
-              {/* Fila de filtros */}
-              <TableRow>
+                <TableCell />
                 <TableCell>
-                  <input
-                    type="text"
-                    placeholder="Filtrar..."
+                  <TextField
+                    label="Dirección"
+                    name="direccion"
                     value={filters.direccion}
                     onChange={e => setFilters(f => ({ ...f, direccion: e.target.value }))}
-                    style={{ width: '100%' }}
+                    fullWidth
+                    size="small"
+                    InputProps={{
+                      sx: {
+                        '& .MuiInputBase-input': { color: '#181818' },
+                        '& .MuiOutlinedInput-notchedOutline': { borderLeft: 'none', borderRight: 'none', borderTop: 'none' },
+                      },
+                    }}
                   />
                 </TableCell>
                 <TableCell>
-                  <input
-                    type="text"
-                    placeholder="Filtrar..."
+                  <TextField
+                    label="Número"
+                    name="numero"
                     value={filters.numero}
                     onChange={e => setFilters(f => ({ ...f, numero: e.target.value }))}
-                    style={{ width: '100%' }}
+                    fullWidth
+                    size="small"
+                    InputProps={{
+                      sx: {
+                        '& .MuiInputBase-input': { color: '#181818' },
+                        '& .MuiOutlinedInput-notchedOutline': { borderLeft: 'none', borderRight: 'none', borderTop: 'none' },
+                      },
+                    }}
                   />
                 </TableCell>
                 <TableCell>
-                  <input
-                    type="text"
-                    placeholder="Filtrar..."
+                  <TextField
+                    label="Localidad"
+                    name="localidad"
                     value={filters.localidad}
                     onChange={e => setFilters(f => ({ ...f, localidad: e.target.value }))}
-                    style={{ width: '100%' }}
+                    fullWidth
+                    size="small"
+                    InputProps={{
+                      sx: {
+                        '& .MuiInputBase-input': { color: '#181818' },
+                        '& .MuiOutlinedInput-notchedOutline': { borderLeft: 'none', borderRight: 'none', borderTop: 'none' },
+                      },
+                    }}
                   />
                 </TableCell>
                 <TableCell>
-                  <input
-                    type="text"
-                    placeholder="Filtrar..."
+                  <TextField
+                    label="Escalera"
+                    name="escalera"
                     value={filters.escalera}
                     onChange={e => setFilters(f => ({ ...f, escalera: e.target.value }))}
-                    style={{ width: '100%' }}
+                    fullWidth
+                    size="small"
+                    InputProps={{
+                      sx: {
+                        '& .MuiInputBase-input': { color: '#181818' },
+                        '& .MuiOutlinedInput-notchedOutline': { borderLeft: 'none', borderRight: 'none', borderTop: 'none' },
+                      },
+                    }}
                   />
                 </TableCell>
                 <TableCell>
-                  <input
-                    type="text"
-                    placeholder="Filtrar..."
+                  <TextField
+                    label="Ascensor"
+                    name="ascensor"
                     value={filters.ascensor}
                     onChange={e => setFilters(f => ({ ...f, ascensor: e.target.value }))}
-                    style={{ width: '100%' }}
+                    fullWidth
+                    size="small"
+                    InputProps={{
+                      sx: {
+                        '& .MuiInputBase-input': { color: '#181818' },
+                        '& .MuiOutlinedInput-notchedOutline': { borderLeft: 'none', borderRight: 'none', borderTop: 'none' },
+                      },
+                    }}
                   />
                 </TableCell>
-                <TableCell />
               </TableRow>
             </TableHead>
             <TableBody>
               {filteredLocalizaciones.map((loc) => (
                 <TableRow key={loc.id}>
+                  <TableCell>
+                    <Tooltip title="Acciones">
+                      <IconButton size="small" onClick={e => handleMenuOpen(e, loc)}>
+                        <FontAwesomeIcon icon={faEllipsisV} />
+                      </IconButton>
+                    </Tooltip>
+                    <Menu
+                      anchorEl={menuAnchorEl}
+                      open={Boolean(menuAnchorEl) && menuLocalizacion === loc}
+                      onClose={handleMenuClose}
+                    >
+                      <MenuItem component={Link} to={`/localizaciones/editar/${loc.id}`} onClick={handleMenuClose}>
+                        <ListItemIcon><FontAwesomeIcon icon={faPencilAlt} /></ListItemIcon>
+                        <ListItemText>Editar</ListItemText>
+                      </MenuItem>
+                      <MenuItem onClick={() => { setDeleteDialog({ open: true, localizacionId: loc.id }); handleMenuClose(); }}>
+                        <ListItemIcon><FontAwesomeIcon icon={faTrash} /></ListItemIcon>
+                        <ListItemText>Eliminar</ListItemText>
+                      </MenuItem>
+                    </Menu>
+                  </TableCell>
                   <TableCell>{loc.direccion}</TableCell>
                   <TableCell>{loc.numero}</TableCell>
                   <TableCell>{loc.localidad}</TableCell>
                   <TableCell>{loc.escalera ?? ''}</TableCell>
                   <TableCell>{loc.ascensor ?? ''}</TableCell>
-                  <TableCell>
-                    <IconButton
-                      component={Link}
-                      to={`/localizaciones/editar/${loc.id}`}
-                      color="primary"
-                      size="small"
-                      sx={{ mr: 1 }}
-                    >
-                      <FontAwesomeIcon icon={faPencilAlt} />
-                    </IconButton>
-                    <IconButton
-                      onClick={() => setDeleteDialog({ open: true, localizacionId: loc.id })}
-                      color="error"
-                      size="small"
-                    >
-                      <FontAwesomeIcon icon={faTrash} />
-                    </IconButton>
-                    <Dialog
-                      open={deleteDialog.open}
-                      onClose={() => setDeleteDialog({ open: false, localizacionId: null })}
-                    >
-                      <DialogTitle>Confirmar eliminación</DialogTitle>
-                      <DialogContent>
-                        <DialogContentText>
-                          ¿Estás seguro de que quieres eliminar esta localización? Esta acción no se puede deshacer.
-                        </DialogContentText>
-                      </DialogContent>
-                      <DialogActions>
-                        <Button onClick={() => setDeleteDialog({ open: false, localizacionId: null })} color="inherit">
-                          Cancelar
-                        </Button>
-                        <Button
-                          onClick={() => handleDelete(deleteDialog.localizacionId)}
-                          color="error"
-                          variant="contained"
-                        >
-                          Eliminar
-                        </Button>
-                      </DialogActions>
-                    </Dialog>
-                  </TableCell>
                 </TableRow>
               ))}
-              {localizaciones.length === 0 && (
+              {filteredLocalizaciones.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
                     No hay localizaciones registradas.
@@ -199,6 +229,43 @@ export default function LocalizacionReparacionList() {
             </TableBody>
           </Table>
         </Paper>
+
+        {/* Dialog de confirmación de borrado */}
+        <Dialog
+          open={deleteDialog.open}
+          onClose={() => setDeleteDialog({ open: false, localizacionId: null })}
+        >
+          <DialogTitle>Confirmar eliminación</DialogTitle>
+          <DialogContent>
+            <DialogContentText>
+              ¿Estás seguro de que quieres eliminar esta localización? Esta acción no se puede deshacer.
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setDeleteDialog({ open: false, localizacionId: null })} color="inherit">
+              Cancelar
+            </Button>
+            <Button
+              onClick={() => handleDelete(deleteDialog.localizacionId)}
+              color="error"
+              variant="contained"
+            >
+              Eliminar
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Snackbar para mensajes de éxito/error */}
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={6000}
+          onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        >
+          <Alert onClose={() => setSnackbar(prev => ({ ...prev, open: false }))} severity={snackbar.severity} sx={{ width: '100%' }}>
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
       </Box>
     </LoadingOverlay>
   );

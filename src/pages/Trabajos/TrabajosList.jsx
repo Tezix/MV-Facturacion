@@ -11,16 +11,24 @@ import {
   TableBody,
   Paper,
   Box,
-  CircularProgress,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogContentText,
   DialogActions,
+  TextField,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText,
+  Tooltip,
+  Snackbar,
+  Alert,
+  CircularProgress,
 } from "@mui/material";
 import IconButton from '@mui/material/IconButton';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTrash, faPencilAlt } from '@fortawesome/free-solid-svg-icons';
+import { faTrash, faPencilAlt, faEllipsisV } from '@fortawesome/free-solid-svg-icons';
 
 const TrabajosList = () => {
   const [trabajos, setTrabajos] = useState([]);
@@ -29,6 +37,21 @@ const TrabajosList = () => {
     nombre: '',
     precio: '',
   });
+  // Para menú de acciones
+  const [menuAnchorEl, setMenuAnchorEl] = useState(null);
+  const [menuTrabajo, setMenuTrabajo] = useState(null);
+  const handleMenuOpen = (event, trabajo) => {
+    setMenuAnchorEl(event.currentTarget);
+    setMenuTrabajo(trabajo);
+  };
+  const handleMenuClose = () => {
+    setMenuAnchorEl(null);
+    setMenuTrabajo(null);
+  };
+  // Dialog de borrado
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, trabajoId: null });
+  // Snackbar
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
   useEffect(() => {
     API.get("trabajos/")
@@ -36,13 +59,13 @@ const TrabajosList = () => {
       .finally(() => setLoading(false));
   }, []);
 
-  const [deleteDialog, setDeleteDialog] = useState({ open: false, trabajoId: null });
   const handleDelete = async (id) => {
     try {
       await API.delete(`trabajos/${id}/`);
       setTrabajos(trabajos.filter((t) => t.id !== id));
+      setSnackbar({ open: true, message: 'Trabajo eliminado correctamente', severity: 'success' });
     } catch {
-      alert("Error al eliminar el trabajo");
+      setSnackbar({ open: true, message: 'Error al eliminar el trabajo', severity: 'error' });
     } finally {
       setDeleteDialog({ open: false, trabajoId: null });
     }
@@ -74,8 +97,9 @@ const TrabajosList = () => {
           color="success"
           component={Link}
           to="/trabajos/crear"
+          startIcon={<span style={{fontSize: 20, fontWeight: 'bold', lineHeight: 1}}>+</span>}
         >
-          Nuevo Trabajo
+          Nuevo
         </Button>
       </Box>
 
@@ -83,55 +107,81 @@ const TrabajosList = () => {
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell><strong>Nombre Reparación</strong></TableCell>
-              <TableCell><strong>Precio</strong></TableCell>
-              <TableCell><strong>Acciones</strong></TableCell>
-            </TableRow>
-            {/* Fila de filtros */}
-            <TableRow>
+              <TableCell />
               <TableCell>
-                <input
-                  type="text"
-                  placeholder="Filtrar..."
+                <TextField
+                  label="Nombre Reparación"
+                  name="nombre"
                   value={filters.nombre}
                   onChange={e => setFilters(f => ({ ...f, nombre: e.target.value }))}
-                  style={{ width: '100%' }}
+                  fullWidth
+                  size="small"
+                  InputProps={{
+                    sx: {
+                      '& .MuiInputBase-input': { color: '#181818' },
+                      '& .MuiOutlinedInput-notchedOutline': { borderLeft: 'none', borderRight: 'none', borderTop: 'none' },
+                    },
+                  }}
                 />
               </TableCell>
               <TableCell>
-                <input
-                  type="text"
-                  placeholder="Filtrar..."
+                <TextField
+                  label="Precio"
+                  name="precio"
                   value={filters.precio}
                   onChange={e => setFilters(f => ({ ...f, precio: e.target.value }))}
-                  style={{ width: '100%' }}
+                  fullWidth
+                  size="small"
+                  InputProps={{
+                    sx: {
+                      '& .MuiInputBase-input': { color: '#181818' },
+                      '& .MuiOutlinedInput-notchedOutline': { borderLeft: 'none', borderRight: 'none', borderTop: 'none' },
+                    },
+                  }}
                 />
               </TableCell>
-              <TableCell />
             </TableRow>
           </TableHead>
           <TableBody>
             {filteredTrabajos.map((trabajo) => (
               <TableRow key={trabajo.id}>
+                <TableCell>
+                  <Tooltip title="Acciones">
+                    <IconButton size="small" onClick={e => handleMenuOpen(e, trabajo)}>
+                      <FontAwesomeIcon icon={faEllipsisV} />
+                    </IconButton>
+                  </Tooltip>
+                  <Menu
+                    anchorEl={menuAnchorEl}
+                    open={Boolean(menuAnchorEl) && menuTrabajo === trabajo}
+                    onClose={handleMenuClose}
+                  >
+                    <MenuItem component={Link} to={`/trabajos/editar/${trabajo.id}`} onClick={handleMenuClose}>
+                      <ListItemIcon><FontAwesomeIcon icon={faPencilAlt} /></ListItemIcon>
+                      <ListItemText>Editar</ListItemText>
+                    </MenuItem>
+                    <MenuItem onClick={() => { setDeleteDialog({ open: true, trabajoId: trabajo.id }); handleMenuClose(); }}>
+                      <ListItemIcon><FontAwesomeIcon icon={faTrash} /></ListItemIcon>
+                      <ListItemText>Eliminar</ListItemText>
+                    </MenuItem>
+                  </Menu>
+                </TableCell>
                 <TableCell>{trabajo.nombre_reparacion}</TableCell>
                 <TableCell>{Number(trabajo.precio).toLocaleString("es-ES", { style: "currency", currency: "EUR" })}</TableCell>
-                <TableCell>
-                  <IconButton
-                    component={Link}
-                    to={`/trabajos/editar/${trabajo.id}`}
-                    color="primary"
-                    size="small"
-                    sx={{ mr: 1 }}
-                  >
-                    <FontAwesomeIcon icon={faPencilAlt} />
-                  </IconButton>
-                  <IconButton
-                    onClick={() => setDeleteDialog({ open: true, trabajoId: trabajo.id })}
-                    color="error"
-                    size="small"
-                  >
-                    <FontAwesomeIcon icon={faTrash} />
-                  </IconButton>
+              </TableRow>
+            ))}
+            {filteredTrabajos.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={3} align="center" sx={{ py: 4 }}>
+                  No hay trabajos disponibles.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </Paper>
+
+      {/* Dialog de confirmación de borrado */}
       <Dialog
         open={deleteDialog.open}
         onClose={() => setDeleteDialog({ open: false, trabajoId: null })}
@@ -155,19 +205,18 @@ const TrabajosList = () => {
           </Button>
         </DialogActions>
       </Dialog>
-                </TableCell>
-              </TableRow>
-            ))}
-            {trabajos.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={3} align="center" sx={{ py: 4 }}>
-                  No hay trabajos disponibles.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </Paper>
+
+      {/* Snackbar para mensajes de éxito/error */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert onClose={() => setSnackbar(prev => ({ ...prev, open: false }))} severity={snackbar.severity} sx={{ width: '100%' }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

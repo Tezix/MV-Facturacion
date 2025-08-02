@@ -11,16 +11,23 @@ import {
   TableBody,
   Paper,
   Box,
-  CircularProgress,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogContentText,
   DialogActions,
+  TextField,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText,
+  Tooltip,
+  Snackbar,
+  Alert,
 } from '@mui/material';
 import IconButton from '@mui/material/IconButton';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTrash, faPencilAlt } from '@fortawesome/free-solid-svg-icons';
+import { faTrash, faPencilAlt, faEllipsisV } from '@fortawesome/free-solid-svg-icons';
 import LoadingOverlay from '../../components/LoadingOverlay';
 
 export default function ReparacionList() {
@@ -34,7 +41,23 @@ export default function ReparacionList() {
     proforma: '',
     localizacion: '',
     trabajo: '',
+    comentarios: '',
   });
+  // Para menú de acciones
+  const [menuAnchorEl, setMenuAnchorEl] = useState(null);
+  const [menuGrupo, setMenuGrupo] = useState(null);
+  const handleMenuOpen = (event, grupo) => {
+    setMenuAnchorEl(event.currentTarget);
+    setMenuGrupo(grupo);
+  };
+  const handleMenuClose = () => {
+    setMenuAnchorEl(null);
+    setMenuGrupo(null);
+  };
+  // Dialog de borrado
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, grupo: null });
+  // Snackbar
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
   useEffect(() => {
     API.get('reparaciones/agrupados/')
@@ -42,15 +65,15 @@ export default function ReparacionList() {
       .finally(() => setLoading(false));
   }, []);
 
-  const [deleteDialog, setDeleteDialog] = useState({ open: false, grupo: null });
   const handleDelete = async (grupo) => {
     try {
       await Promise.all(grupo.reparacion_ids.map(tid => API.delete(`reparaciones/${tid}/`)));
       // Refrescar la lista agrupada
       const nuevos = await API.get('reparaciones/agrupados/').then(res => res.data);
       setReparaciones(nuevos);
+      setSnackbar({ open: true, message: 'Reparaciones eliminadas correctamente', severity: 'success' });
     } catch {
-      alert('Error al eliminar las reparaciones del grupo');
+      setSnackbar({ open: true, message: 'Error al eliminar las reparaciones del grupo', severity: 'error' });
     } finally {
       setDeleteDialog({ open: false, grupo: null });
     }
@@ -93,6 +116,8 @@ export default function ReparacionList() {
         : '';
       if (!trabajos.includes(filters.trabajo.toLowerCase())) return false;
     }
+    // Comentarios
+    if (filters.comentarios && !(String(t.comentarios || '').toLowerCase().includes(filters.comentarios.toLowerCase()))) return false;
     return true;
   });
 
@@ -106,8 +131,9 @@ export default function ReparacionList() {
             color="success"
             component={Link}
             to="/reparaciones/crear"
+            startIcon={<span style={{fontSize: 20, fontWeight: 'bold', lineHeight: 1}}>+</span>}
           >
-            Nueva Reparacion
+            Nueva
           </Button>
         </Box>
 
@@ -115,87 +141,161 @@ export default function ReparacionList() {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell><strong>Fecha</strong></TableCell>
-                <TableCell><strong>Nº Reparación</strong></TableCell>
-                <TableCell><strong>Nº Pedido</strong></TableCell>
-                <TableCell><strong>Factura</strong></TableCell>
-                <TableCell><strong>Proforma</strong></TableCell>
-                <TableCell><strong>Localización</strong></TableCell>
-                <TableCell><strong>Trabajo</strong></TableCell>
-                <TableCell><strong>Comentarios</strong></TableCell>
-                <TableCell><strong>Acciones</strong></TableCell>
-              </TableRow>
-              {/* Fila de filtros */}
-              <TableRow>
+                <TableCell />
                 <TableCell>
-                  <input
-                    type="text"
-                    placeholder="Filtrar..."
+                  <TextField
+                    label="Fecha"
+                    name="fecha"
                     value={filters.fecha}
                     onChange={e => setFilters(f => ({ ...f, fecha: e.target.value }))}
-                    style={{ width: '100%' }}
+                    fullWidth
+                    size="small"
+                    InputProps={{
+                      sx: {
+                        '& .MuiInputBase-input': { color: '#181818' },
+                        '& .MuiOutlinedInput-notchedOutline': { borderLeft: 'none', borderRight: 'none', borderTop: 'none' },
+                      },
+                    }}
                   />
                 </TableCell>
                 <TableCell>
-                  <input
-                    type="text"
-                    placeholder="Filtrar..."
+                  <TextField
+                    label="Nº Reparación"
+                    name="num_reparacion"
                     value={filters.num_reparacion}
                     onChange={e => setFilters(f => ({ ...f, num_reparacion: e.target.value }))}
-                    style={{ width: '100%' }}
+                    fullWidth
+                    size="small"
+                    InputProps={{
+                      sx: {
+                        '& .MuiInputBase-input': { color: '#181818' },
+                        '& .MuiOutlinedInput-notchedOutline': { borderLeft: 'none', borderRight: 'none', borderTop: 'none' },
+                      },
+                    }}
                   />
                 </TableCell>
                 <TableCell>
-                  <input
-                    type="text"
-                    placeholder="Filtrar..."
+                  <TextField
+                    label="Nº Pedido"
+                    name="num_pedido"
                     value={filters.num_pedido}
                     onChange={e => setFilters(f => ({ ...f, num_pedido: e.target.value }))}
-                    style={{ width: '100%' }}
+                    fullWidth
+                    size="small"
+                    InputProps={{
+                      sx: {
+                        '& .MuiInputBase-input': { color: '#181818' },
+                        '& .MuiOutlinedInput-notchedOutline': { borderLeft: 'none', borderRight: 'none', borderTop: 'none' },
+                      },
+                    }}
                   />
                 </TableCell>
                 <TableCell>
-                  <input
-                    type="text"
-                    placeholder="Filtrar..."
+                  <TextField
+                    label="Factura"
+                    name="factura"
                     value={filters.factura}
                     onChange={e => setFilters(f => ({ ...f, factura: e.target.value }))}
-                    style={{ width: '100%' }}
+                    fullWidth
+                    size="small"
+                    InputProps={{
+                      sx: {
+                        '& .MuiInputBase-input': { color: '#181818' },
+                        '& .MuiOutlinedInput-notchedOutline': { borderLeft: 'none', borderRight: 'none', borderTop: 'none' },
+                      },
+                    }}
                   />
                 </TableCell>
                 <TableCell>
-                  <input
-                    type="text"
-                    placeholder="Filtrar..."
+                  <TextField
+                    label="Proforma"
+                    name="proforma"
                     value={filters.proforma}
                     onChange={e => setFilters(f => ({ ...f, proforma: e.target.value }))}
-                    style={{ width: '100%' }}
+                    fullWidth
+                    size="small"
+                    InputProps={{
+                      sx: {
+                        '& .MuiInputBase-input': { color: '#181818' },
+                        '& .MuiOutlinedInput-notchedOutline': { borderLeft: 'none', borderRight: 'none', borderTop: 'none' },
+                      },
+                    }}
                   />
                 </TableCell>
                 <TableCell>
-                  <input
-                    type="text"
-                    placeholder="Filtrar..."
+                  <TextField
+                    label="Localización"
+                    name="localizacion"
                     value={filters.localizacion}
                     onChange={e => setFilters(f => ({ ...f, localizacion: e.target.value }))}
-                    style={{ width: '100%' }}
+                    fullWidth
+                    size="small"
+                    InputProps={{
+                      sx: {
+                        '& .MuiInputBase-input': { color: '#181818' },
+                        '& .MuiOutlinedInput-notchedOutline': { borderLeft: 'none', borderRight: 'none', borderTop: 'none' },
+                      },
+                    }}
                   />
                 </TableCell>
                 <TableCell>
-                  <input
-                    type="text"
-                    placeholder="Filtrar..."
+                  <TextField
+                    label="Trabajo"
+                    name="trabajo"
                     value={filters.trabajo}
                     onChange={e => setFilters(f => ({ ...f, trabajo: e.target.value }))}
-                    style={{ width: '100%' }}
+                    fullWidth
+                    size="small"
+                    InputProps={{
+                      sx: {
+                        '& .MuiInputBase-input': { color: '#181818' },
+                        '& .MuiOutlinedInput-notchedOutline': { borderLeft: 'none', borderRight: 'none', borderTop: 'none' },
+                      },
+                    }}
                   />
                 </TableCell>
-                <TableCell />
+                <TableCell>
+                  <TextField
+                    label="Comentarios"
+                    name="comentarios"
+                    value={filters.comentarios}
+                    onChange={e => setFilters(f => ({ ...f, comentarios: e.target.value }))}
+                    fullWidth
+                    size="small"
+                    InputProps={{
+                      sx: {
+                        '& .MuiInputBase-input': { color: '#181818' },
+                        '& .MuiOutlinedInput-notchedOutline': { borderLeft: 'none', borderRight: 'none', borderTop: 'none' },
+                      },
+                    }}
+                  />
+                </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {filteredReparaciones.map((t, idx) => (
                 <TableRow key={idx}>
+                  <TableCell>
+                    <Tooltip title="Acciones">
+                      <IconButton size="small" onClick={e => handleMenuOpen(e, t)}>
+                        <FontAwesomeIcon icon={faEllipsisV} />
+                      </IconButton>
+                    </Tooltip>
+                    <Menu
+                      anchorEl={menuAnchorEl}
+                      open={Boolean(menuAnchorEl) && menuGrupo === t}
+                      onClose={handleMenuClose}
+                    >
+                      <MenuItem component={Link} to={`/reparaciones/editar/${t.reparacion_ids[0]}`} onClick={handleMenuClose}>
+                        <ListItemIcon><FontAwesomeIcon icon={faPencilAlt} /></ListItemIcon>
+                        <ListItemText>Editar</ListItemText>
+                      </MenuItem>
+                      <MenuItem onClick={() => { setDeleteDialog({ open: true, grupo: t }); handleMenuClose(); }}>
+                        <ListItemIcon><FontAwesomeIcon icon={faTrash} /></ListItemIcon>
+                        <ListItemText>Eliminar</ListItemText>
+                      </MenuItem>
+                    </Menu>
+                  </TableCell>
                   <TableCell>{t.fecha}</TableCell>
                   <TableCell>{t.num_reparacion || '—'}</TableCell>
                   <TableCell>{t.num_pedido || '—'}</TableCell>
@@ -220,60 +320,55 @@ export default function ReparacionList() {
                     )}
                   </TableCell>
                   <TableCell>{t.comentarios || '—'}</TableCell>
-                  <TableCell>
-                    <IconButton
-                      component={Link}
-                      to={`/reparaciones/editar/${t.reparacion_ids[0]}`}
-                      color="primary"
-                      size="small"
-                      sx={{ mr: 1 }}
-                    >
-                      <FontAwesomeIcon icon={faPencilAlt} />
-                    </IconButton>
-                    {/* Eliminar solo el primer reparacion del grupo, o puedes adaptar para eliminar todos */}
-                    <IconButton
-                      onClick={() => setDeleteDialog({ open: true, grupo: t })}
-                      color="error"
-                      size="small"
-                    >
-                      <FontAwesomeIcon icon={faTrash} />
-                    </IconButton>
-      <Dialog
-        open={deleteDialog.open}
-        onClose={() => setDeleteDialog({ open: false, grupo: null })}
-      >
-        <DialogTitle>Confirmar eliminación</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            ¿Estás seguro de que quieres eliminar todas las reparaciones de este grupo? Esta acción no se puede deshacer.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteDialog({ open: false, grupo: null })} color="inherit">
-            Cancelar
-          </Button>
-          <Button
-            onClick={() => handleDelete(deleteDialog.grupo)}
-            color="error"
-            variant="contained"
-          >
-            Eliminar
-          </Button>
-        </DialogActions>
-      </Dialog>
-                  </TableCell>
                 </TableRow>
               ))}
               {filteredReparaciones.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
-                    No hay reparaciones registrados.
+                  <TableCell colSpan={9} align="center" sx={{ py: 4 }}>
+                    No hay reparaciones registradas.
                   </TableCell>
                 </TableRow>
               )}
             </TableBody>
           </Table>
         </Paper>
+
+        {/* Dialog de confirmación de borrado */}
+        <Dialog
+          open={deleteDialog.open}
+          onClose={() => setDeleteDialog({ open: false, grupo: null })}
+        >
+          <DialogTitle>Confirmar eliminación</DialogTitle>
+          <DialogContent>
+            <DialogContentText>
+              ¿Estás seguro de que quieres eliminar todas las reparaciones de este grupo? Esta acción no se puede deshacer.
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setDeleteDialog({ open: false, grupo: null })} color="inherit">
+              Cancelar
+            </Button>
+            <Button
+              onClick={() => handleDelete(deleteDialog.grupo)}
+              color="error"
+              variant="contained"
+            >
+              Eliminar
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Snackbar para mensajes de éxito/error */}
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={6000}
+          onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        >
+          <Alert onClose={() => setSnackbar(prev => ({ ...prev, open: false }))} severity={snackbar.severity} sx={{ width: '100%' }}>
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
       </Box>
     </LoadingOverlay>
   );
