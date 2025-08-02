@@ -17,15 +17,46 @@ import {
   DialogContent,
   DialogContentText,
   DialogActions,
+  Snackbar,
+  Alert,
+  Tooltip,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText,
 } from "@mui/material";
 import IconButton from '@mui/material/IconButton';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTrash, faPencilAlt, faFilePdf, faInfoCircle } from '@fortawesome/free-solid-svg-icons';
+import { faTrash, faPencilAlt, faFilePdf, faInfoCircle, faEnvelope, faEllipsisV, faFileInvoiceDollar } from '@fortawesome/free-solid-svg-icons';
 import { saveAs } from 'file-saver';
 import NumPedidoDialog from './NumPedidoDialog';
 import LoadingOverlay from '../../components/LoadingOverlay';
+import emailjs from '@emailjs/browser';
 
 const ProformasList = () => {
+  // Inicializar EmailJS usando variable de entorno
+  emailjs.init(import.meta.env.VITE_EMAILJS_USER_ID);
+
+  // Estados y estados UI para email
+  const [emailDialog, setEmailDialog] = useState({ open: false, proformaId: null });
+  const [sendingEmail, setSendingEmail] = useState(false);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [estados, setEstados] = useState([]);
+  useEffect(() => {
+    API.get('estados/').then(res => setEstados(res.data));
+  }, []);
+  // Estado para el menú de acciones
+  const [menuAnchorEl, setMenuAnchorEl] = useState(null);
+  const [menuProformaId, setMenuProformaId] = useState(null);
+  const handleMenuOpen = (event, id) => {
+    setMenuAnchorEl(event.currentTarget);
+    setMenuProformaId(id);
+  };
+  const handleMenuClose = () => {
+    setMenuAnchorEl(null);
+    setMenuProformaId(null);
+  };
+
   // Export proforma PDF
   const handleExport = async (id) => {
     try {
@@ -109,6 +140,40 @@ const ProformasList = () => {
       alert("Error al eliminar la proforma");
     } finally {
       setDeleteDialog({ open: false, proformaId: null });
+    }
+  };
+
+  // Envío de proforma por email usando EmailJS
+  const handleSendEmail = async (id) => {
+    setSendingEmail(true);
+    try {
+      // Generar y guardar PDF en el servidor, y obtener datos actualizados
+      const resPdf = await API.post(`proformas/${id}/generar-pdf/`);
+      const proformaData = resPdf.data;
+      const pdfUrl = proformaData.pdf_url;
+      const clienteEmail = proformaData.cliente_email;
+      const proformaNumero = proformaData.numero_proforma;
+      const message = `
+        <div style="font-family: Arial, sans-serif; color: #333;">
+          <h2>Proforma #${proformaNumero}</h2>
+          <p><a href="${pdfUrl}">Descargar Proforma</a></p>
+          <p>Gracias por su confianza.</p>
+        </div>
+      `;
+      const plantilla = { name: 'TMV', email: clienteEmail || '', factura: proformaNumero, message, pdf_url: pdfUrl };
+      await emailjs.send(import.meta.env.VITE_EMAILJS_SERVICE_ID, import.meta.env.VITE_EMAILJS_TEMPLATE_ID, plantilla);
+      setSnackbar({ open: true, message: 'Email enviado correctamente', severity: 'success' });
+      setEmailDialog({ open: false, proformaId: null });
+      const estadoEnviada = estados.find(e => e.nombre === 'Enviada');
+      if (estadoEnviada) {
+        await API.patch(`proformas/${id}/`, { estado: estadoEnviada.id });
+        setProformas(prev => prev.map(p => p.id === id ? { ...p, estado: estadoEnviada.id, estado_nombre: estadoEnviada.nombre } : p));
+      }
+    } catch {
+      setSnackbar({ open: true, message: 'Error al enviar email', severity: 'error' });
+      setEmailDialog({ open: false, proformaId: null });
+    } finally {
+      setSendingEmail(false);
     }
   };
 
@@ -303,37 +368,41 @@ const ProformasList = () => {
         </DialogActions>
       </Dialog>
                   <TableCell>
-                    <IconButton onClick={() => handleExport(proforma.id)} color="primary" size="small" sx={{ mr: 1 }}>
-                      <FontAwesomeIcon icon={faFilePdf} />
-                    </IconButton>
-                    <IconButton
-                      component={Link}
-                      to={`/proformas/editar/${proforma.id}`}
-                      color="primary"
-                      size="small"
-                      sx={{ mr: 1 }}
+                    <Tooltip title="Acciones">
+                      <IconButton size="small" onClick={(e) => handleMenuOpen(e, proforma.id)}>
+                        <FontAwesomeIcon icon={faEllipsisV} />
+                      </IconButton>
+                    </Tooltip>
+                    <Menu
+                      anchorEl={menuAnchorEl}
+                      open={Boolean(menuAnchorEl) && menuProformaId === proforma.id}
+                      onClose={handleMenuClose}
                     >
-                      <FontAwesomeIcon icon={faPencilAlt} />
-                    </IconButton>
-                    <IconButton
-                      onClick={() => setDeleteDialog({ open: true, proformaId: proforma.id })}
-                      color="error"
-                      size="small"
-                      sx={{ mr: 1 }}
-                    >
-                      <FontAwesomeIcon icon={faTrash} />
-                    </IconButton>
-                    {!proforma.factura && (
-                      <Button
-                        onClick={() => setConfirmDialog({ open: true, proformaId: proforma.id })}
-                        variant="contained"
-                        color="success"
-                        size="small"
-                        disabled={convertingId === proforma.id}
-                      >
-                        {convertingId === proforma.id ? "Convirtiendo..." : "Convertir a Factura"}
-                      </Button>
-                    )}
+                      <MenuItem onClick={() => { handleExport(proforma.id); handleMenuClose(); }}>
+                        <ListItemIcon><FontAwesomeIcon icon={faFilePdf} /></ListItemIcon>
+                        <ListItemText>Exportar PDF</ListItemText>
+                      </MenuItem>
+                      <MenuItem component={Link} to={`/proformas/editar/${proforma.id}`} onClick={handleMenuClose}>
+                        <ListItemIcon><FontAwesomeIcon icon={faPencilAlt} /></ListItemIcon>
+                        <ListItemText>Editar</ListItemText>
+                      </MenuItem>
+                      <MenuItem onClick={() => { setDeleteDialog({ open: true, proformaId: proforma.id }); handleMenuClose(); }}>
+                        <ListItemIcon><FontAwesomeIcon icon={faTrash} /></ListItemIcon>
+                        <ListItemText>Eliminar</ListItemText>
+                      </MenuItem>
+                      {!proforma.factura && (
+                        <MenuItem onClick={() => { setConfirmDialog({ open: true, proformaId: proforma.id }); handleMenuClose(); }}>
+                          <ListItemIcon><FontAwesomeIcon icon={faFileInvoiceDollar} /></ListItemIcon>
+                          <ListItemText>Convertir a factura</ListItemText>
+                        </MenuItem>
+                      )}
+                      {proforma.estado_nombre !== 'Enviada' && (
+                        <MenuItem onClick={() => { setEmailDialog({ open: true, proformaId: proforma.id }); handleMenuClose(); }}>
+                          <ListItemIcon><FontAwesomeIcon icon={faEnvelope} /></ListItemIcon>
+                          <ListItemText>Enviar por email</ListItemText>
+                        </MenuItem>
+                      )}
+                    </Menu>
                   </TableCell>
       {/* Dialogo de confirmación para eliminar */}
       <Dialog
@@ -418,6 +487,38 @@ const ProformasList = () => {
           </DialogActions>
         </Dialog>
       )}
+
+      {/* Dialogo de envío por email */}
+        <Dialog open={emailDialog.open} onClose={() => setEmailDialog({ open: false, proformaId: null })}>
+          <DialogTitle>Enviar proforma por email</DialogTitle>
+          <DialogContent>
+            <DialogContentText>¿Deseas enviar la proforma por email?</DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setEmailDialog({ open: false, proformaId: null })} color="inherit">Cancelar</Button>
+            <Button
+              onClick={() => handleSendEmail(emailDialog.proformaId)}
+              color="primary"
+              variant="contained"
+              disabled={sendingEmail}
+              startIcon={sendingEmail ? <CircularProgress size={20} color="inherit" /> : null}
+            >
+              {!sendingEmail && 'Enviar'}
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+      {/* Snackbar para notificaciones */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert onClose={() => setSnackbar(prev => ({ ...prev, open: false }))} severity={snackbar.severity} sx={{ width: '100%' }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
                 </TableRow>
               ))}
               {proformas.length === 0 && (

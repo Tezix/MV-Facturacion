@@ -104,7 +104,6 @@ const FacturaForm = () => {
       }
     }).finally(() => setLoading(false));
     // Limpiar el state de navegación para evitar selección múltiple accidental
-    // eslint-disable-next-line
     // window.history.replaceState({}, document.title);
   }, [id, location.state]);
   // Guardar la factura y navegar a crear nueva reparación
@@ -122,6 +121,9 @@ const FacturaForm = () => {
         };
         delete formToSend.numero_factura;
         delete formToSend.total;
+        // No enviar pdf_file o pdf_url al actualizar la factura
+        delete formToSend.pdf_file;
+        delete formToSend.pdf_url;
         const res = await API.post('facturas/', formToSend);
         facturaId = res.data.id;
       } else {
@@ -133,6 +135,9 @@ const FacturaForm = () => {
         };
         delete formToSend.numero_factura;
         delete formToSend.total;
+        // No enviar pdf_file o pdf_url al actualizar la factura
+        delete formToSend.pdf_file;
+        delete formToSend.pdf_url;
         await API.put(`facturas/${facturaId}/`, formToSend);
       }
       // Asignar reparaciones seleccionadas actuales
@@ -169,6 +174,9 @@ const FacturaForm = () => {
       // Eliminar numero_factura y total si por alguna razón están presentes
       delete formToSend.numero_factura;
       delete formToSend.total;
+      // No enviar pdf_file o pdf_url al actualizar la factura
+      delete formToSend.pdf_file;
+      delete formToSend.pdf_url;
       if (id) {
         await API.put(`facturas/${id}/`, formToSend);
       } else {

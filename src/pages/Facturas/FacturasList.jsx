@@ -19,6 +19,7 @@ import {
   DialogActions,
   Snackbar,
   Alert,
+  Tooltip,
 } from '@mui/material';
 import IconButton from '@mui/material/IconButton';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -46,6 +47,7 @@ export default function FacturasList() {
   // Estado para el popup de detalle de reparación
   const [detalleReparacion, setDetalleReparacion] = useState({ open: false, reparacion: null });
   const [emailDialog, setEmailDialog] = useState({ open: false, facturaId: null });
+  const [sendingEmail, setSendingEmail] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
   useEffect(() => {
@@ -83,17 +85,19 @@ export default function FacturasList() {
 
   // Envío de factura por email usando EmailJS
   const handleSendEmail = async (id) => {
-    try {
-      // Obtener datos completos de la factura
-      const resFactura = await API.get(`facturas/${id}/`);
-      const facturaData = resFactura.data;
+  setSendingEmail(true);
+  try {
+      // Generar y guardar PDF en el servidor, y obtener datos actualizados
+      const resPdf = await API.post(`facturas/${id}/generar-pdf/`);
+      const facturaData = resPdf.data;
       const pdfUrl = facturaData.pdf_url;
       const clienteEmail = facturaData.cliente_email;
       const facturaNumero = facturaData.numero_factura;
-      // Generar HTML de mensaje para enviar
+      // Construir texto de asunto y mensaje
+      const subjectText = `Adjunto remito el enlace de descarga a la factura #${facturaNumero}`;
       const message = `
         <div style="font-family: Arial, sans-serif; color: #333;">
-          <h2>Adjunto remito el enlace de descarga a la factura #${facturaNumero}</h2>
+          <h2>${subjectText}</h2>
           <p><a href="${pdfUrl}">Descargar factura</a></p>
           <p>Gracias por su confianza.</p>
         </div>
@@ -113,17 +117,21 @@ export default function FacturasList() {
         plantilla
       );
       setSnackbar({ open: true, message: 'Email enviado correctamente', severity: 'success' });
+      // Cerrar el diálogo al mostrar el toast
+      setEmailDialog({ open: false, facturaId: null });
       // Actualizar estado de factura a 'Enviada'
       const estadoEnviada = estados.find(e => e.nombre === 'Enviada');
       if (estadoEnviada) {
         await API.patch(`facturas/${id}/`, { estado: estadoEnviada.id });
         setFacturas(prev => prev.map(f => f.id === id ? { ...f, estado: estadoEnviada.id, estado_nombre: estadoEnviada.nombre } : f));
       }
-    } catch {
-      setSnackbar({ open: true, message: 'Error al enviar email', severity: 'error' });
-    } finally {
-      setEmailDialog({ open: false, facturaId: null });
-    }
+  } catch {
+    setSnackbar({ open: true, message: 'Error al enviar email', severity: 'error' });
+    // Cerrar el diálogo al mostrar el toast en caso de error
+    setEmailDialog({ open: false, facturaId: null });
+  } finally {
+    setSendingEmail(false);
+  }
   };
 
   // Ordenar por número de factura descendente (extraer parte numérica central)
@@ -317,30 +325,38 @@ export default function FacturasList() {
         </DialogActions>
       </Dialog>
                   <TableCell>
-                    <IconButton onClick={() => handleExport(factura.id)} color="primary" size="small" sx={{ mr: 1 }}>
-                      <FontAwesomeIcon icon={faFilePdf} />
-                    </IconButton>
-                    {factura.estado_nombre !== 'Enviada' && (
-                      <IconButton onClick={() => setEmailDialog({ open: true, facturaId: factura.id })} color="secondary" size="small" sx={{ mr: 1 }}>
-                        <FontAwesomeIcon icon={faEnvelope} />
+                    <Tooltip title="Exportar PDF">
+                      <IconButton onClick={() => handleExport(factura.id)} color="primary" size="small" sx={{ mr: 1 }}>
+                        <FontAwesomeIcon icon={faFilePdf} />
                       </IconButton>
+                    </Tooltip>
+                    {factura.estado_nombre !== 'Enviada' && (
+                      <Tooltip title="Enviar por email">
+                        <IconButton onClick={() => setEmailDialog({ open: true, facturaId: factura.id })} color="success" size="small" sx={{ mr: 1 }}>
+                          <FontAwesomeIcon icon={faEnvelope} />
+                        </IconButton>
+                      </Tooltip>
                     )}
-                    <IconButton
-                      component={Link}
-                      to={`/facturas/editar/${factura.id}`}
-                      color="primary"
-                      size="small"
-                      sx={{ mr: 1 }}
-                    >
-                      <FontAwesomeIcon icon={faPencilAlt} />
-                    </IconButton>
-                    <IconButton
-                      onClick={() => setDeleteDialog({ open: true, facturaId: factura.id })}
-                      color="error"
-                      size="small"
-                    >
-                      <FontAwesomeIcon icon={faTrash} />
-                    </IconButton>
+                    <Tooltip title="Editar factura">
+                      <IconButton
+                        component={Link}
+                        to={`/facturas/editar/${factura.id}`}
+                        color="primary"
+                        size="small"
+                        sx={{ mr: 1 }}
+                      >
+                        <FontAwesomeIcon icon={faPencilAlt} />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Eliminar factura">
+                      <IconButton
+                        onClick={() => setDeleteDialog({ open: true, facturaId: factura.id })}
+                        color="error"
+                        size="small"
+                      >
+                        <FontAwesomeIcon icon={faTrash} />
+                      </IconButton>
+                    </Tooltip>
       <Dialog
         open={deleteDialog.open}
         onClose={() => setDeleteDialog({ open: false, facturaId: null })}
@@ -390,11 +406,21 @@ export default function FacturasList() {
             </DialogContentText>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setEmailDialog({ open: false, facturaId: null })} color="inherit">
+            <Button
+              onClick={() => setEmailDialog({ open: false, facturaId: null })}
+              color="inherit"
+              disabled={sendingEmail}
+            >
               Cancelar
             </Button>
-            <Button onClick={() => handleSendEmail(emailDialog.facturaId)} color="primary" variant="contained">
-              Enviar
+            <Button
+              onClick={() => handleSendEmail(emailDialog.facturaId)}
+              color="primary"
+              variant="contained"
+              disabled={sendingEmail}
+              startIcon={sendingEmail ? <CircularProgress size={20} color="inherit" /> : null}
+            >
+              {!sendingEmail && 'Enviar'}
             </Button>
           </DialogActions>
         </Dialog>
