@@ -93,10 +93,11 @@ const ProformasList = () => {
   const [confirmDialog, setConfirmDialog] = useState({ open: false, proformaId: null });
   // Dialog para pedir número de pedido
   const [numPedidoDialog, setNumPedidoDialog] = useState({ open: false, proformaId: null });
-  // State for showing success after conversion
-  const [successDialog, setSuccessDialog] = useState({ open: false, facturaNumero: '' });
   // Estado para el popup de detalle de reparación
   const [detalleReparacion, setDetalleReparacion] = useState({ open: false, reparacion: null });
+  // Estado global para tooltip flotante de fila convertida
+  const [hoveredRow, setHoveredRow] = useState(null);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
   // Paso 1: Cuando se confirma la conversión, abrir el diálogo de número de pedido
   const handleConfirmConvert = (proformaId) => {
@@ -108,7 +109,7 @@ const ProformasList = () => {
   const handleNumPedidoSubmit = async (numPedido) => {
     const proformaId = numPedidoDialog.proformaId;
     setConvertingId(proformaId);
-    setNumPedidoDialog({ open: false, proformaId: null });
+    // No cerrar el diálogo hasta terminar
     try {
       // 1. Obtener solo las reparaciones asociadas a la proforma seleccionada
       const reparacionesRes = await API.get(`reparaciones/?proforma=${proformaId}`);
@@ -128,10 +129,12 @@ const ProformasList = () => {
       // Recargar la lista de proformas
       const updated = await API.get("proformas/con-reparaciones/");
       setProformas(updated.data);
-      // Mostrar diálogo de éxito
-      setSuccessDialog({ open: true, facturaNumero: res.data.factura?.numero_factura || '' });
+      // Mostrar snackbar de éxito
+      setSnackbar({ open: true, message: `Proforma convertida a factura correctamente. Número de factura: ${res.data.factura?.numero_factura || ''}`, severity: 'success' });
+      setNumPedidoDialog({ open: false, proformaId: null });
     } catch {
       alert("Error al convertir la proforma a factura o actualizar número de pedido");
+      setNumPedidoDialog({ open: false, proformaId: null });
     } finally {
       setConvertingId(null);
     }
@@ -385,72 +388,163 @@ const ProformasList = () => {
               
             </TableHead>
             <TableBody>
-              {filteredProformas.map((proforma) => (
-                <TableRow key={proforma.id}>
-                  <TableCell>
-                    <Tooltip title="Acciones">
-                      <IconButton size="small" onClick={(e) => handleMenuOpen(e, proforma.id)}>
-                        <FontAwesomeIcon icon={faEllipsisV} />
-                      </IconButton>
-                    </Tooltip>
-                    <Menu
-                      anchorEl={menuAnchorEl}
-                      open={Boolean(menuAnchorEl) && menuProformaId === proforma.id}
-                      onClose={handleMenuClose}
-                    >
-                      <MenuItem onClick={() => { handleExport(proforma.id); handleMenuClose(); }}>
-                        <ListItemIcon><FontAwesomeIcon icon={faFilePdf} /></ListItemIcon>
-                        <ListItemText>Exportar PDF</ListItemText>
-                      </MenuItem>
-                      <MenuItem component={Link} to={`/proformas/editar/${proforma.id}`} onClick={handleMenuClose}>
-                        <ListItemIcon><FontAwesomeIcon icon={faPencilAlt} /></ListItemIcon>
-                        <ListItemText>Editar</ListItemText>
-                      </MenuItem>
-                      <MenuItem onClick={() => { setDeleteDialog({ open: true, proformaId: proforma.id }); handleMenuClose(); }}>
-                        <ListItemIcon><FontAwesomeIcon icon={faTrash} /></ListItemIcon>
-                        <ListItemText>Eliminar</ListItemText>
-                      </MenuItem>
-                      {!proforma.factura && (
-                        <MenuItem onClick={() => { setConfirmDialog({ open: true, proformaId: proforma.id }); handleMenuClose(); }}>
-                          <ListItemIcon><FontAwesomeIcon icon={faFileInvoiceDollar} /></ListItemIcon>
-                          <ListItemText>Convertir a factura</ListItemText>
+              {/* Filas de proformas */}
+              {filteredProformas.map((proforma) => {
+                const isConverted = !!proforma.factura;
+                return (
+                  <TableRow
+                    key={proforma.id}
+                    sx={isConverted ? {
+                      backgroundColor: '#e3f2fd !important',
+                      cursor: 'pointer',
+                      position: 'relative',
+                      transition: 'background 0.2s',
+                    } : {}}
+                    onMouseEnter={isConverted ? () => setHoveredRow(proforma.id) : undefined}
+                    onMouseLeave={isConverted ? () => setHoveredRow(null) : undefined}
+                    onMouseMove={isConverted ? (e) => setMousePos({ x: e.clientX, y: e.clientY }) : undefined}
+                  >
+                    <TableCell>
+                      <Tooltip title="Acciones">
+                        <IconButton size="small" onClick={(e) => handleMenuOpen(e, proforma.id)}>
+                          <FontAwesomeIcon icon={faEllipsisV} />
+                        </IconButton>
+                      </Tooltip>
+                      <Menu
+                        anchorEl={menuAnchorEl}
+                        open={Boolean(menuAnchorEl) && menuProformaId === proforma.id}
+                        onClose={handleMenuClose}
+                      >
+                        <MenuItem onClick={() => { handleExport(proforma.id); handleMenuClose(); }}>
+                          <ListItemIcon><FontAwesomeIcon icon={faFilePdf} /></ListItemIcon>
+                          <ListItemText>Exportar PDF</ListItemText>
                         </MenuItem>
-                      )}
-                      {proforma.estado_nombre !== 'Enviada' && (
-                        <MenuItem onClick={() => { setEmailDialog({ open: true, proformaId: proforma.id }); handleMenuClose(); }}>
-                          <ListItemIcon><FontAwesomeIcon icon={faEnvelope} /></ListItemIcon>
-                          <ListItemText>Enviar por email</ListItemText>
+                        <MenuItem component={Link} to={`/proformas/editar/${proforma.id}`} onClick={handleMenuClose}>
+                          <ListItemIcon><FontAwesomeIcon icon={faPencilAlt} /></ListItemIcon>
+                          <ListItemText>Editar</ListItemText>
                         </MenuItem>
+                        <MenuItem onClick={() => { setDeleteDialog({ open: true, proformaId: proforma.id }); handleMenuClose(); }}>
+                          <ListItemIcon><FontAwesomeIcon icon={faTrash} /></ListItemIcon>
+                          <ListItemText>Eliminar</ListItemText>
+                        </MenuItem>
+                        {!proforma.factura && (
+                          <MenuItem onClick={() => { setConfirmDialog({ open: true, proformaId: proforma.id }); handleMenuClose(); }}>
+                            <ListItemIcon><FontAwesomeIcon icon={faFileInvoiceDollar} /></ListItemIcon>
+                            <ListItemText>Convertir a factura</ListItemText>
+                          </MenuItem>
+                        )}
+                        {proforma.estado_nombre !== 'Enviada' && (
+                          <MenuItem onClick={() => { setEmailDialog({ open: true, proformaId: proforma.id }); handleMenuClose(); }}>
+                            <ListItemIcon><FontAwesomeIcon icon={faEnvelope} /></ListItemIcon>
+                            <ListItemText>Enviar por email</ListItemText>
+                          </MenuItem>
+                        )}
+                      </Menu>
+                    </TableCell>
+                    <TableCell>{proforma.numero_proforma}</TableCell>
+                    <TableCell>{proforma.cliente_nombre || proforma.cliente}</TableCell>
+                    <TableCell>{
+                      proforma.fecha
+                        ? (() => {
+                            const d = new Date(proforma.fecha);
+                            if (isNaN(d)) return proforma.fecha;
+                            const day = String(d.getDate()).padStart(2, '0');
+                            const month = String(d.getMonth() + 1).padStart(2, '0');
+                            const year = d.getFullYear();
+                            return `${day}/${month}/${year}`;
+                          })()
+                        : ''
+                    }</TableCell>
+                    <TableCell>
+                      <Tooltip
+                        title={(() => {
+                          const estadoObj = estados.find(e => e.nombre === (proforma.estado_nombre || proforma.estado));
+                          return estadoObj && estadoObj.descripcion ? estadoObj.descripcion : '';
+                        })()}
+                        arrow
+                        disableHoverListener={false}
+                      >
+                        <span
+                          style={{
+                            display: 'inline-block',
+                            padding: '4px 12px',
+                            borderRadius: 12,
+                            color: '#fff',
+                            fontWeight: 600,
+                            backgroundColor:
+                              (proforma.estado_nombre === 'Enviada') ? '#43a047' :
+                              (proforma.estado_nombre === 'Aceptada') ? '#1976d2' :
+                              (proforma.estado_nombre === 'Creada') ? '#757575' :
+                              '#bdbdbd',
+                          }}
+                        >
+                          {proforma.estado_nombre || proforma.estado}
+                        </span>
+                      </Tooltip>
+                    </TableCell>
+                    <TableCell>{proforma.total} €</TableCell>
+                    <TableCell>
+                      {proforma.reparaciones && proforma.reparaciones.length > 0 ? (
+                        <Box>
+                          {proforma.reparaciones.map((r, index) => (
+                            <Box key={index} display="flex" alignItems="center" mb={0.5}>
+                              <IconButton
+                                size="small"
+                                color="info"
+                                onClick={() => setDetalleReparacion({ open: true, reparacion: r })}
+                              >
+                                <span style={{ fontSize: 18, fontWeight: 'bold', lineHeight: 1 }}>+</span>
+                              </IconButton>
+                              <Typography variant="body2" sx={{ mr: 1 }}>
+                                {r.localizacion}
+                              </Typography>
+                            </Box>
+                          ))}
+                        </Box>
+                      ) : (
+                        '—'
                       )}
-                    </Menu>
-                  </TableCell>
-                  <TableCell>{proforma.numero_proforma}</TableCell>
-                  <TableCell>{proforma.cliente_nombre || proforma.cliente}</TableCell>
-                  <TableCell>{proforma.fecha}</TableCell>
-                  <TableCell>{proforma.estado_nombre || proforma.estado}</TableCell>
-                  <TableCell>{proforma.total} €</TableCell>
-                  <TableCell>
-                    {proforma.reparaciones && proforma.reparaciones.length > 0 ? (
-                      <Box>
-                        {proforma.reparaciones.map((r, index) => (
-                          <Box key={index} display="flex" alignItems="center" mb={0.5}>
-                            <IconButton
-                              size="small"
-                              color="info"
-                              onClick={() => setDetalleReparacion({ open: true, reparacion: r })}
-                            >
-                              <span style={{ fontSize: 18, fontWeight: 'bold', lineHeight: 1 }}>+</span>
-                            </IconButton>
-                            <Typography variant="body2" sx={{ mr: 1 }}>
-                              {r.localizacion}
-                            </Typography>
-                          </Box>
-                        ))}
-                      </Box>
-                    ) : (
-                      '—'
-                    )}
-                  </TableCell>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+              {/* Tooltip flotante personalizado para proformas convertidas */}
+              {(() => {
+                const proforma = filteredProformas.find(p => p.id === hoveredRow);
+                if (!proforma || !proforma.factura) return null;
+                // Usar factura_numero si existe, si no, intentar extraer el número de la factura
+                let numeroFactura = '';
+                if (proforma.factura_numero) {
+                  numeroFactura = proforma.factura_numero;
+                } else if (typeof proforma.factura === 'object' && proforma.factura !== null && 'numero_factura' in proforma.factura) {
+                  numeroFactura = proforma.factura.numero_factura;
+                } else if (typeof proforma.factura === 'string' && proforma.factura.match(/\d{4}\/\d{4}/)) {
+                  numeroFactura = proforma.factura;
+                } else {
+                  numeroFactura = 'Desconocido';
+                }
+                return (
+                  <div
+                    style={{
+                      position: 'fixed',
+                      top: mousePos.y + 12,
+                      left: mousePos.x + 12,
+                      background: '#1976d2',
+                      color: '#fff',
+                      padding: '8px 16px',
+                      borderRadius: 8,
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                      zIndex: 2000,
+                      pointerEvents: 'none',
+                      fontSize: 15,
+                      fontWeight: 500,
+                    }}
+                  >
+                    Ya convertida en factura<br />
+                    Nº factura: <b>{numeroFactura}</b>
+                  </div>
+                );
+              })()}
       {/* Popup de detalle de reparación */}
       <Dialog
         open={detalleReparacion.open}
@@ -538,9 +632,9 @@ const ProformasList = () => {
             onClick={() => handleConfirmConvert(confirmDialog.proformaId)}
             color="success"
             variant="contained"
-            disabled={convertingId === confirmDialog.proformaId}
+            disabled={convertingId !== null}
           >
-            {convertingId === confirmDialog.proformaId ? "Convirtiendo..." : "Convertir"}
+            {convertingId !== null ? "Guardando..." : "Convertir"}
           </Button>
         </DialogActions>
       </Dialog>
@@ -551,32 +645,8 @@ const ProformasList = () => {
         onClose={() => setNumPedidoDialog({ open: false, proformaId: null })}
         onSubmit={handleNumPedidoSubmit}
         loading={!!convertingId}
+        disableClose={!!convertingId}
       />
-
-      {/* Dialogo de éxito */}
-      {successDialog.open && (
-        <Dialog
-          open={successDialog.open}
-          onClose={() => setSuccessDialog({ open: false, facturaNumero: '' })}
-        >
-          <DialogTitle>Conversión exitosa</DialogTitle>
-          <DialogContent>
-            <DialogContentText>
-              Proforma convertida a factura correctamente.<br />
-              Número de factura: {successDialog.facturaNumero}
-            </DialogContentText>
-          </DialogContent>
-          <DialogActions>
-            <Button
-              onClick={() => setSuccessDialog({ open: false, facturaNumero: '' })}
-              variant="contained"
-              color="primary"
-            >
-              Cerrar
-            </Button>
-          </DialogActions>
-        </Dialog>
-      )}
 
       {/* Dialogo de envío por email */}
         <Dialog open={emailDialog.open} onClose={() => setEmailDialog({ open: false, proformaId: null })}>
@@ -610,8 +680,6 @@ const ProformasList = () => {
           {snackbar.message}
         </Alert>
       </Snackbar>
-                </TableRow>
-              ))}
               {proformas.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={7} align="center" sx={{ py: 4 }}>

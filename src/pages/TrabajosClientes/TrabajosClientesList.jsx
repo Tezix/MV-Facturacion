@@ -181,7 +181,11 @@ export default function TrabajoClienteList() {
                   </TableCell>
                   <TableCell>{tc.cliente_nombre || tc.cliente}</TableCell>
                   <TableCell>{tc.trabajo_nombre || tc.trabajo}</TableCell>
-                  <TableCell>{Number(tc.precio).toLocaleString("es-ES", { style: "currency", currency: "EUR" })}</TableCell>
+                  <TableCell>{
+                    Number(tc.precio) % 1 === 0
+                      ? Number(tc.precio).toLocaleString("es-ES", { style: "currency", currency: "EUR", minimumFractionDigits: 0, maximumFractionDigits: 0 })
+                      : Number(tc.precio).toLocaleString("es-ES", { style: "currency", currency: "EUR", minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                  }</TableCell>
                 </TableRow>
               ))}
               {filteredTrabajosClientes.length === 0 && (

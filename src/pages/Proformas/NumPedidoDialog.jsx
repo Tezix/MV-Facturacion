@@ -31,7 +31,7 @@ const NumPedidoDialog = ({ open, onClose, onSubmit, loading }) => {
           Cancelar
         </Button>
         <Button onClick={handleSubmit} color="success" variant="contained" disabled={loading || !numPedido}>
-          Guardar
+          {loading ? 'Guardando...' : 'Guardar'}
         </Button>
       </DialogActions>
     </Dialog>

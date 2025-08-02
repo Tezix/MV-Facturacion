@@ -313,7 +313,18 @@ export default function ReparacionList() {
                       </MenuItem>
                     </Menu>
                   </TableCell>
-                  <TableCell>{t.fecha}</TableCell>
+                  <TableCell>{
+                    t.fecha
+                      ? (() => {
+                          const d = new Date(t.fecha);
+                          if (isNaN(d)) return t.fecha;
+                          const day = String(d.getDate()).padStart(2, '0');
+                          const month = String(d.getMonth() + 1).padStart(2, '0');
+                          const year = d.getFullYear();
+                          return `${day}/${month}/${year}`;
+                        })()
+                      : ''
+                  }</TableCell>
                   <TableCell>{t.num_reparacion || '—'}</TableCell>
                   <TableCell>{t.num_pedido || '—'}</TableCell>
                   <TableCell>{t.factura_numero || t.factura || '—'}</TableCell>

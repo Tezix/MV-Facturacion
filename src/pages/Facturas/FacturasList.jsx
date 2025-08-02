@@ -391,8 +391,47 @@ export default function FacturasList() {
                   </TableCell>
                   <TableCell>{factura.numero_factura}</TableCell>
                   <TableCell>{factura.cliente_nombre || factura.cliente}</TableCell>
-                  <TableCell>{factura.fecha}</TableCell>
-                  <TableCell>{factura.estado_nombre || factura.estado}</TableCell>
+                  <TableCell>{
+                    factura.fecha
+                      ? (() => {
+                          const d = new Date(factura.fecha);
+                          if (isNaN(d)) return factura.fecha;
+                          const day = String(d.getDate()).padStart(2, '0');
+                          const month = String(d.getMonth() + 1).padStart(2, '0');
+                          const year = d.getFullYear();
+                          return `${day}/${month}/${year}`;
+                        })()
+                      : ''
+                  }</TableCell>
+                  <TableCell>
+                    <Tooltip
+                      title={(() => {
+                        // Buscar la descripción del estado correspondiente
+                        const estadoObj = estados.find(e => e.nombre === (factura.estado_nombre || factura.estado));
+                        return estadoObj && estadoObj.descripcion ? estadoObj.descripcion : '';
+                      })()}
+                      arrow
+                      disableHoverListener={false}
+                    >
+                      <span
+                        style={{
+                          display: 'inline-block',
+                          padding: '4px 12px',
+                          borderRadius: 12,
+                          color: '#fff',
+                          fontWeight: 600,
+                          backgroundColor:
+                            (factura.estado_nombre === 'Enviada') ? '#43a047' :
+                            (factura.estado_nombre === 'Pagada') ? '#1976d2' :
+                            (factura.estado_nombre === 'Pendiente pago') ? '#ff9800' :
+                            (factura.estado_nombre === 'Creada') ? '#757575' :
+                            '#bdbdbd',
+                        }}
+                      >
+                        {factura.estado_nombre || factura.estado}
+                      </span>
+                    </Tooltip>
+                  </TableCell>
                   <TableCell>{factura.total} €</TableCell>
                   <TableCell>
                     {factura.reparaciones && factura.reparaciones.length > 0 ? (

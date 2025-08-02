@@ -26,6 +26,7 @@ import {
   Alert,
   CircularProgress,
 } from "@mui/material";
+import LoadingOverlay from '../../components/LoadingOverlay';
 import IconButton from '@mui/material/IconButton';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash, faPencilAlt, faEllipsisV } from '@fortawesome/free-solid-svg-icons';
@@ -82,16 +83,11 @@ const TrabajosList = () => {
     return true;
   });
 
-  if (loading) {
-    return (
-      <Box p={4} display="flex" flexDirection="column" alignItems="center">
-        <CircularProgress size={24} sx={{ mt: 2 }} />
-      </Box>
-    );
-  }
+
 
   return (
-    <Box p={3}>
+    <LoadingOverlay loading={loading}>
+      <Box p={3}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h4" component="h1">
           Precios Trabajos
@@ -171,7 +167,11 @@ const TrabajosList = () => {
                   </Menu>
                 </TableCell>
                 <TableCell>{trabajo.nombre_reparacion}</TableCell>
-                <TableCell>{Number(trabajo.precio).toLocaleString("es-ES", { style: "currency", currency: "EUR" })}</TableCell>
+                <TableCell>{
+                  Number(trabajo.precio) % 1 === 0
+                    ? Number(trabajo.precio).toLocaleString("es-ES", { style: "currency", currency: "EUR", minimumFractionDigits: 0, maximumFractionDigits: 0 })
+                    : Number(trabajo.precio).toLocaleString("es-ES", { style: "currency", currency: "EUR", minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                }</TableCell>
               </TableRow>
             ))}
             {filteredTrabajos.length === 0 && (
@@ -223,8 +223,9 @@ const TrabajosList = () => {
           {snackbar.message}
         </Alert>
       </Snackbar>
-    </Box>
+      </Box>
+    </LoadingOverlay>
   );
-};
+}
 
 export default TrabajosList;
