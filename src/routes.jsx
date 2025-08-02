@@ -1,7 +1,8 @@
-import { BrowserRouter as BrowserRouter, Routes, Route } from 'react-router-dom';
-import { useState } from 'react';
+import { BrowserRouter as BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import LoginPage from './auth/LoginPage';
 import Navbar from './components/Navbar';
+import Dashboard from './pages/Dashboard/Dashboard';
 import ClientesList from './pages/Clientes/ClientesList';
 import ClienteForm from './pages/Clientes/ClienteForm';
 import FacturasList from './pages/Facturas/FacturasList';
@@ -22,6 +23,15 @@ import LocalizacionForm from './pages/Localizaciones/LocalizacionForm';
 
 import ReparacionesList from './pages/Reparaciones/ReparacionesList';
 import ReparacionForm from './pages/Reparaciones/ReparacionForm';
+
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [pathname]);
+  return null;
+}
+
 export default function AppRoutes() {
 
 const [auth, setAuth] = useState(!!localStorage.getItem('token'));
@@ -36,9 +46,10 @@ const [auth, setAuth] = useState(!!localStorage.getItem('token'));
   return (
 
     <BrowserRouter>
+      <ScrollToTop />
       <Navbar onLogout={handleLogout} />
       <Routes>
-        <Route path="/" element={<ReparacionesList />} />
+        <Route path="/" element={<Dashboard />} />
         <Route path="/clientes" element={<ClientesList />} />
         <Route path="/clientes/crear" element={<ClienteForm />} />
         <Route path="/clientes/editar/:id" element={<ClienteForm />} />

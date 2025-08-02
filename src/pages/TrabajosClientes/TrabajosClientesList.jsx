@@ -11,7 +11,6 @@ import {
   TableBody,
   Paper,
   Box,
-  CircularProgress,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -21,6 +20,7 @@ import {
 import IconButton from '@mui/material/IconButton';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash, faPencilAlt } from '@fortawesome/free-solid-svg-icons';
+import LoadingOverlay from '../../components/LoadingOverlay';
 
 export default function TrabajoClienteList() {
   const [trabajosClientes, setTrabajosClientes] = useState([]);
@@ -57,128 +57,122 @@ export default function TrabajoClienteList() {
     return true;
   });
 
-  if (loading) {
-    return (
-      <Box p={4} display="flex" flexDirection="column" alignItems="center">
-        <CircularProgress size={24} sx={{ mt: 2 }} />
-      </Box>
-    );
-  }
-
   return (
-    <Box p={3}>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h4">Precios Especiales</Typography>
-        <Button
-          variant="contained"
-          color="success"
-          component={Link}
-          to="/trabajos-clientes/crear"
-        >
-          Nuevo Precio Especial
-        </Button>
-      </Box>
-
-      <Paper elevation={3}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell><strong>Cliente</strong></TableCell>
-              <TableCell><strong>Reparacion</strong></TableCell>
-              <TableCell><strong>Precio</strong></TableCell>
-              <TableCell><strong>Acciones</strong></TableCell>
-            </TableRow>
-            {/* Fila de filtros */}
-            <TableRow>
-              <TableCell>
-                <input
-                  type="text"
-                  placeholder="Filtrar..."
-                  value={filters.cliente}
-                  onChange={e => setFilters(f => ({ ...f, cliente: e.target.value }))}
-                  style={{ width: '100%' }}
-                />
-              </TableCell>
-              <TableCell>
-                <input
-                  type="text"
-                  placeholder="Filtrar..."
-                  value={filters.reparacion}
-                  onChange={e => setFilters(f => ({ ...f, reparacion: e.target.value }))}
-                  style={{ width: '100%' }}
-                />
-              </TableCell>
-              <TableCell>
-                <input
-                  type="text"
-                  placeholder="Filtrar..."
-                  value={filters.precio}
-                  onChange={e => setFilters(f => ({ ...f, precio: e.target.value }))}
-                  style={{ width: '100%' }}
-                />
-              </TableCell>
-              <TableCell />
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {filteredTrabajosClientes.map((tc) => (
-              <TableRow key={tc.id}>
-                <TableCell>{tc.cliente_nombre || tc.cliente}</TableCell>
-                <TableCell>{tc.trabajo_nombre || tc.trabajo}</TableCell>
-                <TableCell>{Number(tc.precio).toLocaleString("es-ES", { style: "currency", currency: "EUR" })}</TableCell>
-                <TableCell>
-                  <IconButton
-                    component={Link}
-                    to={`/trabajos-clientes/editar/${tc.id}`}
-                    color="primary"
-                    size="small"
-                    sx={{ mr: 1 }}
-                  >
-                    <FontAwesomeIcon icon={faPencilAlt} />
-                  </IconButton>
-                  <IconButton
-                    onClick={() => setDeleteDialog({ open: true, trabajoClienteId: tc.id })}
-                    color="error"
-                    size="small"
-                  >
-                    <FontAwesomeIcon icon={faTrash} />
-                  </IconButton>
-      <Dialog
-        open={deleteDialog.open}
-        onClose={() => setDeleteDialog({ open: false, trabajoClienteId: null })}
-      >
-        <DialogTitle>Confirmar eliminación</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            ¿Estás seguro de que quieres eliminar este trabajo de cliente? Esta acción no se puede deshacer.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteDialog({ open: false, trabajoClienteId: null })} color="inherit">
-            Cancelar
-          </Button>
+    <LoadingOverlay loading={loading}>
+      <Box p={3}>
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+          <Typography variant="h4">Precios Especiales</Typography>
           <Button
-            onClick={() => handleDelete(deleteDialog.trabajoClienteId)}
-            color="error"
             variant="contained"
+            color="success"
+            component={Link}
+            to="/trabajos-clientes/crear"
           >
-            Eliminar
+            Nuevo Precio Especial
           </Button>
-        </DialogActions>
-      </Dialog>
-                </TableCell>
-              </TableRow>
-            ))}
-            {trabajosClientes.length === 0 && (
+        </Box>
+
+        <Paper elevation={3}>
+          <Table>
+            <TableHead>
               <TableRow>
-                <TableCell colSpan={4} align="center" sx={{ py: 4 }}>
-                  No hay trabajos registradas.
-                </TableCell>
+                <TableCell><strong>Cliente</strong></TableCell>
+                <TableCell><strong>Reparacion</strong></TableCell>
+                <TableCell><strong>Precio</strong></TableCell>
+                <TableCell><strong>Acciones</strong></TableCell>
               </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </Paper>
-    </Box>
+              {/* Fila de filtros */}
+              <TableRow>
+                <TableCell>
+                  <input
+                    type="text"
+                    placeholder="Filtrar..."
+                    value={filters.cliente}
+                    onChange={e => setFilters(f => ({ ...f, cliente: e.target.value }))}
+                    style={{ width: '100%' }}
+                  />
+                </TableCell>
+                <TableCell>
+                  <input
+                    type="text"
+                    placeholder="Filtrar..."
+                    value={filters.reparacion}
+                    onChange={e => setFilters(f => ({ ...f, reparacion: e.target.value }))}
+                    style={{ width: '100%' }}
+                  />
+                </TableCell>
+                <TableCell>
+                  <input
+                    type="text"
+                    placeholder="Filtrar..."
+                    value={filters.precio}
+                    onChange={e => setFilters(f => ({ ...f, precio: e.target.value }))}
+                    style={{ width: '100%' }}
+                  />
+                </TableCell>
+                <TableCell />
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {filteredTrabajosClientes.map((tc) => (
+                <TableRow key={tc.id}>
+                  <TableCell>{tc.cliente_nombre || tc.cliente}</TableCell>
+                  <TableCell>{tc.trabajo_nombre || tc.trabajo}</TableCell>
+                  <TableCell>{Number(tc.precio).toLocaleString("es-ES", { style: "currency", currency: "EUR" })}</TableCell>
+                  <TableCell>
+                    <IconButton
+                      component={Link}
+                      to={`/trabajos-clientes/editar/${tc.id}`}
+                      color="primary"
+                      size="small"
+                      sx={{ mr: 1 }}
+                    >
+                      <FontAwesomeIcon icon={faPencilAlt} />
+                    </IconButton>
+                    <IconButton
+                      onClick={() => setDeleteDialog({ open: true, trabajoClienteId: tc.id })}
+                      color="error"
+                      size="small"
+                    >
+                      <FontAwesomeIcon icon={faTrash} />
+                    </IconButton>
+                    <Dialog
+                      open={deleteDialog.open}
+                      onClose={() => setDeleteDialog({ open: false, trabajoClienteId: null })}
+                    >
+                      <DialogTitle>Confirmar eliminación</DialogTitle>
+                      <DialogContent>
+                        <DialogContentText>
+                          ¿Estás seguro de que quieres eliminar este trabajo de cliente? Esta acción no se puede deshacer.
+                        </DialogContentText>
+                      </DialogContent>
+                      <DialogActions>
+                        <Button onClick={() => setDeleteDialog({ open: false, trabajoClienteId: null })} color="inherit">
+                          Cancelar
+                        </Button>
+                        <Button
+                          onClick={() => handleDelete(deleteDialog.trabajoClienteId)}
+                          color="error"
+                          variant="contained"
+                        >
+                          Eliminar
+                        </Button>
+                      </DialogActions>
+                    </Dialog>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {trabajosClientes.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={4} align="center" sx={{ py: 4 }}>
+                    No hay trabajos registradas.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </Paper>
+      </Box>
+    </LoadingOverlay>
   );
 }

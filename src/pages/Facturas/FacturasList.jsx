@@ -22,6 +22,7 @@ import IconButton from '@mui/material/IconButton';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash, faPencilAlt, faFilePdf, faInfoCircle } from '@fortawesome/free-solid-svg-icons';
 import { saveAs } from 'file-saver';
+import LoadingOverlay from '../../components/LoadingOverlay';
 
 
 export default function FacturasList() {
@@ -67,8 +68,23 @@ export default function FacturasList() {
     }
   };
 
+  // Ordenar por número de factura descendente (extraer parte numérica central)
+  const extractFacturaNum = (str) => {
+    if (!str) return 0;
+    // Busca el primer grupo de dígitos de al menos 1 cifra
+    const match = String(str).match(/\d+/g);
+    if (!match) return 0;
+    // Si hay más de un grupo, toma el más largo (normalmente el central)
+    const num = match.reduce((max, curr) => curr.length > max.length ? curr : max, '0');
+    return parseInt(num, 10);
+  };
+  const sortedFacturas = [...facturas].sort((a, b) => {
+    const numA = extractFacturaNum(a.numero_factura);
+    const numB = extractFacturaNum(b.numero_factura);
+    return numB - numA;
+  });
   // Filtrado local
-  const filteredFacturas = facturas.filter(factura => {
+  const filteredFacturas = sortedFacturas.filter(factura => {
     if (filters.numero && !(String(factura.numero_factura || '').toLowerCase().includes(filters.numero.toLowerCase()))) return false;
     if (filters.cliente && !((factura.cliente_nombre || factura.cliente || '').toLowerCase().includes(filters.cliente.toLowerCase()))) return false;
     if (filters.fecha && !(String(factura.fecha || '').toLowerCase().includes(filters.fecha.toLowerCase()))) return false;
@@ -84,131 +100,124 @@ export default function FacturasList() {
     return true;
   });
 
-  if (loading) {
-    return (
-      <Box p={4} display="flex" flexDirection="column" alignItems="center">
-        <CircularProgress size={24} sx={{ mt: 2 }} />
-      </Box>
-    );
-  }
-
   return (
-    <Box p={3}>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h4" component="h1">
-          Facturas
-        </Typography>
-        <Button
-          variant="contained"
-          color="success"
-          component={Link}
-          to="/facturas/crear"
-        >
-          Nueva Factura
-        </Button>
-      </Box>
+    <LoadingOverlay loading={loading}>
+      <Box p={3}>
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+          <Typography variant="h4" component="h1">
+            Facturas
+          </Typography>
+          <Button
+            variant="contained"
+            color="success"
+            component={Link}
+            to="/facturas/crear"
+          >
+            Nueva Factura
+          </Button>
+        </Box>
 
-      <Paper elevation={3}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell><strong>Número</strong></TableCell>
-              <TableCell><strong>Cliente</strong></TableCell>
-              <TableCell><strong>Fecha</strong></TableCell>
-              <TableCell><strong>Estado</strong></TableCell>
-              <TableCell><strong>Total</strong></TableCell>
-              <TableCell><strong>Reparaciones</strong></TableCell>
-              <TableCell><strong>Acciones</strong></TableCell>
-            </TableRow>
-            {/* Fila de filtros */}
-            <TableRow>
-              <TableCell>
-                <input
-                  type="text"
-                  placeholder="Filtrar..."
-                  value={filters.numero}
-                  onChange={e => setFilters(f => ({ ...f, numero: e.target.value }))}
-                  style={{ width: '100%' }}
-                />
-              </TableCell>
-              <TableCell>
-                <input
-                  type="text"
-                  placeholder="Filtrar..."
-                  value={filters.cliente}
-                  onChange={e => setFilters(f => ({ ...f, cliente: e.target.value }))}
-                  style={{ width: '100%' }}
-                />
-              </TableCell>
-              <TableCell>
-                <input
-                  type="text"
-                  placeholder="Filtrar..."
-                  value={filters.fecha}
-                  onChange={e => setFilters(f => ({ ...f, fecha: e.target.value }))}
-                  style={{ width: '100%' }}
-                />
-              </TableCell>
-              <TableCell>
-                <input
-                  type="text"
-                  placeholder="Filtrar..."
-                  value={filters.estado}
-                  onChange={e => setFilters(f => ({ ...f, estado: e.target.value }))}
-                  style={{ width: '100%' }}
-                />
-              </TableCell>
-              <TableCell>
-                <input
-                  type="text"
-                  placeholder="Filtrar..."
-                  value={filters.total}
-                  onChange={e => setFilters(f => ({ ...f, total: e.target.value }))}
-                  style={{ width: '100%' }}
-                />
-              </TableCell>
-              <TableCell>
-                <input
-                  type="text"
-                  placeholder="Filtrar..."
-                  value={filters.reparaciones}
-                  onChange={e => setFilters(f => ({ ...f, reparaciones: e.target.value }))}
-                  style={{ width: '100%' }}
-                />
-              </TableCell>
-              <TableCell />
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {filteredFacturas.map((factura) => (
-              <TableRow key={factura.id}>
-                <TableCell>{factura.numero_factura}</TableCell>
-                <TableCell>{factura.cliente_nombre || factura.cliente}</TableCell>
-                <TableCell>{factura.fecha}</TableCell>
-                <TableCell>{factura.estado_nombre || factura.estado}</TableCell>
-                <TableCell>{factura.total} €</TableCell>
+        <Paper elevation={3}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell><strong>Número</strong></TableCell>
+                <TableCell><strong>Cliente</strong></TableCell>
+                <TableCell><strong>Fecha</strong></TableCell>
+                <TableCell><strong>Estado</strong></TableCell>
+                <TableCell><strong>Total</strong></TableCell>
+                <TableCell><strong>Reparaciones</strong></TableCell>
+                <TableCell><strong>Acciones</strong></TableCell>
+              </TableRow>
+              {/* Fila de filtros */}
+              <TableRow>
                 <TableCell>
-                  {factura.reparaciones && factura.reparaciones.length > 0 ? (
-                    <Box>
-                      {factura.reparaciones.map((r, index) => (
-                        <Box key={index} display="flex" alignItems="center" mb={0.5}>
-                          <Typography variant="body2" sx={{ mr: 1 }}>
-                            {r.localizacion}
-                          </Typography>
-                          <IconButton
-                            size="small"
-                            color="info"
-                            onClick={() => setDetalleReparacion({ open: true, reparacion: r })}
-                          >
-                            <FontAwesomeIcon icon={faInfoCircle} />
-                          </IconButton>
-                        </Box>
-                      ))}
-                    </Box>
-                  ) : (
-                    '—'
-                  )}
+                  <input
+                    type="text"
+                    placeholder="Filtrar..."
+                    value={filters.numero}
+                    onChange={e => setFilters(f => ({ ...f, numero: e.target.value }))}
+                    style={{ width: '100%' }}
+                  />
                 </TableCell>
+                <TableCell>
+                  <input
+                    type="text"
+                    placeholder="Filtrar..."
+                    value={filters.cliente}
+                    onChange={e => setFilters(f => ({ ...f, cliente: e.target.value }))}
+                    style={{ width: '100%' }}
+                  />
+                </TableCell>
+                <TableCell>
+                  <input
+                    type="text"
+                    placeholder="Filtrar..."
+                    value={filters.fecha}
+                    onChange={e => setFilters(f => ({ ...f, fecha: e.target.value }))}
+                    style={{ width: '100%' }}
+                  />
+                </TableCell>
+                <TableCell>
+                  <input
+                    type="text"
+                    placeholder="Filtrar..."
+                    value={filters.estado}
+                    onChange={e => setFilters(f => ({ ...f, estado: e.target.value }))}
+                    style={{ width: '100%' }}
+                  />
+                </TableCell>
+                <TableCell>
+                  <input
+                    type="text"
+                    placeholder="Filtrar..."
+                    value={filters.total}
+                    onChange={e => setFilters(f => ({ ...f, total: e.target.value }))}
+                    style={{ width: '100%' }}
+                  />
+                </TableCell>
+                <TableCell>
+                  <input
+                    type="text"
+                    placeholder="Filtrar..."
+                    value={filters.reparaciones}
+                    onChange={e => setFilters(f => ({ ...f, reparaciones: e.target.value }))}
+                    style={{ width: '100%' }}
+                  />
+                </TableCell>
+                <TableCell />
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {filteredFacturas.map((factura) => (
+                <TableRow key={factura.id}>
+                  <TableCell>{factura.numero_factura}</TableCell>
+                  <TableCell>{factura.cliente_nombre || factura.cliente}</TableCell>
+                  <TableCell>{factura.fecha}</TableCell>
+                  <TableCell>{factura.estado_nombre || factura.estado}</TableCell>
+                  <TableCell>{factura.total} €</TableCell>
+                  <TableCell>
+                    {factura.reparaciones && factura.reparaciones.length > 0 ? (
+                      <Box>
+                        {factura.reparaciones.map((r, index) => (
+                          <Box key={index} display="flex" alignItems="center" mb={0.5}>
+                            <Typography variant="body2" sx={{ mr: 1 }}>
+                              {r.localizacion}
+                            </Typography>
+                            <IconButton
+                              size="small"
+                              color="info"
+                              onClick={() => setDetalleReparacion({ open: true, reparacion: r })}
+                            >
+                              <FontAwesomeIcon icon={faInfoCircle} />
+                            </IconButton>
+                          </Box>
+                        ))}
+                      </Box>
+                    ) : (
+                      '—'
+                    )}
+                  </TableCell>
       {/* Popup de detalle de reparación */}
       <Dialog
         open={detalleReparacion.open}
@@ -249,26 +258,26 @@ export default function FacturasList() {
           </Button>
         </DialogActions>
       </Dialog>
-                <TableCell>
-                  <IconButton onClick={() => handleExport(factura.id)} color="primary" size="small" sx={{ mr: 1 }}>
-                    <FontAwesomeIcon icon={faFilePdf} />
-                  </IconButton>
-                  <IconButton
-                    component={Link}
-                    to={`/facturas/editar/${factura.id}`}
-                    color="primary"
-                    size="small"
-                    sx={{ mr: 1 }}
-                  >
-                    <FontAwesomeIcon icon={faPencilAlt} />
-                  </IconButton>
-                  <IconButton
-                    onClick={() => setDeleteDialog({ open: true, facturaId: factura.id })}
-                    color="error"
-                    size="small"
-                  >
-                    <FontAwesomeIcon icon={faTrash} />
-                  </IconButton>
+                  <TableCell>
+                    <IconButton onClick={() => handleExport(factura.id)} color="primary" size="small" sx={{ mr: 1 }}>
+                      <FontAwesomeIcon icon={faFilePdf} />
+                    </IconButton>
+                    <IconButton
+                      component={Link}
+                      to={`/facturas/editar/${factura.id}`}
+                      color="primary"
+                      size="small"
+                      sx={{ mr: 1 }}
+                    >
+                      <FontAwesomeIcon icon={faPencilAlt} />
+                    </IconButton>
+                    <IconButton
+                      onClick={() => setDeleteDialog({ open: true, facturaId: factura.id })}
+                      color="error"
+                      size="small"
+                    >
+                      <FontAwesomeIcon icon={faTrash} />
+                    </IconButton>
       <Dialog
         open={deleteDialog.open}
         onClose={() => setDeleteDialog({ open: false, facturaId: null })}
@@ -292,19 +301,20 @@ export default function FacturasList() {
           </Button>
         </DialogActions>
       </Dialog>
-                </TableCell>
-              </TableRow>
-            ))}
-            {filteredFacturas.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
-                  No hay facturas registradas.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </Paper>
-    </Box>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {filteredFacturas.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
+                    No hay facturas registradas.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </Paper>
+      </Box>
+    </LoadingOverlay>
   );
 }

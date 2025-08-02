@@ -22,6 +22,8 @@ import IconButton from '@mui/material/IconButton';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash, faPencilAlt, faFilePdf, faInfoCircle } from '@fortawesome/free-solid-svg-icons';
 import { saveAs } from 'file-saver';
+import NumPedidoDialog from './NumPedidoDialog';
+import LoadingOverlay from '../../components/LoadingOverlay';
 
 const ProformasList = () => {
   // Export proforma PDF
@@ -46,25 +48,49 @@ const ProformasList = () => {
   });
   const [convertingId, setConvertingId] = useState(null);
   const [confirmDialog, setConfirmDialog] = useState({ open: false, proformaId: null });
+  // Dialog para pedir número de pedido
+  const [numPedidoDialog, setNumPedidoDialog] = useState({ open: false, proformaId: null });
   // State for showing success after conversion
   const [successDialog, setSuccessDialog] = useState({ open: false, facturaNumero: '' });
   // Estado para el popup de detalle de reparación
   const [detalleReparacion, setDetalleReparacion] = useState({ open: false, reparacion: null });
 
-  const handleConvertToFactura = async (id) => {
-    setConvertingId(id);
+  // Paso 1: Cuando se confirma la conversión, abrir el diálogo de número de pedido
+  const handleConfirmConvert = (proformaId) => {
+    setConfirmDialog({ open: false, proformaId: null });
+    setNumPedidoDialog({ open: true, proformaId });
+  };
+
+  // Paso 2: Cuando se introduce el número de pedido, actualizar reparaciones y convertir
+  const handleNumPedidoSubmit = async (numPedido) => {
+    const proformaId = numPedidoDialog.proformaId;
+    setConvertingId(proformaId);
+    setNumPedidoDialog({ open: false, proformaId: null });
     try {
-      const res = await API.post(`proformas/${id}/convertir-a-factura/`);
+      // 1. Obtener solo las reparaciones asociadas a la proforma seleccionada
+      const reparacionesRes = await API.get(`reparaciones/?proforma=${proformaId}`);
+      // Filtrar solo las reparaciones que tienen proforma === proformaId (por si el backend devuelve más)
+      const reparaciones = Array.isArray(reparacionesRes.data)
+        ? reparacionesRes.data.filter(r => r.proforma === proformaId || r.proforma === Number(proformaId))
+        : [];
+      const reparacionIds = reparaciones.map(r => r.id);
+      // 2. Actualizar el num_pedido solo de esas reparaciones
+      if (reparacionIds.length > 0) {
+        await Promise.all(reparacionIds.map(id =>
+          API.patch(`reparaciones/${id}/`, { num_pedido: numPedido })
+        ));
+      }
+      // 3. Convertir la proforma a factura
+      const res = await API.post(`proformas/${proformaId}/convertir-a-factura/`);
       // Recargar la lista de proformas
       const updated = await API.get("proformas/con-reparaciones/");
       setProformas(updated.data);
       // Mostrar diálogo de éxito
       setSuccessDialog({ open: true, facturaNumero: res.data.factura?.numero_factura || '' });
     } catch {
-      alert("Error al convertir la proforma a factura");
+      alert("Error al convertir la proforma a factura o actualizar número de pedido");
     } finally {
       setConvertingId(null);
-      setConfirmDialog({ open: false, proformaId: null });
     }
   };
 
@@ -86,8 +112,23 @@ const ProformasList = () => {
     }
   };
 
+  // Ordenar por número de proforma descendente (extraer parte numérica central)
+  const extractProformaNum = (str) => {
+    if (!str) return 0;
+    // Busca el primer grupo de dígitos de al menos 1 cifra
+    const match = String(str).match(/\d+/g);
+    if (!match) return 0;
+    // Si hay más de un grupo, toma el más largo (normalmente el central)
+    const num = match.reduce((max, curr) => curr.length > max.length ? curr : max, '0');
+    return parseInt(num, 10);
+  };
+  const sortedProformas = [...proformas].sort((a, b) => {
+    const numA = extractProformaNum(a.numero_proforma);
+    const numB = extractProformaNum(b.numero_proforma);
+    return numB - numA;
+  });
   // Filtrado local
-  const filteredProformas = proformas.filter(proforma => {
+  const filteredProformas = sortedProformas.filter(proforma => {
     if (filters.numero && !(String(proforma.numero_proforma || '').toLowerCase().includes(filters.numero.toLowerCase()))) return false;
     if (filters.cliente && !((proforma.cliente_nombre || proforma.cliente || '').toLowerCase().includes(filters.cliente.toLowerCase()))) return false;
     if (filters.fecha && !(String(proforma.fecha || '').toLowerCase().includes(filters.fecha.toLowerCase()))) return false;
@@ -103,131 +144,124 @@ const ProformasList = () => {
     return true;
   });
 
-  if (loading) {
-    return (
-      <Box p={4} display="flex" flexDirection="column" alignItems="center">
-        <CircularProgress size={24} sx={{ mt: 2 }} />
-      </Box>
-    );
-  }
-
   return (
-    <Box p={3}>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h4" component="h1">
-          Proformas
-        </Typography>
-        <Button
-          variant="contained"
-          color="primary"
-          component={Link}
-          to="/proformas/nueva"
-        >
-          Nueva Proforma
-        </Button>
-      </Box>
+    <LoadingOverlay loading={loading}>
+      <Box p={3}>
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+          <Typography variant="h4" component="h1">
+            Proformas
+          </Typography>
+          <Button
+            variant="contained"
+            color="primary"
+            component={Link}
+            to="/proformas/nueva"
+          >
+            Nueva Proforma
+          </Button>
+        </Box>
 
-      <Paper elevation={3}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell><strong>Número</strong></TableCell>
-              <TableCell><strong>Cliente</strong></TableCell>
-              <TableCell><strong>Fecha</strong></TableCell>
-              <TableCell><strong>Estado</strong></TableCell>
-              <TableCell><strong>Total</strong></TableCell>
-              <TableCell><strong>Reparaciones</strong></TableCell>
-              <TableCell><strong>Acciones</strong></TableCell>
-            </TableRow>
-            {/* Fila de filtros */}
-            <TableRow>
-              <TableCell>
-                <input
-                  type="text"
-                  placeholder="Filtrar..."
-                  value={filters.numero}
-                  onChange={e => setFilters(f => ({ ...f, numero: e.target.value }))}
-                  style={{ width: '100%' }}
-                />
-              </TableCell>
-              <TableCell>
-                <input
-                  type="text"
-                  placeholder="Filtrar..."
-                  value={filters.cliente}
-                  onChange={e => setFilters(f => ({ ...f, cliente: e.target.value }))}
-                  style={{ width: '100%' }}
-                />
-              </TableCell>
-              <TableCell>
-                <input
-                  type="text"
-                  placeholder="Filtrar..."
-                  value={filters.fecha}
-                  onChange={e => setFilters(f => ({ ...f, fecha: e.target.value }))}
-                  style={{ width: '100%' }}
-                />
-              </TableCell>
-              <TableCell>
-                <input
-                  type="text"
-                  placeholder="Filtrar..."
-                  value={filters.estado}
-                  onChange={e => setFilters(f => ({ ...f, estado: e.target.value }))}
-                  style={{ width: '100%' }}
-                />
-              </TableCell>
-              <TableCell>
-                <input
-                  type="text"
-                  placeholder="Filtrar..."
-                  value={filters.total}
-                  onChange={e => setFilters(f => ({ ...f, total: e.target.value }))}
-                  style={{ width: '100%' }}
-                />
-              </TableCell>
-              <TableCell>
-                <input
-                  type="text"
-                  placeholder="Filtrar..."
-                  value={filters.reparaciones}
-                  onChange={e => setFilters(f => ({ ...f, reparaciones: e.target.value }))}
-                  style={{ width: '100%' }}
-                />
-              </TableCell>
-              <TableCell />
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {filteredProformas.map((proforma) => (
-              <TableRow key={proforma.id}>
-                <TableCell>{proforma.numero_proforma}</TableCell>
-                <TableCell>{proforma.cliente_nombre || proforma.cliente}</TableCell>
-                <TableCell>{proforma.fecha}</TableCell>
-                <TableCell>{proforma.estado_nombre || proforma.estado}</TableCell>
-                <TableCell>{proforma.total} €</TableCell>
+        <Paper elevation={3}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell><strong>Número</strong></TableCell>
+                <TableCell><strong>Cliente</strong></TableCell>
+                <TableCell><strong>Fecha</strong></TableCell>
+                <TableCell><strong>Estado</strong></TableCell>
+                <TableCell><strong>Total</strong></TableCell>
+                <TableCell><strong>Reparaciones</strong></TableCell>
+                <TableCell><strong>Acciones</strong></TableCell>
+              </TableRow>
+              {/* Fila de filtros */}
+              <TableRow>
                 <TableCell>
-                  {proforma.reparaciones && proforma.reparaciones.length > 0 ? (
-                    <Box>
-                      {proforma.reparaciones.map((r, index) => (
-                        <Box key={index} display="flex" alignItems="center" mb={0.5}>
-                          <Typography variant="body2" sx={{ mr: 1 }}>
-                            {r.localizacion}
-                          </Typography>
-                          <IconButton
-                            size="small"
-                            color="info"
-                            onClick={() => setDetalleReparacion({ open: true, reparacion: r })}
-                          >
-                            <FontAwesomeIcon icon={faInfoCircle} />
-                          </IconButton>
-                        </Box>
-                      ))}
-                    </Box>
-                  ) : (
-                    '—'
-                  )}
+                  <input
+                    type="text"
+                    placeholder="Filtrar..."
+                    value={filters.numero}
+                    onChange={e => setFilters(f => ({ ...f, numero: e.target.value }))}
+                    style={{ width: '100%' }}
+                  />
                 </TableCell>
+                <TableCell>
+                  <input
+                    type="text"
+                    placeholder="Filtrar..."
+                    value={filters.cliente}
+                    onChange={e => setFilters(f => ({ ...f, cliente: e.target.value }))}
+                    style={{ width: '100%' }}
+                  />
+                </TableCell>
+                <TableCell>
+                  <input
+                    type="text"
+                    placeholder="Filtrar..."
+                    value={filters.fecha}
+                    onChange={e => setFilters(f => ({ ...f, fecha: e.target.value }))}
+                    style={{ width: '100%' }}
+                  />
+                </TableCell>
+                <TableCell>
+                  <input
+                    type="text"
+                    placeholder="Filtrar..."
+                    value={filters.estado}
+                    onChange={e => setFilters(f => ({ ...f, estado: e.target.value }))}
+                    style={{ width: '100%' }}
+                  />
+                </TableCell>
+                <TableCell>
+                  <input
+                    type="text"
+                    placeholder="Filtrar..."
+                    value={filters.total}
+                    onChange={e => setFilters(f => ({ ...f, total: e.target.value }))}
+                    style={{ width: '100%' }}
+                  />
+                </TableCell>
+                <TableCell>
+                  <input
+                    type="text"
+                    placeholder="Filtrar..."
+                    value={filters.reparaciones}
+                    onChange={e => setFilters(f => ({ ...f, reparaciones: e.target.value }))}
+                    style={{ width: '100%' }}
+                  />
+                </TableCell>
+                <TableCell />
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {filteredProformas.map((proforma) => (
+                <TableRow key={proforma.id}>
+                  <TableCell>{proforma.numero_proforma}</TableCell>
+                  <TableCell>{proforma.cliente_nombre || proforma.cliente}</TableCell>
+                  <TableCell>{proforma.fecha}</TableCell>
+                  <TableCell>{proforma.estado_nombre || proforma.estado}</TableCell>
+                  <TableCell>{proforma.total} €</TableCell>
+                  <TableCell>
+                    {proforma.reparaciones && proforma.reparaciones.length > 0 ? (
+                      <Box>
+                        {proforma.reparaciones.map((r, index) => (
+                          <Box key={index} display="flex" alignItems="center" mb={0.5}>
+                            <Typography variant="body2" sx={{ mr: 1 }}>
+                              {r.localizacion}
+                            </Typography>
+                            <IconButton
+                              size="small"
+                              color="info"
+                              onClick={() => setDetalleReparacion({ open: true, reparacion: r })}
+                            >
+                              <FontAwesomeIcon icon={faInfoCircle} />
+                            </IconButton>
+                          </Box>
+                        ))}
+                      </Box>
+                    ) : (
+                      '—'
+                    )}
+                  </TableCell>
       {/* Popup de detalle de reparación */}
       <Dialog
         open={detalleReparacion.open}
@@ -268,39 +302,39 @@ const ProformasList = () => {
           </Button>
         </DialogActions>
       </Dialog>
-                <TableCell>
-                  <IconButton onClick={() => handleExport(proforma.id)} color="primary" size="small" sx={{ mr: 1 }}>
-                    <FontAwesomeIcon icon={faFilePdf} />
-                  </IconButton>
-                  <IconButton
-                    component={Link}
-                    to={`/proformas/editar/${proforma.id}`}
-                    color="primary"
-                    size="small"
-                    sx={{ mr: 1 }}
-                  >
-                    <FontAwesomeIcon icon={faPencilAlt} />
-                  </IconButton>
-                  <IconButton
-                    onClick={() => setDeleteDialog({ open: true, proformaId: proforma.id })}
-                    color="error"
-                    size="small"
-                    sx={{ mr: 1 }}
-                  >
-                    <FontAwesomeIcon icon={faTrash} />
-                  </IconButton>
-                  {!proforma.factura && (
-                    <Button
-                      onClick={() => setConfirmDialog({ open: true, proformaId: proforma.id })}
-                      variant="contained"
-                      color="success"
+                  <TableCell>
+                    <IconButton onClick={() => handleExport(proforma.id)} color="primary" size="small" sx={{ mr: 1 }}>
+                      <FontAwesomeIcon icon={faFilePdf} />
+                    </IconButton>
+                    <IconButton
+                      component={Link}
+                      to={`/proformas/editar/${proforma.id}`}
+                      color="primary"
                       size="small"
-                      disabled={convertingId === proforma.id}
+                      sx={{ mr: 1 }}
                     >
-                      {convertingId === proforma.id ? "Convirtiendo..." : "Convertir a Factura"}
-                    </Button>
-                  )}
-                </TableCell>
+                      <FontAwesomeIcon icon={faPencilAlt} />
+                    </IconButton>
+                    <IconButton
+                      onClick={() => setDeleteDialog({ open: true, proformaId: proforma.id })}
+                      color="error"
+                      size="small"
+                      sx={{ mr: 1 }}
+                    >
+                      <FontAwesomeIcon icon={faTrash} />
+                    </IconButton>
+                    {!proforma.factura && (
+                      <Button
+                        onClick={() => setConfirmDialog({ open: true, proformaId: proforma.id })}
+                        variant="contained"
+                        color="success"
+                        size="small"
+                        disabled={convertingId === proforma.id}
+                      >
+                        {convertingId === proforma.id ? "Convirtiendo..." : "Convertir a Factura"}
+                      </Button>
+                    )}
+                  </TableCell>
       {/* Dialogo de confirmación para eliminar */}
       <Dialog
         open={deleteDialog.open}
@@ -342,7 +376,7 @@ const ProformasList = () => {
             Cancelar
           </Button>
           <Button
-            onClick={() => handleConvertToFactura(confirmDialog.proformaId)}
+            onClick={() => handleConfirmConvert(confirmDialog.proformaId)}
             color="success"
             variant="contained"
             disabled={convertingId === confirmDialog.proformaId}
@@ -351,6 +385,14 @@ const ProformasList = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Dialogo para introducir número de pedido */}
+      <NumPedidoDialog
+        open={numPedidoDialog.open}
+        onClose={() => setNumPedidoDialog({ open: false, proformaId: null })}
+        onSubmit={handleNumPedidoSubmit}
+        loading={!!convertingId}
+      />
 
       {/* Dialogo de éxito */}
       {successDialog.open && (
@@ -376,19 +418,20 @@ const ProformasList = () => {
           </DialogActions>
         </Dialog>
       )}
-              </TableRow>
-            ))}
-            {proformas.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
-                  No hay proformas registradas.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </Paper>
-    </Box>
+                </TableRow>
+              ))}
+              {proformas.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
+                    No hay proformas registradas.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </Paper>
+      </Box>
+    </LoadingOverlay>
   );
 };
 

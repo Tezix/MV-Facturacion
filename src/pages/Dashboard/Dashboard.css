@@ -1,0 +1,52 @@
+.dashboard-container {
+  width: 90dvw;
+  max-width: none;
+  padding: 24px;
+}
+
+.dashboard-annual-card {
+  width: 100%;
+  max-width: none;
+  margin: 0 0 32px 0;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.dashboard-charts-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 0 16px;
+  overflow-x: auto;
+}
+
+@media (min-width: 960px) {
+  .dashboard-charts-container {
+    flex-direction: row;
+  }
+}
+
+.dashboard-chart {
+  flex: 1;
+  min-width: 300px;
+}
+/* specific adjustments for bar charts */
+/* Remove special bar chart width styling; use default .dashboard-chart */
+.dashboard-chart-bar {
+  flex: 1;
+  min-width: 300px;
+}
+
+.dashboard-quarter-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  width: 100%;
+}
+
+.dashboard-quarter-card {
+  flex: 1 1 calc(50% - 16px);
+  padding: 16px;
+  box-sizing: border-box;
+  min-width: 280px;
+}

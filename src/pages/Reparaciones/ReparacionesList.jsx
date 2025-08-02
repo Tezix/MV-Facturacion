@@ -21,6 +21,7 @@ import {
 import IconButton from '@mui/material/IconButton';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash, faPencilAlt } from '@fortawesome/free-solid-svg-icons';
+import LoadingOverlay from '../../components/LoadingOverlay';
 
 export default function ReparacionList() {
   const [reparaciones, setReparaciones] = useState([]);
@@ -56,7 +57,18 @@ export default function ReparacionList() {
   };
 
   // Filtrado local de la lista
-  const filteredReparaciones = reparaciones.filter((t) => {
+  // Ordenar por fecha descendente (más nuevas primero)
+  const sortedReparaciones = [...reparaciones].sort((a, b) => {
+    // Si alguna fecha es null/undefined, ponerla al final
+    if (!a.fecha) return 1;
+    if (!b.fecha) return -1;
+    // Comparar como fechas reales si es posible
+    const dateA = new Date(a.fecha);
+    const dateB = new Date(b.fecha);
+    return dateB - dateA;
+  });
+
+  const filteredReparaciones = sortedReparaciones.filter((t) => {
     // Fecha (permite buscar por substring)
     if (filters.fecha && !(t.fecha || '').toLowerCase().includes(filters.fecha.toLowerCase())) return false;
     // Nº Reparación
@@ -84,152 +96,148 @@ export default function ReparacionList() {
     return true;
   });
 
-  if (loading) {
-    return (
-      <Box p={4} display="flex" flexDirection="column" alignItems="center">
-        <CircularProgress size={24} sx={{ mt: 2 }} />
-      </Box>
-    );
-  }
   return (
-    <Box p={3}>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h4">Reparaciones</Typography>
-        <Button
-          variant="contained"
-          color="success"
-          component={Link}
-          to="/reparaciones/crear"
-        >
-          Nueva Reparacion
-        </Button>
-      </Box>
+    <LoadingOverlay loading={loading}>
+      <Box p={3}>
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+          <Typography variant="h4">Reparaciones</Typography>
+          <Button
+            variant="contained"
+            color="success"
+            component={Link}
+            to="/reparaciones/crear"
+          >
+            Nueva Reparacion
+          </Button>
+        </Box>
 
-      <Paper elevation={3}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell><strong>Fecha</strong></TableCell>
-              <TableCell><strong>Nº Reparación</strong></TableCell>
-              <TableCell><strong>Nº Pedido</strong></TableCell>
-              <TableCell><strong>Factura</strong></TableCell>
-              <TableCell><strong>Proforma</strong></TableCell>
-              <TableCell><strong>Localización</strong></TableCell>
-              <TableCell><strong>Trabajo</strong></TableCell>
-              <TableCell><strong>Acciones</strong></TableCell>
-            </TableRow>
-            {/* Fila de filtros */}
-            <TableRow>
-              <TableCell>
-                <input
-                  type="text"
-                  placeholder="Filtrar..."
-                  value={filters.fecha}
-                  onChange={e => setFilters(f => ({ ...f, fecha: e.target.value }))}
-                  style={{ width: '100%' }}
-                />
-              </TableCell>
-              <TableCell>
-                <input
-                  type="text"
-                  placeholder="Filtrar..."
-                  value={filters.num_reparacion}
-                  onChange={e => setFilters(f => ({ ...f, num_reparacion: e.target.value }))}
-                  style={{ width: '100%' }}
-                />
-              </TableCell>
-              <TableCell>
-                <input
-                  type="text"
-                  placeholder="Filtrar..."
-                  value={filters.num_pedido}
-                  onChange={e => setFilters(f => ({ ...f, num_pedido: e.target.value }))}
-                  style={{ width: '100%' }}
-                />
-              </TableCell>
-              <TableCell>
-                <input
-                  type="text"
-                  placeholder="Filtrar..."
-                  value={filters.factura}
-                  onChange={e => setFilters(f => ({ ...f, factura: e.target.value }))}
-                  style={{ width: '100%' }}
-                />
-              </TableCell>
-              <TableCell>
-                <input
-                  type="text"
-                  placeholder="Filtrar..."
-                  value={filters.proforma}
-                  onChange={e => setFilters(f => ({ ...f, proforma: e.target.value }))}
-                  style={{ width: '100%' }}
-                />
-              </TableCell>
-              <TableCell>
-                <input
-                  type="text"
-                  placeholder="Filtrar..."
-                  value={filters.localizacion}
-                  onChange={e => setFilters(f => ({ ...f, localizacion: e.target.value }))}
-                  style={{ width: '100%' }}
-                />
-              </TableCell>
-              <TableCell>
-                <input
-                  type="text"
-                  placeholder="Filtrar..."
-                  value={filters.trabajo}
-                  onChange={e => setFilters(f => ({ ...f, trabajo: e.target.value }))}
-                  style={{ width: '100%' }}
-                />
-              </TableCell>
-              <TableCell />
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {filteredReparaciones.map((t, idx) => (
-              <TableRow key={idx}>
-                <TableCell>{t.fecha}</TableCell>
-                <TableCell>{t.num_reparacion || '—'}</TableCell>
-                <TableCell>{t.num_pedido || '—'}</TableCell>
-                <TableCell>{t.factura_numero || t.factura || '—'}</TableCell>
-                <TableCell>{t.proforma_numero || t.proforma || '—'}</TableCell>
+        <Paper elevation={3}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell><strong>Fecha</strong></TableCell>
+                <TableCell><strong>Nº Reparación</strong></TableCell>
+                <TableCell><strong>Nº Pedido</strong></TableCell>
+                <TableCell><strong>Factura</strong></TableCell>
+                <TableCell><strong>Proforma</strong></TableCell>
+                <TableCell><strong>Localización</strong></TableCell>
+                <TableCell><strong>Trabajo</strong></TableCell>
+                <TableCell><strong>Comentarios</strong></TableCell>
+                <TableCell><strong>Acciones</strong></TableCell>
+              </TableRow>
+              {/* Fila de filtros */}
+              <TableRow>
                 <TableCell>
-                    {t.localizacion
-                      ? `${t.localizacion.direccion}, ${t.localizacion.numero}, ${t.localizacion.localidad}, ${t.localizacion.ascensor}${t.localizacion.escalera ? ', ' + t.localizacion.escalera : ''}`
-                      : '—'}
+                  <input
+                    type="text"
+                    placeholder="Filtrar..."
+                    value={filters.fecha}
+                    onChange={e => setFilters(f => ({ ...f, fecha: e.target.value }))}
+                    style={{ width: '100%' }}
+                  />
                 </TableCell>
                 <TableCell>
-                  {t.trabajos && t.trabajos.length > 0 ? (
-                    <Box>
-                      {t.trabajos.map((trabajo, index) => (
-                        <Typography key={index} variant="body2">
-                         - {trabajo.nombre_reparacion}
-                        </Typography>
-                      ))}
-                    </Box>
-                  ) : (
-                    '—'
-                  )}
+                  <input
+                    type="text"
+                    placeholder="Filtrar..."
+                    value={filters.num_reparacion}
+                    onChange={e => setFilters(f => ({ ...f, num_reparacion: e.target.value }))}
+                    style={{ width: '100%' }}
+                  />
                 </TableCell>
                 <TableCell>
-                  <IconButton
-                    component={Link}
-                    to={`/reparaciones/editar/${t.reparacion_ids[0]}`}
-                    color="primary"
-                    size="small"
-                    sx={{ mr: 1 }}
-                  >
-                    <FontAwesomeIcon icon={faPencilAlt} />
-                  </IconButton>
-                  {/* Eliminar solo el primer reparacion del grupo, o puedes adaptar para eliminar todos */}
-                  <IconButton
-                    onClick={() => setDeleteDialog({ open: true, grupo: t })}
-                    color="error"
-                    size="small"
-                  >
-                    <FontAwesomeIcon icon={faTrash} />
-                  </IconButton>
+                  <input
+                    type="text"
+                    placeholder="Filtrar..."
+                    value={filters.num_pedido}
+                    onChange={e => setFilters(f => ({ ...f, num_pedido: e.target.value }))}
+                    style={{ width: '100%' }}
+                  />
+                </TableCell>
+                <TableCell>
+                  <input
+                    type="text"
+                    placeholder="Filtrar..."
+                    value={filters.factura}
+                    onChange={e => setFilters(f => ({ ...f, factura: e.target.value }))}
+                    style={{ width: '100%' }}
+                  />
+                </TableCell>
+                <TableCell>
+                  <input
+                    type="text"
+                    placeholder="Filtrar..."
+                    value={filters.proforma}
+                    onChange={e => setFilters(f => ({ ...f, proforma: e.target.value }))}
+                    style={{ width: '100%' }}
+                  />
+                </TableCell>
+                <TableCell>
+                  <input
+                    type="text"
+                    placeholder="Filtrar..."
+                    value={filters.localizacion}
+                    onChange={e => setFilters(f => ({ ...f, localizacion: e.target.value }))}
+                    style={{ width: '100%' }}
+                  />
+                </TableCell>
+                <TableCell>
+                  <input
+                    type="text"
+                    placeholder="Filtrar..."
+                    value={filters.trabajo}
+                    onChange={e => setFilters(f => ({ ...f, trabajo: e.target.value }))}
+                    style={{ width: '100%' }}
+                  />
+                </TableCell>
+                <TableCell />
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {filteredReparaciones.map((t, idx) => (
+                <TableRow key={idx}>
+                  <TableCell>{t.fecha}</TableCell>
+                  <TableCell>{t.num_reparacion || '—'}</TableCell>
+                  <TableCell>{t.num_pedido || '—'}</TableCell>
+                  <TableCell>{t.factura_numero || t.factura || '—'}</TableCell>
+                  <TableCell>{t.proforma_numero || t.proforma || '—'}</TableCell>
+                  <TableCell>
+                      {t.localizacion
+                        ? `${t.localizacion.direccion}, ${t.localizacion.numero}, ${t.localizacion.localidad}, Esc ${t.localizacion.escalera} Asc ${t.localizacion.ascensor}`
+                        : '—'}
+                  </TableCell>
+                  <TableCell>
+                    {t.trabajos && t.trabajos.length > 0 ? (
+                      <Box>
+                        {t.trabajos.map((trabajo, index) => (
+                          <Typography key={index} variant="body2">
+                           - {trabajo.nombre_reparacion}
+                          </Typography>
+                        ))}
+                      </Box>
+                    ) : (
+                      '—'
+                    )}
+                  </TableCell>
+                  <TableCell>{t.comentarios || '—'}</TableCell>
+                  <TableCell>
+                    <IconButton
+                      component={Link}
+                      to={`/reparaciones/editar/${t.reparacion_ids[0]}`}
+                      color="primary"
+                      size="small"
+                      sx={{ mr: 1 }}
+                    >
+                      <FontAwesomeIcon icon={faPencilAlt} />
+                    </IconButton>
+                    {/* Eliminar solo el primer reparacion del grupo, o puedes adaptar para eliminar todos */}
+                    <IconButton
+                      onClick={() => setDeleteDialog({ open: true, grupo: t })}
+                      color="error"
+                      size="small"
+                    >
+                      <FontAwesomeIcon icon={faTrash} />
+                    </IconButton>
       <Dialog
         open={deleteDialog.open}
         onClose={() => setDeleteDialog({ open: false, grupo: null })}
@@ -253,19 +261,20 @@ export default function ReparacionList() {
           </Button>
         </DialogActions>
       </Dialog>
-                </TableCell>
-              </TableRow>
-            ))}
-            {filteredReparaciones.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
-                  No hay reparaciones registrados.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </Paper>
-    </Box>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {filteredReparaciones.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
+                    No hay reparaciones registrados.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </Paper>
+      </Box>
+    </LoadingOverlay>
   );
 }

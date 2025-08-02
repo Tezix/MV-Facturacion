@@ -14,8 +14,8 @@ const LocalizacionReparacionForm = () => {
     direccion: '',
     numero: '',
     localidad: '',
-    ascensor: false,
     escalera: '',
+    ascensor: false,
   });
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -40,8 +40,8 @@ const LocalizacionReparacionForm = () => {
           direccion: res.data.direccion || '',
           numero: res.data.numero || '',
           localidad: res.data.localidad || '',
-          ascensor: res.data.ascensor ?? false,
           escalera: res.data.escalera || '',
+          ascensor: res.data.ascensor ?? false,
         });
       });
     } else {
@@ -169,19 +169,18 @@ const LocalizacionReparacionForm = () => {
         fullWidth
       />
 
-
       <TextField
-        label="Ascensor"
-        name="ascensor"
-        value={form.ascensor || ''}
+        label="Escalera"
+        name="escalera"
+        value={form.escalera || ''}
         onChange={handleChange}
         fullWidth
       />
 
       <TextField
-        label="Escalera"
-        name="escalera"
-        value={form.escalera || ''}
+        label="Ascensor"
+        name="ascensor"
+        value={form.ascensor || ''}
         onChange={handleChange}
         fullWidth
       />

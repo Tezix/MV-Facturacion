@@ -11,7 +11,6 @@ import {
   TableBody,
   Paper,
   Box,
-  CircularProgress,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -21,6 +20,7 @@ import {
 import IconButton from '@mui/material/IconButton';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash, faPencilAlt } from '@fortawesome/free-solid-svg-icons';
+import LoadingOverlay from '../../components/LoadingOverlay';
 
 
 export default function EstadosList() {
@@ -56,119 +56,113 @@ export default function EstadosList() {
     return true;
   });
 
-  if (loading) {
-    return (
-      <Box p={4} display="flex" flexDirection="column" alignItems="center">
-        <CircularProgress size={24} sx={{ mt: 2 }} />
-      </Box>
-    );
-  }
-
   return (
-    <Box p={3}>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h4" component="h1">
-          Estados
-        </Typography>
-        <Button
-          variant="contained"
-          color="success"
-          component={Link}
-          to="/estados/crear"
-        >
-          Nuevo Estado
-        </Button>
-      </Box>
-
-      <Paper elevation={3}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell><strong>Nombre</strong></TableCell>
-              <TableCell><strong>Descripción</strong></TableCell>
-              <TableCell><strong>Acciones</strong></TableCell>
-            </TableRow>
-            {/* Fila de filtros */}
-            <TableRow>
-              <TableCell>
-                <input
-                  type="text"
-                  placeholder="Filtrar..."
-                  value={filters.nombre}
-                  onChange={e => setFilters(f => ({ ...f, nombre: e.target.value }))}
-                  style={{ width: '100%' }}
-                />
-              </TableCell>
-              <TableCell>
-                <input
-                  type="text"
-                  placeholder="Filtrar..."
-                  value={filters.descripcion}
-                  onChange={e => setFilters(f => ({ ...f, descripcion: e.target.value }))}
-                  style={{ width: '100%' }}
-                />
-              </TableCell>
-              <TableCell />
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {filteredEstados.map((estado) => (
-              <TableRow key={estado.id}>
-                <TableCell>{estado.nombre}</TableCell>
-                <TableCell>{estado.descripcion}</TableCell>
-                <TableCell>
-                  <IconButton
-                    component={Link}
-                    to={`/estados/editar/${estado.id}`}
-                    color="primary"
-                    size="small"
-                    sx={{ mr: 1 }}
-                  >
-                    <FontAwesomeIcon icon={faPencilAlt} />
-                  </IconButton>
-                  <IconButton
-                    onClick={() => setDeleteDialog({ open: true, estadoId: estado.id })}
-                    color="error"
-                    size="small"
-                  >
-                    <FontAwesomeIcon icon={faTrash} />
-                  </IconButton>
-      <Dialog
-        open={deleteDialog.open}
-        onClose={() => setDeleteDialog({ open: false, estadoId: null })}
-      >
-        <DialogTitle>Confirmar eliminación</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            ¿Estás seguro de que quieres eliminar este estado? Esta acción no se puede deshacer.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteDialog({ open: false, estadoId: null })} color="inherit">
-            Cancelar
-          </Button>
+    <LoadingOverlay loading={loading}>
+      <Box p={3}>
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+          <Typography variant="h4" component="h1">
+            Estados
+          </Typography>
           <Button
-            onClick={() => handleDelete(deleteDialog.estadoId)}
-            color="error"
             variant="contained"
+            color="success"
+            component={Link}
+            to="/estados/crear"
           >
-            Eliminar
+            Nuevo Estado
           </Button>
-        </DialogActions>
-      </Dialog>
-                </TableCell>
-              </TableRow>
-            ))}
-            {estados.length === 0 && (
+        </Box>
+
+        <Paper elevation={3}>
+          <Table>
+            <TableHead>
               <TableRow>
-                <TableCell colSpan={4} align="center" sx={{ py: 4 }}>
-                  No hay estados registrados.
-                </TableCell>
+                <TableCell><strong>Nombre</strong></TableCell>
+                <TableCell><strong>Descripción</strong></TableCell>
+                <TableCell><strong>Acciones</strong></TableCell>
               </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </Paper>
-    </Box>
+              {/* Fila de filtros */}
+              <TableRow>
+                <TableCell>
+                  <input
+                    type="text"
+                    placeholder="Filtrar..."
+                    value={filters.nombre}
+                    onChange={e => setFilters(f => ({ ...f, nombre: e.target.value }))}
+                    style={{ width: '100%' }}
+                  />
+                </TableCell>
+                <TableCell>
+                  <input
+                    type="text"
+                    placeholder="Filtrar..."
+                    value={filters.descripcion}
+                    onChange={e => setFilters(f => ({ ...f, descripcion: e.target.value }))}
+                    style={{ width: '100%' }}
+                  />
+                </TableCell>
+                <TableCell />
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {filteredEstados.map((estado) => (
+                <TableRow key={estado.id}>
+                  <TableCell>{estado.nombre}</TableCell>
+                  <TableCell>{estado.descripcion}</TableCell>
+                  <TableCell>
+                    <IconButton
+                      component={Link}
+                      to={`/estados/editar/${estado.id}`}
+                      color="primary"
+                      size="small"
+                      sx={{ mr: 1 }}
+                    >
+                      <FontAwesomeIcon icon={faPencilAlt} />
+                    </IconButton>
+                    <IconButton
+                      onClick={() => setDeleteDialog({ open: true, estadoId: estado.id })}
+                      color="error"
+                      size="small"
+                    >
+                      <FontAwesomeIcon icon={faTrash} />
+                    </IconButton>
+                    <Dialog
+                      open={deleteDialog.open}
+                      onClose={() => setDeleteDialog({ open: false, estadoId: null })}
+                    >
+                      <DialogTitle>Confirmar eliminación</DialogTitle>
+                      <DialogContent>
+                        <DialogContentText>
+                          ¿Estás seguro de que quieres eliminar este estado? Esta acción no se puede deshacer.
+                        </DialogContentText>
+                      </DialogContent>
+                      <DialogActions>
+                        <Button onClick={() => setDeleteDialog({ open: false, estadoId: null })} color="inherit">
+                          Cancelar
+                        </Button>
+                        <Button
+                          onClick={() => handleDelete(deleteDialog.estadoId)}
+                          color="error"
+                          variant="contained"
+                        >
+                          Eliminar
+                        </Button>
+                      </DialogActions>
+                    </Dialog>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {estados.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={4} align="center" sx={{ py: 4 }}>
+                    No hay estados registrados.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </Paper>
+      </Box>
+    </LoadingOverlay>
   );
 }

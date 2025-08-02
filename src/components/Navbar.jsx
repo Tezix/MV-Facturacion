@@ -4,6 +4,7 @@ import { useState } from 'react';
 import './Navbar.css';
 
 const mainLinks = [
+  { label: 'Dashboard', path: '/' },
   { label: 'Reparaciones', path: '/reparaciones' },
   { label: 'Facturas', path: '/facturas' },
   { label: 'Proformas', path: '/proformas' },
@@ -32,13 +33,15 @@ export default function Navbar() {
     <AppBar position="fixed" elevation={3} sx={{ backgroundColor: "black", width: "100%", top: 0, left: 0, borderRadius: 0 }}>
       <Toolbar sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Box
+          <Link to="/">
+            <Box
             component="img"
             src="/favicon.webp"
             alt="Logo"
             className="logo-img"
             sx={{ backgroundColor: 'white', borderRadius: '50%', padding: 1 }}
-          />
+            />
+          </Link>
           {mainLinks.map(({ label, path }) => (
             <Button
               key={path}

@@ -30,23 +30,36 @@ const ReparacionForm = () => {
     factura: '',
     proforma: '',
     localizacion: '',
+    comentarios: '',
   });
   const [localizaciones, setLocalizaciones] = useState([]);
   const [trabajos, setTrabajos] = useState([]);
   const [trabajosSeleccionadas, setTrabajosSeleccionadas] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false); // loading de submit
+  const [fetching, setFetching] = useState(true); // loading de datos iniciales
 
   const navigate = useNavigate();
   const { id } = useParams();
   const location = useLocation();
 
   useEffect(() => {
-    if (id) {
-      // Buscar el grupo correspondiente en el endpoint agrupado
-      API.get('reparaciones/agrupados/').then((res) => {
-        const grupos = res.data;
-        // Buscar el grupo que contenga este id
-        const grupo = grupos.find(g => g.reparacion_ids.includes(Number(id)));
+    let isMounted = true;
+    setFetching(true);
+    const fetchAll = async () => {
+      try {
+        let grupo = null;
+        if (id) {
+          // Buscar el grupo correspondiente en el endpoint agrupado
+          const grupos = await API.get('reparaciones/agrupados/').then(res => res.data);
+          grupo = grupos.find(g => g.reparacion_ids.includes(Number(id)));
+        }
+        const [localizacionesRes, trabajosRes] = await Promise.all([
+          API.get('localizaciones_reparaciones/'),
+          API.get('trabajos/')
+        ]);
+        if (!isMounted) return;
+        setLocalizaciones(localizacionesRes.data);
+        setTrabajos(trabajosRes.data);
         if (grupo) {
           setForm((prev) => ({
             ...prev,
@@ -56,17 +69,20 @@ const ReparacionForm = () => {
             factura: grupo.factura,
             proforma: grupo.proforma,
             localizacion: grupo.localizacion.id,
-            localizacionInput: `${grupo.localizacion.direccion}, ${grupo.localizacion.numero} ${grupo.localizacion.ascensor || ''}, ${grupo.localizacion.localidad}`,
+            localizacionInput: `${grupo.localizacion.direccion}, ${grupo.localizacion.numero} ${grupo.localizacion.ascensor || ''} ${grupo.localizacion.escalera || ''}, ${grupo.localizacion.localidad}`,
+            comentarios: grupo.comentarios || '',
           }));
           setTrabajosSeleccionadas(grupo.trabajos);
+        } else {
+          // Si es creación, setear fecha a hoy (por si el usuario vuelve a la página)
+          setForm((prev) => ({ ...prev, fecha: getTodayStr() }));
         }
-      });
-    } else {
-      // Si es creación, setear fecha a hoy (por si el usuario vuelve a la página)
-      setForm((prev) => ({ ...prev, fecha: getTodayStr() }));
-    }
-    API.get('localizaciones_reparaciones/').then((res) => setLocalizaciones(res.data));
-    API.get('trabajos/').then((res) => setTrabajos(res.data));
+      } finally {
+        if (isMounted) setFetching(false);
+      }
+    };
+    fetchAll();
+    return () => { isMounted = false; };
   }, [id]);
 
   // Si volvemos de crear una localización, seleccionarla automáticamente
@@ -94,6 +110,8 @@ const ReparacionForm = () => {
         trabajos: trabajosSeleccionadas.map((t) => t.id),
       };
       delete payload.localizacion;
+      // Eliminar localizacionInput si existe
+      if (payload.localizacionInput) delete payload.localizacionInput;
       let nuevaReparacionId = null;
       if (id) {
         // Obtener el grupo de reparaciones a editar
@@ -134,10 +152,10 @@ const ReparacionForm = () => {
     }
   };
 
-  if (id && !form.fecha) {
+  if (fetching || (id && !form.fecha)) {
     return (
       <Box p={4} textAlign="center">
-        <CircularProgress sx={{ mt: 2 }} />
+        <CircularProgress size={24} sx={{ mt: 2 }} />
       </Box>
     );
   }
@@ -165,7 +183,7 @@ const ReparacionForm = () => {
             options={localizaciones}
             getOptionLabel={(option) =>
               option && typeof option === 'object'
-                ? `${option.direccion}, ${option.numero} ${option.ascensor || ''}, ${option.localidad}`
+                ? `${option.direccion}, ${option.numero}, Esc ${option.escalera || ''} Asc ${option.ascensor || ''}, ${option.localidad}`
                 : (typeof option === 'string' ? option : '')
             }
             value={
@@ -176,7 +194,7 @@ const ReparacionForm = () => {
                 ...prev,
                 localizacion: newValue ? newValue.id : '',
                 localizacionInput: newValue && typeof newValue === 'object'
-                  ? `${newValue.direccion}, ${newValue.numero} ${newValue.ascensor || ''}, ${newValue.localidad}`
+                  ? `${newValue.direccion}, ${newValue.numero}, Esc ${newValue.escalera || ''} Asc ${newValue.ascensor || ''}, ${newValue.localidad}`
                   : prev.localizacionInput
               }));
             }}
@@ -269,6 +287,17 @@ const ReparacionForm = () => {
         renderInput={(params) => (
           <TextField {...params} label="Trabajos" placeholder="Selecciona trabajos" fullWidth />
         )}
+      />
+
+      <TextField
+        name="comentarios"
+        label="Comentarios"
+        value={form.comentarios || ''}
+        onChange={handleChange}
+        fullWidth
+        multiline
+        minRows={2}
+        maxRows={6}
       />
 
       <Button type="submit" variant="contained" color="primary" disabled={loading} sx={{ position: 'relative' }}>
