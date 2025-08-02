@@ -173,14 +173,15 @@ const ProformasList = () => {
       const pdfUrl = proformaData.pdf_url;
       const clienteEmail = proformaData.cliente_email;
       const proformaNumero = proformaData.numero_proforma;
+      const subjectText = `Adjunto remito el enlace de descarga a la proforma #${proformaNumero}`;
       const message = `
         <div style="font-family: Arial, sans-serif; color: #333;">
-          <h2>Proforma #${proformaNumero}</h2>
+          <h2>${subjectText}</h2>
           <p><a href="${pdfUrl}">Descargar Proforma</a></p>
           <p>Gracias por su confianza.</p>
         </div>
       `;
-      const plantilla = { name: 'TMV', email: clienteEmail || '', factura: proformaNumero, message, pdf_url: pdfUrl };
+      const plantilla = { name: 'TMV Ascensores', email: clienteEmail || '', factura: proformaNumero, message, pdf_url: pdfUrl };
       await emailjs.send(import.meta.env.VITE_EMAILJS_SERVICE_ID, import.meta.env.VITE_EMAILJS_TEMPLATE_ID, plantilla);
       setSnackbar({ open: true, message: 'Email enviado correctamente', severity: 'success' });
       setEmailDialog({ open: false, proformaId: null });

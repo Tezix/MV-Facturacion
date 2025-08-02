@@ -136,7 +136,7 @@ export default function FacturasList() {
       `;
       // Plantilla para EmailJS
       const plantilla = {
-        name: 'TMV',
+        name: 'TMV Ascensores',
         email: clienteEmail || '',
         factura: facturaNumero,
         message: message,
