@@ -17,17 +17,24 @@ import {
   DialogContent,
   DialogContentText,
   DialogActions,
+  Snackbar,
+  Alert,
 } from '@mui/material';
 import IconButton from '@mui/material/IconButton';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTrash, faPencilAlt, faFilePdf, faInfoCircle } from '@fortawesome/free-solid-svg-icons';
+import { faTrash, faPencilAlt, faFilePdf, faInfoCircle, faEnvelope } from '@fortawesome/free-solid-svg-icons';
 import { saveAs } from 'file-saver';
 import LoadingOverlay from '../../components/LoadingOverlay';
+import emailjs from '@emailjs/browser';
 
 
 export default function FacturasList() {
+  // Inicializar EmailJS usando variable de entorno
+  emailjs.init(import.meta.env.VITE_EMAILJS_USER_ID);
+
   const [facturas, setFacturas] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [estados, setEstados] = useState([]);
   const [filters, setFilters] = useState({
     numero: '',
     cliente: '',
@@ -38,11 +45,17 @@ export default function FacturasList() {
   });
   // Estado para el popup de detalle de reparación
   const [detalleReparacion, setDetalleReparacion] = useState({ open: false, reparacion: null });
+  const [emailDialog, setEmailDialog] = useState({ open: false, facturaId: null });
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
   useEffect(() => {
     API.get('facturas/con-reparaciones/')
       .then((res) => setFacturas(res.data))
       .finally(() => setLoading(false));
+  }, []);
+  // Cargar estados para asignar estado 'Enviada'
+  useEffect(() => {
+    API.get('estados/').then((res) => setEstados(res.data));
   }, []);
 
   const [deleteDialog, setDeleteDialog] = useState({ open: false, facturaId: null });
@@ -65,6 +78,51 @@ export default function FacturasList() {
       saveAs(blob, `factura_${id}.pdf`);
     } catch {
       alert('Error al exportar PDF');
+    }
+  };
+
+  // Envío de factura por email usando EmailJS
+  const handleSendEmail = async (id) => {
+    try {
+      // Obtener datos completos de la factura
+      const resFactura = await API.get(`facturas/${id}/`);
+      const facturaData = resFactura.data;
+      const pdfUrl = facturaData.pdf_url;
+      const clienteEmail = facturaData.cliente_email;
+      const facturaNumero = facturaData.numero_factura;
+      // Generar HTML de mensaje para enviar
+      const message = `
+        <div style="font-family: Arial, sans-serif; color: #333;">
+          <h2>Adjunto remito el enlace de descarga a la factura #${facturaNumero}</h2>
+          <p><a href="${pdfUrl}">Descargar factura</a></p>
+          <p>Gracias por su confianza.</p>
+        </div>
+      `;
+      // Plantilla para EmailJS
+      const plantilla = {
+        name: 'TMV',
+        email: clienteEmail || '',
+        factura: facturaNumero,
+        message: message,
+        pdf_url: pdfUrl
+      };
+      // Enviar email
+      await emailjs.send(
+        import.meta.env.VITE_EMAILJS_SERVICE_ID,
+        import.meta.env.VITE_EMAILJS_TEMPLATE_ID,
+        plantilla
+      );
+      setSnackbar({ open: true, message: 'Email enviado correctamente', severity: 'success' });
+      // Actualizar estado de factura a 'Enviada'
+      const estadoEnviada = estados.find(e => e.nombre === 'Enviada');
+      if (estadoEnviada) {
+        await API.patch(`facturas/${id}/`, { estado: estadoEnviada.id });
+        setFacturas(prev => prev.map(f => f.id === id ? { ...f, estado: estadoEnviada.id, estado_nombre: estadoEnviada.nombre } : f));
+      }
+    } catch {
+      setSnackbar({ open: true, message: 'Error al enviar email', severity: 'error' });
+    } finally {
+      setEmailDialog({ open: false, facturaId: null });
     }
   };
 
@@ -262,6 +320,11 @@ export default function FacturasList() {
                     <IconButton onClick={() => handleExport(factura.id)} color="primary" size="small" sx={{ mr: 1 }}>
                       <FontAwesomeIcon icon={faFilePdf} />
                     </IconButton>
+                    {factura.estado_nombre !== 'Enviada' && (
+                      <IconButton onClick={() => setEmailDialog({ open: true, facturaId: factura.id })} color="secondary" size="small" sx={{ mr: 1 }}>
+                        <FontAwesomeIcon icon={faEnvelope} />
+                      </IconButton>
+                    )}
                     <IconButton
                       component={Link}
                       to={`/facturas/editar/${factura.id}`}
@@ -314,6 +377,39 @@ export default function FacturasList() {
             </TableBody>
           </Table>
         </Paper>
+
+        {/* Dialog de confirmación de envío por email */}
+        <Dialog
+          open={emailDialog.open}
+          onClose={() => setEmailDialog({ open: false, facturaId: null })}
+        >
+          <DialogTitle>Confirmar envío por email</DialogTitle>
+          <DialogContent>
+            <DialogContentText>
+              ¿Estás seguro de que quieres enviar esta factura por email?
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setEmailDialog({ open: false, facturaId: null })} color="inherit">
+              Cancelar
+            </Button>
+            <Button onClick={() => handleSendEmail(emailDialog.facturaId)} color="primary" variant="contained">
+              Enviar
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Snackbar for success/error messages */}
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={6000}
+          onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        >
+          <Alert onClose={() => setSnackbar(prev => ({ ...prev, open: false }))} severity={snackbar.severity} sx={{ width: '100%' }}>
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
       </Box>
     </LoadingOverlay>
   );

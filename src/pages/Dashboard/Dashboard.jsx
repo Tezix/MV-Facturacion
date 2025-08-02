@@ -161,6 +161,9 @@ export default function Dashboard() {
     });
     return row;
   });
+  // determine number of columns for quarter cards: up to 3 in one row, otherwise 2 per row
+  const visibleQuartersCount = visibleQuarters.length;
+  const quarterCols = visibleQuartersCount <= 3 ? visibleQuartersCount : 2;
 
   return (
     <>
@@ -223,7 +226,16 @@ export default function Dashboard() {
           </Paper>
 
           {/* Quarter details cards */}
-          <div className="dashboard-quarter-container">
+          {/* Quarter details cards with dynamic grid layout */}
+          <div
+            className="dashboard-quarter-container"
+            style={{
+              display: 'grid',
+              gridTemplateColumns: `repeat(${quarterCols}, 1fr)`,
+              gap: '16px',
+              width: '100%',
+            }}
+          >
             {visibleQuarters.map((q, idx) => (
               <Paper key={idx} elevation={2} className="dashboard-quarter-card">
                 <Typography variant="h6" align="center">{q.label}</Typography>
