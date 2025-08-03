@@ -35,6 +35,7 @@ import emailjs from '@emailjs/browser';
 
 
 export default function FacturasList() {
+  // ...existing code...
   // Inicializar EmailJS usando variable de entorno
   emailjs.init(import.meta.env.VITE_EMAILJS_USER_ID);
 
@@ -181,6 +182,8 @@ export default function FacturasList() {
     const numB = extractFacturaNum(b.numero_factura);
     return numB - numA;
   });
+  // Determinar la última factura (por número más alto)
+  const lastFacturaId = sortedFacturas.length > 0 ? sortedFacturas[0].id : null;
   // Filtrado local
   const filteredFacturas = sortedFacturas.filter(factura => {
     if (filters.numero && !(String(factura.numero_factura || '').toLowerCase().includes(filters.numero.toLowerCase()))) return false;
@@ -379,14 +382,18 @@ export default function FacturasList() {
                           <ListItemText>Enviar por email</ListItemText>
                         </MenuItem>
                       )}
-                      <MenuItem component={Link} to={`/facturas/editar/${factura.id}`} onClick={handleMenuClose}>
-                        <ListItemIcon><FontAwesomeIcon icon={faPencilAlt} /></ListItemIcon>
-                        <ListItemText>Editar</ListItemText>
-                      </MenuItem>
-                      <MenuItem onClick={() => { setDeleteDialog({ open: true, facturaId: factura.id }); handleMenuClose(); }}>
-                        <ListItemIcon><FontAwesomeIcon icon={faTrash} /></ListItemIcon>
-                        <ListItemText>Eliminar</ListItemText>
-                      </MenuItem>
+                      {factura.estado_nombre !== 'Pagada' && (
+                        <MenuItem component={Link} to={`/facturas/editar/${factura.id}`} onClick={handleMenuClose}>
+                          <ListItemIcon><FontAwesomeIcon icon={faPencilAlt} /></ListItemIcon>
+                          <ListItemText>Editar</ListItemText>
+                        </MenuItem>
+                      )}
+                      {factura.id === lastFacturaId && (
+                        <MenuItem onClick={() => { setDeleteDialog({ open: true, facturaId: factura.id }); handleMenuClose(); }}>
+                          <ListItemIcon><FontAwesomeIcon icon={faTrash} /></ListItemIcon>
+                          <ListItemText>Eliminar</ListItemText>
+                        </MenuItem>
+                      )}
                     </Menu>
                   </TableCell>
                   <TableCell>{factura.numero_factura}</TableCell>

@@ -213,6 +213,8 @@ const ProformasList = () => {
     const numB = extractProformaNum(b.numero_proforma);
     return numB - numA;
   });
+  // Determinar la última proforma (por número más alto)
+  const lastProformaId = sortedProformas.length > 0 ? sortedProformas[0].id : null;
   // Filtrado local
   const filteredProformas = sortedProformas.filter(proforma => {
     if (filters.numero && !(String(proforma.numero_proforma || '').toLowerCase().includes(filters.numero.toLowerCase()))) return false;
@@ -424,10 +426,12 @@ const ProformasList = () => {
                           <ListItemIcon><FontAwesomeIcon icon={faPencilAlt} /></ListItemIcon>
                           <ListItemText>Editar</ListItemText>
                         </MenuItem>
-                        <MenuItem onClick={() => { setDeleteDialog({ open: true, proformaId: proforma.id }); handleMenuClose(); }}>
-                          <ListItemIcon><FontAwesomeIcon icon={faTrash} /></ListItemIcon>
-                          <ListItemText>Eliminar</ListItemText>
-                        </MenuItem>
+                        {proforma.id === lastProformaId && (
+                          <MenuItem onClick={() => { setDeleteDialog({ open: true, proformaId: proforma.id }); handleMenuClose(); }}>
+                            <ListItemIcon><FontAwesomeIcon icon={faTrash} /></ListItemIcon>
+                            <ListItemText>Eliminar</ListItemText>
+                          </MenuItem>
+                        )}
                         {!proforma.factura && (
                           <MenuItem onClick={() => { setConfirmDialog({ open: true, proformaId: proforma.id }); handleMenuClose(); }}>
                             <ListItemIcon><FontAwesomeIcon icon={faFileInvoiceDollar} /></ListItemIcon>
