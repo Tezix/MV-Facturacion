@@ -1,3 +1,25 @@
+// Helpers para formato dd/MM/yyyy
+function parseFecha(fechaStr) {
+  if (!fechaStr) return null;
+  if (fechaStr instanceof Date) return fechaStr;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(fechaStr)) {
+    const [yyyy, mm, dd] = fechaStr.split('-');
+    return new Date(Number(yyyy), Number(mm) - 1, Number(dd));
+  }
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(fechaStr)) {
+    const [dd, mm, yyyy] = fechaStr.split('/');
+    return new Date(Number(yyyy), Number(mm) - 1, Number(dd));
+  }
+  return new Date(fechaStr);
+}
+
+function formatFecha(date) {
+  if (!date) return '';
+  const dd = String(date.getDate()).padStart(2, '0');
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const yyyy = date.getFullYear();
+  return `${dd}/${mm}/${yyyy}`;
+}
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { API } from '../../api/axios';
@@ -11,12 +33,14 @@ import {
   Button,
   Typography,
   CircularProgress,
-  Tooltip
-        } from '@mui/material';
-        import {
-          Autocomplete,
-          Chip,
-        } from '@mui/material';
+  Tooltip,
+  Autocomplete,
+  Chip,
+} from '@mui/material';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { es } from 'date-fns/locale';
 
 const FacturaForm = () => {
   const [form, setForm] = useState({
@@ -277,16 +301,28 @@ const FacturaForm = () => {
 
 
 
-      <TextField
-        name="fecha"
-        label="Fecha"
-        type="date"
-        value={form.fecha}
-        onChange={handleChange}
-        fullWidth
-        required
-        InputLabelProps={{ shrink: true }}
-      />
+      <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={es}>
+        <DatePicker
+          label="Fecha"
+          value={form.fecha ? parseFecha(form.fecha) : null}
+          onChange={newValue => {
+            setForm(f => ({ ...f, fecha: newValue ? formatFecha(newValue) : '' }));
+          }}
+          format="dd/MM/yyyy"
+          slotProps={{
+            textField: {
+              fullWidth: true,
+              required: true,
+              margin: 'normal',
+              InputLabelProps: { shrink: true },
+              inputProps: {
+                style: { cursor: 'pointer' },
+                readOnly: true,
+              },
+            },
+          }}
+        />
+      </LocalizationProvider>
 
 
 

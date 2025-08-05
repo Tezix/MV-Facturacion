@@ -24,16 +24,18 @@ import {
   Tooltip,
   Snackbar,
   Alert,
+  CircularProgress
 } from '@mui/material';
 import IconButton from '@mui/material/IconButton';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTrash, faPencilAlt, faEllipsisV } from '@fortawesome/free-solid-svg-icons';
+import { faTrash, faPencilAlt, faEllipsisV, faImages } from '@fortawesome/free-solid-svg-icons';
 import LoadingOverlay from '../../components/LoadingOverlay';
 
 import { useLocation, useNavigate } from 'react-router-dom';
 
 export default function ReparacionList() {
   const [reparaciones, setReparaciones] = useState([]);
+  const [fotosDialog, setFotosDialog] = useState({ open: false, fotos: [] });
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({
     fecha: '',
@@ -138,9 +140,33 @@ export default function ReparacionList() {
     return true;
   });
 
+  const handleOpenFotos = (fotos) => {
+    setFotosDialog({ open: true, fotos });
+  };
+  const handleCloseFotos = () => {
+    setFotosDialog({ open: false, fotos: [] });
+  };
+
   return (
     <LoadingOverlay loading={loading}>
       <Box p={3}>
+        {/* Dialog para mostrar fotos */}
+        <Dialog open={fotosDialog.open} onClose={handleCloseFotos} maxWidth="sm" fullWidth>
+          <DialogTitle>Fotos adjuntas</DialogTitle>
+          <DialogContent dividers>
+            {fotosDialog.fotos && fotosDialog.fotos.length > 0 ? (
+              fotosDialog.fotos.map((url, idx) => (
+                <Box key={idx} component="img" src={url} alt={`Foto ${idx+1}`} sx={{ width: '100%', mb: 2 }} />
+              ))
+            ) : (
+              <Typography>No hay fotos adjuntas.</Typography>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseFotos}>Cerrar</Button>
+          </DialogActions>
+        </Dialog>
+
         <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
           <Typography variant="h4">Reparaciones</Typography>
           <Button
@@ -287,11 +313,12 @@ export default function ReparacionList() {
                     }}
                   />
                 </TableCell>
+                <TableCell>Fotos</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {filteredReparaciones.map((t, idx) => (
-                <TableRow key={idx}>
+              {filteredReparaciones.map((t) => (
+                <TableRow key={t.reparacion_ids[0]}>
                   <TableCell>
                     <Tooltip title="Acciones">
                       <IconButton size="small" onClick={e => handleMenuOpen(e, t)}>
@@ -348,6 +375,11 @@ export default function ReparacionList() {
                     )}
                   </TableCell>
                   <TableCell>{t.comentarios || '—'}</TableCell>
+                  <TableCell>
+                    <IconButton onClick={() => handleOpenFotos(t.fotos)} disabled={!t.fotos || t.fotos.length === 0}>
+                      <FontAwesomeIcon icon={faImages} />
+                    </IconButton>
+                  </TableCell>
                 </TableRow>
               ))}
               {filteredReparaciones.length === 0 && (

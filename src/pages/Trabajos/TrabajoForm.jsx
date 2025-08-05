@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { API } from "../../api/axios";
 import {
   Box,
@@ -13,7 +13,9 @@ const TrabajoForm = () => {
   const [form, setForm] = useState({
     nombre_reparacion: "",
     precio: "",
+    especial: false,
   });
+  const location = useLocation();
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const handleDelete = async () => {
@@ -30,10 +32,13 @@ const TrabajoForm = () => {
   const { id } = useParams();
 
   useEffect(() => {
+    if (location.state?.fromReparacion) {
+      setForm((prev) => ({ ...prev, especial: true }));
+    }
     if (id) {
       API.get(`trabajos/${id}/`).then((res) => setForm(res.data));
     }
-  }, [id]);
+  }, [id, location.state?.fromReparacion]);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -43,17 +48,30 @@ const TrabajoForm = () => {
     e.preventDefault();
     setSaving(true);
     try {
-      let isCreacion = false;
+      let savedTrabajo = null;
       if (id) {
-        await API.put(`trabajos/${id}/`, form);
+        const res = await API.put(`trabajos/${id}/`, form);
+        savedTrabajo = res.data;
       } else {
-        await API.post("trabajos/", form);
-        isCreacion = true;
+        const res = await API.post("trabajos/", form);
+        savedTrabajo = res.data;
       }
-      if (isCreacion) {
-        navigate('/trabajos', { state: { snackbar: { open: true, message: 'Trabajo creado correctamente', severity: 'success' } } });
+      if (location.state?.fromReparacion) {
+        const reparId = location.state.reparacionId;
+        const path = reparId ? `/reparaciones/editar/${reparId}` : '/reparaciones/crear';
+        navigate(path, {
+          state: {
+            nuevaTrabajo: savedTrabajo,
+            reparacionFormState: location.state.reparacionFormState,
+          },
+        });
       } else {
-        navigate('/trabajos', { state: { snackbar: { open: true, message: 'Trabajo actualizado correctamente', severity: 'success' } } });
+        const snackbar = {
+          open: true,
+          message: id ? 'Trabajo actualizado correctamente' : 'Trabajo creado correctamente',
+          severity: 'success',
+        };
+        navigate('/trabajos', { state: { snackbar } });
       }
     } finally {
       setSaving(false);

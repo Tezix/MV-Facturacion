@@ -1,3 +1,5 @@
+import GastosList from './pages/Gastos/GastosList';
+import GastoForm from './pages/Gastos/GastoForm';
 import { BrowserRouter as BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import LoginPage from './auth/LoginPage';
@@ -78,6 +80,9 @@ const [auth, setAuth] = useState(!!localStorage.getItem('token'));
         <Route path="/reparaciones" element={<ReparacionesList />} />
         <Route path="/reparaciones/crear" element={<ReparacionForm />} />
         <Route path="/reparaciones/editar/:id" element={<ReparacionForm />} />
+        <Route path="/gastos/registrar" element={<GastosList />} />
+        <Route path="/gastos/registrar/nuevo" element={<GastoForm />} />
+        <Route path="/gastos/editar/:id" element={<GastoForm />} />
       </Routes>
     </BrowserRouter>
       

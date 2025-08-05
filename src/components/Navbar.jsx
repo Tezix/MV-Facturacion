@@ -1,13 +1,17 @@
-import { AppBar, Toolbar, Button, Box, Menu, MenuItem, Typography } from '@mui/material';
+import { AppBar, Toolbar, Button, Box, Menu, MenuItem } from '@mui/material';
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
 import './Navbar.css';
 
-const mainLinks = [
-  { label: 'Dashboard', path: '/' },
+
+const emitidasLinks = [
   { label: 'Reparaciones', path: '/reparaciones' },
   { label: 'Facturas', path: '/facturas' },
   { label: 'Proformas', path: '/proformas' },
+];
+
+const gastosLinks = [
+  { label: 'Listado', path: '/gastos/registrar' },
 ];
 
 const dropdownLinks = [
@@ -29,25 +33,44 @@ export default function Navbar() {
     setAnchorEl(null);
   };
 
+
   return (
     <AppBar position="fixed" elevation={3} sx={{ backgroundColor: "black", width: "100%", top: 0, left: 0, borderRadius: 0 }}>
       <Toolbar sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <Link to="/">
             <Box
-            component="img"
-            src="/favicon.webp"
-            alt="Logo"
-            className="logo-img"
-            sx={{ backgroundColor: 'white', borderRadius: '50%', padding: 1 }}
+              component="img"
+              src="/favicon.webp"
+              alt="Logo"
+              className="logo-img"
+              sx={{ backgroundColor: 'white', borderRadius: '50%', padding: 1 }}
             />
           </Link>
-          {mainLinks.map(({ label, path }) => (
+          {emitidasLinks.map(({ label, path }) => (
             <Button
               key={path}
+              color="inherit"
               component={Link}
               to={path}
+              sx={{
+                textTransform: 'none',
+                fontWeight: 'bold',
+                '&:hover': {
+                  backgroundColor: 'rgba(255,255,255,0.1)',
+                  color: 'rgba(137, 188, 234, 1)',
+                },
+              }}
+            >
+              {label}
+            </Button>
+          ))}
+          {gastosLinks.map(({ label, path }) => (
+            <Button
+              key={path}
               color="inherit"
+              component={Link}
+              to={path}
               sx={{
                 textTransform: 'none',
                 fontWeight: 'bold',
