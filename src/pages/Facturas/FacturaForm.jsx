@@ -36,6 +36,8 @@ import {
   Tooltip,
   Autocomplete,
   Chip,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -43,6 +45,9 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { es } from 'date-fns/locale';
 
 const FacturaForm = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  
   const [form, setForm] = useState({
     cliente: '',
     fecha: '',
@@ -233,8 +238,8 @@ const FacturaForm = () => {
 
   if (loading) {
     return (
-      <Box p={4} display="flex" flexDirection="column" alignItems="center">
-        <CircularProgress size={24} sx={{ mt: 2 }} />
+      <Box p={isMobile ? 2 : 4} display="flex" flexDirection="column" alignItems="center">
+        <CircularProgress size={isMobile ? 20 : 24} sx={{ mt: 2 }} />
       </Box>
     );
   }
@@ -244,15 +249,15 @@ const FacturaForm = () => {
       component="form"
       onSubmit={handleSubmit}
       sx={{
-        p: 3,
-        width: '70vw',
+        p: isMobile ? 2 : 3,
+        width: isMobile ? '95vw' : '70vw',
         mx: 'auto',
         display: 'flex',
         flexDirection: 'column',
-        gap: 3,
+        gap: isMobile ? 2 : 3,
       }}
     >
-      <Typography variant="h5" fontWeight="bold">
+      <Typography variant={isMobile ? "h6" : "h5"} fontWeight="bold">
         {id ? 'Editar' : 'Crear'} Factura
       </Typography>
 
@@ -271,13 +276,14 @@ const FacturaForm = () => {
             label="Cliente"
             name="cliente"
             required
+            size={isMobile ? "small" : "medium"}
           />
         )}
         isOptionEqualToValue={(option, value) => option.id === value.id}
         noOptionsText="No hay coincidencias"
       />
 
-      <FormControl fullWidth required>
+      <FormControl fullWidth required size={isMobile ? "small" : "medium"}>
         <InputLabel id="estado-label">Estado</InputLabel>
         <Select
           labelId="estado-label"
@@ -314,6 +320,7 @@ const FacturaForm = () => {
               fullWidth: true,
               required: true,
               margin: 'normal',
+              size: isMobile ? "small" : "medium",
               InputLabelProps: { shrink: true },
               inputProps: {
                 style: { cursor: 'pointer' },
@@ -328,8 +335,10 @@ const FacturaForm = () => {
 
 
 
-      <Box display="flex" alignItems="center" gap={1}>
-        <Box flex={1}>
+      <Box display="flex" alignItems="center" gap={1} sx={{ 
+        flexDirection: isMobile ? 'column' : 'row'
+      }}>
+        <Box flex={1} sx={{ width: '100%' }}>
           <Autocomplete
             multiple
             options={reparaciones}
@@ -352,12 +361,23 @@ const FacturaForm = () => {
                 const direccion = loc.direccion || '';
                 const numero = loc.numero !== undefined && loc.numero !== null ? loc.numero : '';
                 return (
-                  <Chip label={`${fecha} - ${numReparacion} - ${direccion} ${numero}`} {...getTagProps({ index })} key={option.id} />
+                  <Chip 
+                    label={`${fecha} - ${numReparacion} - ${direccion} ${numero}`} 
+                    {...getTagProps({ index })} 
+                    key={option.id} 
+                    size={isMobile ? "small" : "medium"}
+                  />
                 );
               })
             }
             renderInput={(params) => (
-              <TextField {...params} label="Reparaciones a asociar" placeholder="Selecciona reparaciones" fullWidth />
+              <TextField 
+                {...params} 
+                label="Reparaciones a asociar" 
+                placeholder="Selecciona reparaciones" 
+                fullWidth 
+                size={isMobile ? "small" : "medium"}
+              />
             )}
           />
         </Box>
@@ -374,6 +394,11 @@ const FacturaForm = () => {
             <Button
               variant="outlined"
               color="primary"
+              size={isMobile ? "small" : "medium"}
+              sx={{ 
+                minWidth: isMobile ? '100%' : 'auto',
+                mt: isMobile ? 1 : 0
+              }}
               onClick={handleNuevaReparacion}
               disabled={saving || !requiredFieldsFilled}
             >
@@ -398,12 +423,17 @@ const FacturaForm = () => {
             variant="contained"
             color="primary"
             disabled={saving || !requiredFieldsFilled}
-            sx={{ position: 'relative' }}
+            size={isMobile ? "medium" : "large"}
+            sx={{ 
+              position: 'relative',
+              minHeight: isMobile ? 40 : 48,
+              fontSize: isMobile ? '0.9rem' : '1rem'
+            }}
             fullWidth
           >
             {saving ? (
               <>
-                <CircularProgress size={24} color="inherit" sx={{ position: 'absolute', left: '50%', top: '50%', marginTop: '-12px', marginLeft: '-12px' }} />
+                <CircularProgress size={isMobile ? 20 : 24} color="inherit" sx={{ position: 'absolute', left: '50%', top: '50%', marginTop: isMobile ? '-10px' : '-12px', marginLeft: isMobile ? '-10px' : '-12px' }} />
                 <span style={{ opacity: 0 }}>Guardar</span>
               </>
             ) : (

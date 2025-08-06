@@ -25,17 +25,22 @@ import {
   MenuItem,
   ListItemIcon,
   ListItemText,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import StarIcon from '@mui/icons-material/Star';
 import IconButton from '@mui/material/IconButton';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTrash, faPencilAlt, faFilePdf, faEnvelope, faEllipsisV } from '@fortawesome/free-solid-svg-icons';
+import { faTrash, faPencilAlt, faFilePdf, faEnvelope, faEllipsisV, faFileText } from '@fortawesome/free-solid-svg-icons';
 import { saveAs } from 'file-saver';
 import LoadingOverlay from '../../components/LoadingOverlay';
 import emailjs from '@emailjs/browser';
 
 
 export default function FacturasList() {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  
   // ...existing code...
   // Inicializar EmailJS usando variable de entorno
   emailjs.init(import.meta.env.VITE_EMAILJS_USER_ID);
@@ -53,6 +58,8 @@ export default function FacturasList() {
   });
   // Estado para el popup de detalle de reparación
   const [detalleReparacion, setDetalleReparacion] = useState({ open: false, reparacion: null });
+  // Estado para el popup de estado
+  const [estadoDialog, setEstadoDialog] = useState({ open: false, estado: null });
   // Estado para el menú de acciones
   const [menuAnchorEl, setMenuAnchorEl] = useState(null);
   const [menuFacturaId, setMenuFacturaId] = useState(null);
@@ -259,28 +266,35 @@ export default function FacturasList() {
 
   return (
     <LoadingOverlay loading={loading}>
-      <Box p={3}>
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-          <Typography variant="h4" component="h1">
-            Facturas
-          </Typography>
+      <Box p={isMobile ? 1 : 3} sx={{ width: '100%', overflowX: 'hidden' }}>
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3} sx={{ 
+          flexDirection: isMobile ? 'column' : 'row',
+          gap: isMobile ? 1 : 0
+        }}>
+          <Typography variant={isMobile ? "h5" : "h4"} sx={{ mb: isMobile ? 1 : 0 }}>Facturas</Typography>
           <Button
             variant="contained"
             color="success"
             component={Link}
             to="/facturas/crear"
             startIcon={<span style={{fontSize: 20, fontWeight: 'bold', lineHeight: 1}}>+</span>}
+            size={isMobile ? "small" : "medium"}
           >
             Nueva
           </Button>
         </Box>
 
-        <Paper elevation={3}>
-          <Table>
+        <Paper elevation={3} sx={{ overflowX: 'auto' }}>
+          <Table sx={{ 
+            minWidth: isMobile ? 'auto' : 650,
+            '& .MuiTableCell-root': {
+              padding: isMobile ? '4px 2px' : '8px 4px'
+            }
+          }}>
             <TableHead>
               <TableRow>
-                <TableCell />
-                <TableCell>
+                <TableCell sx={{ minWidth: isMobile ? 35 : 45, padding: isMobile ? '4px 2px' : '8px 4px' }} />
+                <TableCell sx={{ minWidth: isMobile ? 50 : 75, padding: isMobile ? '4px 2px' : '8px 4px' }}>
                   <TextField
                     label="Número"
                     name="numero"
@@ -290,19 +304,18 @@ export default function FacturasList() {
                     size="small"
                     InputProps={{
                       sx: {
-                        '& .MuiInputBase-input': {
-                          color: '#181818',
-                        },
-                        '& .MuiOutlinedInput-notchedOutline': {
-                          borderLeft: 'none',
-                          borderRight: 'none',
-                          borderTop: 'none',
-                        },
+                        '& .MuiInputBase-input': { color: '#181818', fontSize: isMobile ? '0.75rem' : 'inherit' },
+                        '& .MuiOutlinedInput-notchedOutline': { borderLeft: 'none', borderRight: 'none', borderTop: 'none' },
                       },
+                    }}
+                    InputLabelProps={{
+                      sx: {
+                        fontSize: isMobile ? '0.75rem' : 'inherit'
+                      }
                     }}
                   />
                 </TableCell>
-                <TableCell>
+                <TableCell sx={{ minWidth: isMobile ? 70 : 120, padding: isMobile ? '4px 2px' : '8px 4px' }}>
                   <TextField
                     label="Cliente"
                     name="cliente"
@@ -312,112 +325,95 @@ export default function FacturasList() {
                     size="small"
                     InputProps={{
                       sx: {
-                        '& .MuiInputBase-input': {
-                          color: '#181818',
-                        },
-                        '& .MuiOutlinedInput-notchedOutline': {
-                          borderLeft: 'none',
-                          borderRight: 'none',
-                          borderTop: 'none',
-                        },
+                        '& .MuiInputBase-input': { color: '#181818', fontSize: isMobile ? '0.75rem' : 'inherit' },
+                        '& .MuiOutlinedInput-notchedOutline': { borderLeft: 'none', borderRight: 'none', borderTop: 'none' },
                       },
+                    }}
+                    InputLabelProps={{
+                      sx: {
+                        fontSize: isMobile ? '0.75rem' : 'inherit'
+                      }
                     }}
                   />
                 </TableCell>
-                <TableCell>
-                  <TextField
-                    label="Fecha"
-                    name="fecha"
-                    value={filters.fecha}
-                    onChange={e => setFilters(f => ({ ...f, fecha: e.target.value }))}
-                    fullWidth
-                    size="small"
-                    InputProps={{
-                      sx: {
-                        '& .MuiInputBase-input': {
-                          color: '#181818',
+                {!isMobile && (
+                  <TableCell sx={{ minWidth: 90, padding: '8px 4px' }}>
+                    <TextField
+                      label="Fecha"
+                      name="fecha"
+                      value={filters.fecha}
+                      onChange={e => setFilters(f => ({ ...f, fecha: e.target.value }))}
+                      fullWidth
+                      size="small"
+                      InputProps={{
+                        sx: {
+                          '& .MuiInputBase-input': { color: '#181818' },
+                          '& .MuiOutlinedInput-notchedOutline': { borderLeft: 'none', borderRight: 'none', borderTop: 'none' },
                         },
-                        '& .MuiOutlinedInput-notchedOutline': {
-                          borderLeft: 'none',
-                          borderRight: 'none',
-                          borderTop: 'none',
+                      }}
+                    />
+                  </TableCell>
+                )}
+                <TableCell sx={{ minWidth: isMobile ? 35 : 85, fontSize: isMobile ? '0.75rem' : 'inherit', padding: isMobile ? '4px 1px' : '8px 4px' }}>
+                  {isMobile ? 'Est' : (
+                    <TextField
+                      label="Estado"
+                      name="estado"
+                      value={filters.estado}
+                      onChange={e => setFilters(f => ({ ...f, estado: e.target.value }))}
+                      fullWidth
+                      size="small"
+                      InputProps={{
+                        sx: {
+                          '& .MuiInputBase-input': { color: '#181818' },
+                          '& .MuiOutlinedInput-notchedOutline': { borderLeft: 'none', borderRight: 'none', borderTop: 'none' },
                         },
-                      },
-                    }}
-                  />
+                      }}
+                    />
+                  )}
                 </TableCell>
-                <TableCell>
-                  <TextField
-                    label="Estado"
-                    name="estado"
-                    value={filters.estado}
-                    onChange={e => setFilters(f => ({ ...f, estado: e.target.value }))}
-                    fullWidth
-                    size="small"
-                    InputProps={{
-                      sx: {
-                        '& .MuiInputBase-input': {
-                          color: '#181818',
+                {!isMobile && (
+                  <TableCell sx={{ minWidth: 90, padding: '8px 4px' }}>
+                    <TextField
+                      label="Total"
+                      name="total"
+                      value={filters.total}
+                      onChange={e => setFilters(f => ({ ...f, total: e.target.value }))}
+                      fullWidth
+                      size="small"
+                      InputProps={{
+                        sx: {
+                          '& .MuiInputBase-input': { color: '#181818' },
+                          '& .MuiOutlinedInput-notchedOutline': { borderLeft: 'none', borderRight: 'none', borderTop: 'none' },
                         },
-                        '& .MuiOutlinedInput-notchedOutline': {
-                          borderLeft: 'none',
-                          borderRight: 'none',
-                          borderTop: 'none',
+                      }}
+                    />
+                  </TableCell>
+                )}
+                <TableCell sx={{ minWidth: isMobile ? 35 : 105, fontSize: isMobile ? '0.75rem' : 'inherit', padding: isMobile ? '4px 1px' : '8px 4px' }}>
+                  {isMobile ? 'Rep' : (
+                    <TextField
+                      label="Reparaciones"
+                      name="reparaciones"
+                      value={filters.reparaciones}
+                      onChange={e => setFilters(f => ({ ...f, reparaciones: e.target.value }))}
+                      fullWidth
+                      size="small"
+                      InputProps={{
+                        sx: {
+                          '& .MuiInputBase-input': { color: '#181818' },
+                          '& .MuiOutlinedInput-notchedOutline': { borderLeft: 'none', borderRight: 'none', borderTop: 'none' },
                         },
-                      },
-                    }}
-                  />
-                </TableCell>
-                <TableCell>
-                  <TextField
-                    label="Total"
-                    name="total"
-                    value={filters.total}
-                    onChange={e => setFilters(f => ({ ...f, total: e.target.value }))}
-                    fullWidth
-                    size="small"
-                    InputProps={{
-                      sx: {
-                        '& .MuiInputBase-input': {
-                          color: '#181818',
-                        },
-                        '& .MuiOutlinedInput-notchedOutline': {
-                          borderLeft: 'none',
-                          borderRight: 'none',
-                          borderTop: 'none',
-                        },
-                      },
-                    }}
-                  />
-                </TableCell>
-                <TableCell>
-                  <TextField
-                    label="Reparaciones"
-                    name="reparaciones"
-                    value={filters.reparaciones}
-                    onChange={e => setFilters(f => ({ ...f, reparaciones: e.target.value }))}
-                    fullWidth
-                    size="small"
-                    InputProps={{
-                      sx: {
-                        '& .MuiInputBase-input': {
-                          color: '#181818',
-                        },
-                        '& .MuiOutlinedInput-notchedOutline': {
-                          borderLeft: 'none',
-                          borderRight: 'none',
-                          borderTop: 'none',
-                        },
-                      },
-                    }}
-                  />
+                      }}
+                    />
+                  )}
                 </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {filteredFacturas.map((factura) => (
                 <TableRow key={factura.id}>
-                  <TableCell>
+                  <TableCell sx={{ minWidth: isMobile ? 35 : 45, padding: isMobile ? '4px 2px' : '8px 4px' }}>
                     <Tooltip title="Acciones">
                       <IconButton size="small" onClick={e => handleMenuOpen(e, factura.id)}>
                         <FontAwesomeIcon icon={faEllipsisV} />
@@ -452,70 +448,124 @@ export default function FacturasList() {
                       )}
                     </Menu>
                   </TableCell>
-                  <TableCell>{factura.numero_factura}</TableCell>
-                  <TableCell>{factura.cliente_nombre || factura.cliente}</TableCell>
-                  <TableCell>{
-                    factura.fecha
-                      ? (() => {
-                          const d = new Date(factura.fecha);
-                          if (isNaN(d)) return factura.fecha;
-                          const day = String(d.getDate()).padStart(2, '0');
-                          const month = String(d.getMonth() + 1).padStart(2, '0');
-                          const year = d.getFullYear();
-                          return `${day}/${month}/${year}`;
-                        })()
-                      : ''
-                  }</TableCell>
-                  <TableCell>
-                    <Tooltip
-                      title={(() => {
-                        // Buscar la descripción del estado correspondiente
-                        const estadoObj = estados.find(e => e.nombre === (factura.estado_nombre || factura.estado));
-                        return estadoObj && estadoObj.descripcion ? estadoObj.descripcion : '';
-                      })()}
-                      arrow
-                      disableHoverListener={false}
-                    >
-                      <span
-                        style={{
-                          display: 'inline-block',
-                          padding: '4px 12px',
-                          borderRadius: 12,
-                          color: '#fff',
-                          fontWeight: 600,
-                          backgroundColor:
-                            (factura.estado_nombre === 'Enviada') ? '#43a047' :
-                            (factura.estado_nombre === 'Pagada') ? '#1976d2' :
-                            (factura.estado_nombre === 'Pendiente pago') ? '#ff9800' :
-                            (factura.estado_nombre === 'Creada') ? '#757575' :
-                            '#bdbdbd',
-                        }}
+                  <TableCell sx={{ 
+                    minWidth: isMobile ? 50 : 75,
+                    fontSize: isMobile ? '0.7rem' : 'inherit',
+                    padding: isMobile ? '4px 2px' : '8px 4px'
+                  }}>{factura.numero_factura}</TableCell>
+                  <TableCell sx={{ 
+                    minWidth: isMobile ? 70 : 120,
+                    fontSize: isMobile ? '0.65rem' : 'inherit',
+                    wordBreak: 'break-word',
+                    maxWidth: isMobile ? 70 : 'none',
+                    padding: isMobile ? '4px 2px' : '8px 4px'
+                  }}>{factura.cliente_nombre || factura.cliente}</TableCell>
+                  {!isMobile && (
+                    <TableCell sx={{ minWidth: 90, fontSize: '0.9rem', padding: '8px 4px' }}>{
+                      factura.fecha
+                        ? (() => {
+                            const d = new Date(factura.fecha);
+                            if (isNaN(d)) return factura.fecha;
+                            const day = String(d.getDate()).padStart(2, '0');
+                            const month = String(d.getMonth() + 1).padStart(2, '0');
+                            const year = d.getFullYear();
+                            return `${day}/${month}/${year}`;
+                          })()
+                        : ''
+                    }</TableCell>
+                  )}
+                  <TableCell sx={{ minWidth: isMobile ? 35 : 85, padding: isMobile ? '4px 1px' : '8px 4px' }}>
+                    {isMobile ? (
+                      <IconButton 
+                        onClick={() => setEstadoDialog({ 
+                          open: true, 
+                          estado: {
+                            nombre: factura.estado_nombre || factura.estado,
+                            descripcion: (() => {
+                              const estadoObj = estados.find(e => e.nombre === (factura.estado_nombre || factura.estado));
+                              return estadoObj && estadoObj.descripcion ? estadoObj.descripcion : '';
+                            })()
+                          }
+                        })} 
+                        size="small"
+                        sx={{ padding: '2px' }}
                       >
-                        {factura.estado_nombre || factura.estado}
-                      </span>
-                    </Tooltip>
-                  </TableCell>
-                  <TableCell>{factura.total} €</TableCell>
-                  <TableCell>
-                    {factura.reparaciones && factura.reparaciones.length > 0 ? (
-                      <Box>
-                        {factura.reparaciones.map((r, index) => (
-                          <Box key={index} display="flex" alignItems="center" mb={0.5}>
-                            <IconButton
-                              size="small"
-                              color="info"
-                              onClick={() => setDetalleReparacion({ open: true, reparacion: r })}
-                            >
-                              <span style={{ fontSize: 18, fontWeight: 'bold', lineHeight: 1 }}>+</span>
-                            </IconButton>
-                            <Typography variant="body2" sx={{ mr: 1 }}>
-                              {r.localizacion}
-                            </Typography>
-                          </Box>
-                        ))}
-                      </Box>
+                        <Box
+                          sx={{
+                            width: 20,
+                            height: 20,
+                            borderRadius: '50%',
+                            backgroundColor:
+                              (factura.estado_nombre === 'Enviada') ? '#43a047' :
+                              (factura.estado_nombre === 'Pagada') ? '#1976d2' :
+                              (factura.estado_nombre === 'Pendiente pago') ? '#ff9800' :
+                              (factura.estado_nombre === 'Creada') ? '#757575' :
+                              '#bdbdbd',
+                          }}
+                        />
+                      </IconButton>
                     ) : (
-                      '—'
+                      <Tooltip
+                        title={(() => {
+                          const estadoObj = estados.find(e => e.nombre === (factura.estado_nombre || factura.estado));
+                          return estadoObj && estadoObj.descripcion ? estadoObj.descripcion : '';
+                        })()}
+                        arrow
+                        disableHoverListener={false}
+                      >
+                        <span
+                          style={{
+                            display: 'inline-block',
+                            padding: '4px 12px',
+                            borderRadius: 12,
+                            color: '#fff',
+                            fontWeight: 600,
+                            backgroundColor:
+                              (factura.estado_nombre === 'Enviada') ? '#43a047' :
+                              (factura.estado_nombre === 'Pagada') ? '#1976d2' :
+                              (factura.estado_nombre === 'Pendiente pago') ? '#ff9800' :
+                              (factura.estado_nombre === 'Creada') ? '#757575' :
+                              '#bdbdbd',
+                          }}
+                        >
+                          {factura.estado_nombre || factura.estado}
+                        </span>
+                      </Tooltip>
+                    )}
+                  </TableCell>
+                  {!isMobile && (
+                    <TableCell sx={{ minWidth: 90, fontSize: '0.9rem', padding: '8px 4px' }}>{factura.total} €</TableCell>
+                  )}
+                  <TableCell sx={{ minWidth: isMobile ? 35 : 105, padding: isMobile ? '4px 1px' : '8px 4px' }}>
+                    {isMobile ? (
+                      <IconButton 
+                        onClick={() => setDetalleReparacion({ open: true, reparacion: factura.reparaciones?.[0] || null })} 
+                        disabled={!factura.reparaciones || factura.reparaciones.length === 0}
+                        size="small"
+                      >
+                        <FontAwesomeIcon icon={faFileText} />
+                      </IconButton>
+                    ) : (
+                      factura.reparaciones && factura.reparaciones.length > 0 ? (
+                        <Box>
+                          {factura.reparaciones.map((r, index) => (
+                            <Box key={index} display="flex" alignItems="center" mb={0.5}>
+                              <IconButton
+                                size="small"
+                                color="info"
+                                onClick={() => setDetalleReparacion({ open: true, reparacion: r })}
+                              >
+                                <span style={{ fontSize: 18, fontWeight: 'bold', lineHeight: 1 }}>+</span>
+                              </IconButton>
+                              <Typography variant="body2" sx={{ mr: 1, fontSize: '0.8rem' }}>
+                                {r.localizacion}
+                              </Typography>
+                            </Box>
+                          ))}
+                        </Box>
+                      ) : (
+                        '—'
+                      )
                     )}
                   </TableCell>
       {/* Popup de detalle de reparación */}
@@ -561,8 +611,49 @@ export default function FacturasList() {
           </Button>
         </DialogActions>
       </Dialog>
-                  <TableCell>
-                  
+
+      {/* Dialog para mostrar estado */}
+      <Dialog
+        open={estadoDialog.open}
+        onClose={() => setEstadoDialog({ open: false, estado: null })}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>Estado de la factura</DialogTitle>
+        <DialogContent>
+          {estadoDialog.estado && (
+            <Box display="flex" alignItems="center" gap={2}>
+              <Box
+                sx={{
+                  width: 24,
+                  height: 24,
+                  borderRadius: '50%',
+                  backgroundColor:
+                    (estadoDialog.estado.nombre === 'Enviada') ? '#43a047' :
+                    (estadoDialog.estado.nombre === 'Pagada') ? '#1976d2' :
+                    (estadoDialog.estado.nombre === 'Pendiente pago') ? '#ff9800' :
+                    (estadoDialog.estado.nombre === 'Creada') ? '#757575' :
+                    '#bdbdbd',
+                }}
+              />
+              <Box>
+                <Typography variant="h6">{estadoDialog.estado.nombre}</Typography>
+                {estadoDialog.estado.descripcion && (
+                  <Typography variant="body2" color="textSecondary">
+                    {estadoDialog.estado.descripcion}
+                  </Typography>
+                )}
+              </Box>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEstadoDialog({ open: false, estado: null })} color="primary">
+            Cerrar
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       <Dialog
         open={deleteDialog.open}
         onClose={() => setDeleteDialog({ open: false, facturaId: null })}
@@ -588,12 +679,11 @@ export default function FacturasList() {
           </Button>
         </DialogActions>
       </Dialog>
-                  </TableCell>
                 </TableRow>
               ))}
               {filteredFacturas.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
+                  <TableCell colSpan={isMobile ? 5 : 7} align="center" sx={{ py: 4 }}>
                     No hay facturas registradas.
                   </TableCell>
                 </TableRow>

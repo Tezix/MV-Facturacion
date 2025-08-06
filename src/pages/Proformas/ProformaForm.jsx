@@ -40,7 +40,9 @@ import {
   CircularProgress,
   Autocomplete,
   Chip,
-  Tooltip
+  Tooltip,
+  useTheme,
+  useMediaQuery,
 } from "@mui/material";
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -48,6 +50,9 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { es } from 'date-fns/locale';
 
 const ProformaForm = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  
   const [form, setForm] = useState({
     cliente: "",
     fecha: "",
@@ -229,8 +234,8 @@ const ProformaForm = () => {
 
   if (loading) {
     return (
-      <Box p={4} display="flex" flexDirection="column" alignItems="center">
-        <CircularProgress size={24} sx={{ mt: 2 }} />
+      <Box p={isMobile ? 2 : 4} display="flex" flexDirection="column" alignItems="center">
+        <CircularProgress size={isMobile ? 20 : 24} sx={{ mt: 2 }} />
       </Box>
     );
   }
@@ -240,21 +245,22 @@ const ProformaForm = () => {
       component="form"
       onSubmit={handleSubmit}
       sx={{
-        p: 3,
+        p: isMobile ? 2 : 3,
         mx: 'auto',
         display: 'flex',
         flexDirection: 'column',
-        gap: 3,
-        width: '70vw',
+        gap: isMobile ? 2 : 3,
+        width: isMobile ? '95vw' : '70vw',
       }}
     >
-      <Typography variant="h5" fontWeight="bold">
+      <Typography variant={isMobile ? "h6" : "h5"} fontWeight="bold">
         {id ? 'Editar' : 'Crear'} Proforma
       </Typography>
 
       <Autocomplete
         fullWidth
         required
+        size={isMobile ? "small" : "medium"}
         options={clientes}
         getOptionLabel={(option) => option?.nombre || ''}
         value={clientes.find((c) => c.id === form.cliente) || null}
@@ -273,7 +279,7 @@ const ProformaForm = () => {
         noOptionsText="No hay coincidencias"
       />
 
-      <FormControl fullWidth required>
+      <FormControl fullWidth required size={isMobile ? "small" : "medium"}>
         <InputLabel id="estado-label">Estado</InputLabel>
         <Select
           labelId="estado-label"
@@ -307,6 +313,7 @@ const ProformaForm = () => {
             textField: {
               fullWidth: true,
               required: true,
+              size: isMobile ? "small" : "medium",
               margin: 'normal',
               InputLabelProps: { shrink: true },
               inputProps: {
@@ -319,10 +326,11 @@ const ProformaForm = () => {
       </LocalizationProvider>
 
 
-      <Box display="flex" alignItems="center" gap={1}>
-        <Box flex={1}>
+      <Box display="flex" alignItems="center" gap={1} flexDirection={isMobile ? "column" : "row"}>
+        <Box flex={1} width={isMobile ? "100%" : "auto"}>
           <Autocomplete
             multiple
+            size={isMobile ? "small" : "medium"}
             options={reparaciones}
             getOptionLabel={(option) => {
               if (!option) return '';
@@ -365,8 +373,10 @@ const ProformaForm = () => {
             <Button
               variant="outlined"
               color="primary"
+              size={isMobile ? "small" : "medium"}
               onClick={handleNuevaReparacion}
               disabled={saving || !requiredFieldsFilled}
+              fullWidth={isMobile}
             >
               Nueva
             </Button>
@@ -388,13 +398,24 @@ const ProformaForm = () => {
             type="submit"
             variant="contained"
             color="success"
+            size={isMobile ? "small" : "medium"}
             disabled={saving || !requiredFieldsFilled}
             sx={{ position: 'relative' }}
             fullWidth
           >
             {saving ? (
               <>
-                <CircularProgress size={24} color="inherit" sx={{ position: 'absolute', left: '50%', top: '50%', marginTop: '-12px', marginLeft: '-12px' }} />
+                <CircularProgress 
+                  size={isMobile ? 20 : 24} 
+                  color="inherit" 
+                  sx={{ 
+                    position: 'absolute', 
+                    left: '50%', 
+                    top: '50%', 
+                    marginTop: isMobile ? '-10px' : '-12px', 
+                    marginLeft: isMobile ? '-10px' : '-12px' 
+                  }} 
+                />
                 <span style={{ opacity: 0 }}>Guardar</span>
               </>
             ) : (

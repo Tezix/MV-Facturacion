@@ -7,9 +7,14 @@ import {
   Button,
   Typography,
   CircularProgress,
+  useTheme,
+  useMediaQuery,
 } from "@mui/material";
 
 const TrabajoForm = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  
   const [form, setForm] = useState({
     nombre_reparacion: "",
     precio: "",
@@ -80,8 +85,8 @@ const TrabajoForm = () => {
 
   if (id && !form.nombre_reparacion) {
     return (
-      <Box p={4} textAlign="center">
-        <CircularProgress sx={{ mt: 2 }} />
+      <Box p={isMobile ? 2 : 4} textAlign="center">
+        <CircularProgress size={isMobile ? 20 : 24} sx={{ mt: 2 }} />
       </Box>
     );
   }
@@ -91,15 +96,15 @@ const TrabajoForm = () => {
       component="form"
       onSubmit={handleSubmit}
       sx={{
-        p: 3,
-        width: '70vw',
+        p: isMobile ? 2 : 3,
+        width: isMobile ? '95vw' : '70vw',
         mx: "auto",
         display: "flex",
         flexDirection: "column",
-        gap: 3,
+        gap: isMobile ? 2 : 3,
       }}
     >
-      <Typography variant="h5" fontWeight="bold">
+      <Typography variant={isMobile ? "h6" : "h5"} fontWeight="bold">
         {id ? "Editar" : "Crear"} Trabajo
       </Typography>
 
@@ -111,6 +116,7 @@ const TrabajoForm = () => {
         onChange={handleChange}
         required
         fullWidth
+        size={isMobile ? "small" : "medium"}
         placeholder="Ej: Reparación de aire acondicionado"
       />
 
@@ -122,14 +128,26 @@ const TrabajoForm = () => {
         onChange={handleChange}
         required
         fullWidth
+        size={isMobile ? "small" : "medium"}
         inputProps={{ step: "0.01", min: "0" }}
         placeholder="Ej: 100.00"
       />
 
-      <Button type="submit" variant="contained" color="primary" disabled={saving} sx={{ position: 'relative' }}>
+      <Button 
+        type="submit" 
+        variant="contained" 
+        color="primary" 
+        disabled={saving} 
+        size={isMobile ? "medium" : "large"}
+        sx={{ 
+          position: 'relative',
+          minHeight: isMobile ? 40 : 48,
+          fontSize: isMobile ? '0.9rem' : '1rem'
+        }}
+      >
         {saving ? (
           <>
-            <CircularProgress size={24} color="inherit" sx={{ position: 'absolute', left: '50%', top: '50%', marginTop: '-12px', marginLeft: '-12px' }} />
+            <CircularProgress size={isMobile ? 20 : 24} color="inherit" sx={{ position: 'absolute', left: '50%', top: '50%', marginTop: isMobile ? '-10px' : '-12px', marginLeft: isMobile ? '-10px' : '-12px' }} />
             <span style={{ opacity: 0 }}>Guardar</span>
           </>
         ) : (
@@ -142,11 +160,16 @@ const TrabajoForm = () => {
           color="error"
           onClick={handleDelete}
           disabled={deleting}
-          sx={{ position: 'relative' }}
+          size={isMobile ? "medium" : "large"}
+          sx={{ 
+            position: 'relative',
+            minHeight: isMobile ? 40 : 48,
+            fontSize: isMobile ? '0.9rem' : '1rem'
+          }}
         >
           {deleting ? (
             <>
-              <CircularProgress size={24} color="inherit" sx={{ position: 'absolute', left: '50%', top: '50%', marginTop: '-12px', marginLeft: '-12px' }} />
+              <CircularProgress size={isMobile ? 20 : 24} color="inherit" sx={{ position: 'absolute', left: '50%', top: '50%', marginTop: isMobile ? '-10px' : '-12px', marginLeft: isMobile ? '-10px' : '-12px' }} />
               <span style={{ opacity: 0 }}>Eliminar</span>
             </>
           ) : (

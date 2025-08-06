@@ -24,18 +24,25 @@ import {
   Tooltip,
   Snackbar,
   Alert,
-  CircularProgress
+  CircularProgress,
+  useMediaQuery,
+  useTheme
 } from '@mui/material';
 import IconButton from '@mui/material/IconButton';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTrash, faPencilAlt, faEllipsisV, faImages } from '@fortawesome/free-solid-svg-icons';
+import { faTrash, faPencilAlt, faEllipsisV, faImages, faFileText, faComment } from '@fortawesome/free-solid-svg-icons';
 import LoadingOverlay from '../../components/LoadingOverlay';
 
 import { useLocation, useNavigate } from 'react-router-dom';
 
 export default function ReparacionList() {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  
   const [reparaciones, setReparaciones] = useState([]);
   const [fotosDialog, setFotosDialog] = useState({ open: false, fotos: [] });
+  const [trabajosDialog, setTrabajosDialog] = useState({ open: false, trabajos: [] });
+  const [comentariosDialog, setComentariosDialog] = useState({ open: false, comentarios: '' });
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({
     fecha: '',
@@ -101,12 +108,23 @@ export default function ReparacionList() {
   // Filtrado local de la lista
   // Ordenar por fecha descendente (más nuevas primero)
   const sortedReparaciones = [...reparaciones].sort((a, b) => {
-    // Si alguna fecha es null/undefined, ponerla al final
+    // Si ambas fechas son null/undefined, mantener orden original
+    if (!a.fecha && !b.fecha) return 0;
+    // Si solo a.fecha es null/undefined, ponerla al final
     if (!a.fecha) return 1;
+    // Si solo b.fecha es null/undefined, ponerla al final
     if (!b.fecha) return -1;
-    // Comparar como fechas reales si es posible
+    
+    // Comparar como fechas reales
     const dateA = new Date(a.fecha);
     const dateB = new Date(b.fecha);
+    
+    // Si alguna fecha es inválida, ponerla al final
+    if (isNaN(dateA.getTime()) && isNaN(dateB.getTime())) return 0;
+    if (isNaN(dateA.getTime())) return 1;
+    if (isNaN(dateB.getTime())) return -1;
+    
+    // Ordenar descendente (más recientes primero)
     return dateB - dateA;
   });
 
@@ -147,9 +165,23 @@ export default function ReparacionList() {
     setFotosDialog({ open: false, fotos: [] });
   };
 
+  const handleOpenTrabajos = (trabajos) => {
+    setTrabajosDialog({ open: true, trabajos });
+  };
+  const handleCloseTrabajos = () => {
+    setTrabajosDialog({ open: false, trabajos: [] });
+  };
+
+  const handleOpenComentarios = (comentarios) => {
+    setComentariosDialog({ open: true, comentarios });
+  };
+  const handleCloseComentarios = () => {
+    setComentariosDialog({ open: false, comentarios: '' });
+  };
+
   return (
     <LoadingOverlay loading={loading}>
-      <Box p={3}>
+      <Box p={isMobile ? 1 : 3} sx={{ width: '100%', overflowX: 'hidden' }}>
         {/* Dialog para mostrar fotos */}
         <Dialog open={fotosDialog.open} onClose={handleCloseFotos} maxWidth="sm" fullWidth>
           <DialogTitle>Fotos adjuntas</DialogTitle>
@@ -171,25 +203,70 @@ export default function ReparacionList() {
           </DialogActions>
         </Dialog>
 
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-          <Typography variant="h4">Reparaciones</Typography>
+        {/* Dialog para mostrar trabajos */}
+        <Dialog open={trabajosDialog.open} onClose={handleCloseTrabajos} maxWidth="sm" fullWidth>
+          <DialogTitle>Trabajos</DialogTitle>
+          <DialogContent dividers>
+            {trabajosDialog.trabajos && trabajosDialog.trabajos.length > 0 ? (
+              trabajosDialog.trabajos.map((trabajoRel, idx) => (
+                <Typography key={idx} variant="body1" sx={{ mb: 1 }}>
+                  • {trabajoRel.trabajo.nombre_reparacion}
+                </Typography>
+              ))
+            ) : (
+              <Typography>No hay trabajos asignados.</Typography>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseTrabajos}>Cerrar</Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Dialog para mostrar comentarios */}
+        <Dialog open={comentariosDialog.open} onClose={handleCloseComentarios} maxWidth="sm" fullWidth>
+          <DialogTitle>Comentarios</DialogTitle>
+          <DialogContent dividers>
+            {comentariosDialog.comentarios && comentariosDialog.comentarios.trim() !== '' ? (
+              <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
+                {comentariosDialog.comentarios}
+              </Typography>
+            ) : (
+              <Typography>No hay comentarios.</Typography>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseComentarios}>Cerrar</Button>
+          </DialogActions>
+        </Dialog>
+
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3} sx={{ 
+          flexDirection: isMobile ? 'column' : 'row',
+          gap: isMobile ? 1 : 0
+        }}>
+          <Typography variant={isMobile ? "h5" : "h4"} sx={{ mb: isMobile ? 1 : 0 }}>Reparaciones</Typography>
           <Button
             variant="contained"
             color="success"
             component={Link}
             to="/reparaciones/crear"
             startIcon={<span style={{fontSize: 20, fontWeight: 'bold', lineHeight: 1}}>+</span>}
+            size={isMobile ? "small" : "medium"}
           >
             Nueva
           </Button>
         </Box>
 
-        <Paper elevation={3}>
-          <Table>
+        <Paper elevation={3} sx={{ overflowX: 'auto' }}>
+          <Table sx={{ 
+            minWidth: isMobile ? 'auto' : 650,
+            '& .MuiTableCell-root': {
+              padding: isMobile ? '4px 2px' : '8px 4px'
+            }
+          }}>
             <TableHead>
               <TableRow>
-                <TableCell />
-                <TableCell>
+                <TableCell sx={{ minWidth: isMobile ? 35 : 45, padding: isMobile ? '4px 2px' : '8px 4px' }} />
+                <TableCell sx={{ minWidth: isMobile ? 50 : 75, padding: isMobile ? '4px 2px' : '8px 4px' }}>
                   <TextField
                     label="Fecha"
                     name="fecha"
@@ -199,77 +276,110 @@ export default function ReparacionList() {
                     size="small"
                     InputProps={{
                       sx: {
-                        '& .MuiInputBase-input': { color: '#181818' },
+                        '& .MuiInputBase-input': { color: '#181818', fontSize: isMobile ? '0.75rem' : 'inherit' },
                         '& .MuiOutlinedInput-notchedOutline': { borderLeft: 'none', borderRight: 'none', borderTop: 'none' },
                       },
                     }}
-                  />
-                </TableCell>
-                <TableCell>
-                  <TextField
-                    label="Nº Reparación"
-                    name="num_reparacion"
-                    value={filters.num_reparacion}
-                    onChange={e => setFilters(f => ({ ...f, num_reparacion: e.target.value }))}
-                    fullWidth
-                    size="small"
-                    InputProps={{
+                    InputLabelProps={{
                       sx: {
-                        '& .MuiInputBase-input': { color: '#181818' },
-                        '& .MuiOutlinedInput-notchedOutline': { borderLeft: 'none', borderRight: 'none', borderTop: 'none' },
-                      },
+                        fontSize: isMobile ? '0.75rem' : 'inherit'
+                      }
                     }}
                   />
                 </TableCell>
-                <TableCell>
-                  <TextField
-                    label="Nº Pedido"
-                    name="num_pedido"
-                    value={filters.num_pedido}
-                    onChange={e => setFilters(f => ({ ...f, num_pedido: e.target.value }))}
-                    fullWidth
-                    size="small"
-                    InputProps={{
-                      sx: {
-                        '& .MuiInputBase-input': { color: '#181818' },
-                        '& .MuiOutlinedInput-notchedOutline': { borderLeft: 'none', borderRight: 'none', borderTop: 'none' },
-                      },
-                    }}
-                  />
-                </TableCell>
-                <TableCell>
-                  <TextField
-                    label="Factura"
-                    name="factura"
-                    value={filters.factura}
-                    onChange={e => setFilters(f => ({ ...f, factura: e.target.value }))}
-                    fullWidth
-                    size="small"
-                    InputProps={{
-                      sx: {
-                        '& .MuiInputBase-input': { color: '#181818' },
-                        '& .MuiOutlinedInput-notchedOutline': { borderLeft: 'none', borderRight: 'none', borderTop: 'none' },
-                      },
-                    }}
-                  />
-                </TableCell>
-                <TableCell>
-                  <TextField
-                    label="Proforma"
-                    name="proforma"
-                    value={filters.proforma}
-                    onChange={e => setFilters(f => ({ ...f, proforma: e.target.value }))}
-                    fullWidth
-                    size="small"
-                    InputProps={{
-                      sx: {
-                        '& .MuiInputBase-input': { color: '#181818' },
-                        '& .MuiOutlinedInput-notchedOutline': { borderLeft: 'none', borderRight: 'none', borderTop: 'none' },
-                      },
-                    }}
-                  />
-                </TableCell>
-                <TableCell>
+                {!isMobile && (
+                  <TableCell sx={{ minWidth: 90, padding: '8px 4px' }}>
+                    <TextField
+                      label="Nº Reparación"
+                      name="num_reparacion"
+                      value={filters.num_reparacion}
+                      onChange={e => setFilters(f => ({ ...f, num_reparacion: e.target.value }))}
+                      fullWidth
+                      size="small"
+                      InputProps={{
+                        sx: {
+                          '& .MuiInputBase-input': { color: '#181818', fontSize: isMobile ? '0.75rem' : 'inherit' },
+                          '& .MuiOutlinedInput-notchedOutline': { borderLeft: 'none', borderRight: 'none', borderTop: 'none' },
+                        },
+                      }}
+                      InputLabelProps={{
+                        sx: {
+                          fontSize: isMobile ? '0.75rem' : 'inherit'
+                        }
+                      }}
+                    />
+                  </TableCell>
+                )}
+                {!isMobile && (
+                  <TableCell sx={{ minWidth: 90, padding: '8px 4px' }}>
+                    <TextField
+                      label="Nº Pedido"
+                      name="num_pedido"
+                      value={filters.num_pedido}
+                      onChange={e => setFilters(f => ({ ...f, num_pedido: e.target.value }))}
+                      fullWidth
+                      size="small"
+                      InputProps={{
+                        sx: {
+                          '& .MuiInputBase-input': { color: '#181818', fontSize: isMobile ? '0.75rem' : 'inherit' },
+                          '& .MuiOutlinedInput-notchedOutline': { borderLeft: 'none', borderRight: 'none', borderTop: 'none' },
+                        },
+                      }}
+                      InputLabelProps={{
+                        sx: {
+                          fontSize: isMobile ? '0.75rem' : 'inherit'
+                        }
+                      }}
+                    />
+                  </TableCell>
+                )}
+                {!isMobile && (
+                  <TableCell sx={{ minWidth: 90, padding: '8px 4px' }}>
+                    <TextField
+                      label="Factura"
+                      name="factura"
+                      value={filters.factura}
+                      onChange={e => setFilters(f => ({ ...f, factura: e.target.value }))}
+                      fullWidth
+                      size="small"
+                      InputProps={{
+                        sx: {
+                          '& .MuiInputBase-input': { color: '#181818', fontSize: isMobile ? '0.75rem' : 'inherit' },
+                          '& .MuiOutlinedInput-notchedOutline': { borderLeft: 'none', borderRight: 'none', borderTop: 'none' },
+                        },
+                      }}
+                      InputLabelProps={{
+                        sx: {
+                          fontSize: isMobile ? '0.75rem' : 'inherit'
+                        }
+                      }}
+                    />
+                  </TableCell>
+                )}
+                {!isMobile && (
+                  <TableCell sx={{ minWidth: 90, padding: '8px 4px' }}>
+                    <TextField
+                      label="Proforma"
+                      name="proforma"
+                      value={filters.proforma}
+                      onChange={e => setFilters(f => ({ ...f, proforma: e.target.value }))}
+                      fullWidth
+                      size="small"
+                      InputProps={{
+                        sx: {
+                          '& .MuiInputBase-input': { color: '#181818', fontSize: isMobile ? '0.75rem' : 'inherit' },
+                          '& .MuiOutlinedInput-notchedOutline': { borderLeft: 'none', borderRight: 'none', borderTop: 'none' },
+                        },
+                      }}
+                      InputLabelProps={{
+                        sx: {
+                          fontSize: isMobile ? '0.75rem' : 'inherit'
+                        }
+                      }}
+                    />
+                  </TableCell>
+                )}
+                <TableCell sx={{ minWidth: isMobile ? 90 : 140, padding: isMobile ? '4px 2px' : '8px 4px' }}>
                   <TextField
                     label="Localización"
                     name="localizacion"
@@ -279,51 +389,70 @@ export default function ReparacionList() {
                     size="small"
                     InputProps={{
                       sx: {
-                        '& .MuiInputBase-input': { color: '#181818' },
+                        '& .MuiInputBase-input': { color: '#181818', fontSize: isMobile ? '0.75rem' : 'inherit' },
                         '& .MuiOutlinedInput-notchedOutline': { borderLeft: 'none', borderRight: 'none', borderTop: 'none' },
                       },
                     }}
-                  />
-                </TableCell>
-                <TableCell>
-                  <TextField
-                    label="Trabajo"
-                    name="trabajo"
-                    value={filters.trabajo}
-                    onChange={e => setFilters(f => ({ ...f, trabajo: e.target.value }))}
-                    fullWidth
-                    size="small"
-                    InputProps={{
+                    InputLabelProps={{
                       sx: {
-                        '& .MuiInputBase-input': { color: '#181818' },
-                        '& .MuiOutlinedInput-notchedOutline': { borderLeft: 'none', borderRight: 'none', borderTop: 'none' },
-                      },
+                        fontSize: isMobile ? '0.75rem' : 'inherit'
+                      }
                     }}
                   />
                 </TableCell>
-                <TableCell>
-                  <TextField
-                    label="Comentarios"
-                    name="comentarios"
-                    value={filters.comentarios}
-                    onChange={e => setFilters(f => ({ ...f, comentarios: e.target.value }))}
-                    fullWidth
-                    size="small"
-                    InputProps={{
-                      sx: {
-                        '& .MuiInputBase-input': { color: '#181818' },
-                        '& .MuiOutlinedInput-notchedOutline': { borderLeft: 'none', borderRight: 'none', borderTop: 'none' },
-                      },
-                    }}
-                  />
+                <TableCell sx={{ minWidth: isMobile ? 35 : 85, fontSize: isMobile ? '0.75rem' : 'inherit', padding: isMobile ? '4px 1px' : '8px 4px' }}>
+                  {isMobile ? 'Trab' : (
+                    <TextField
+                      label="Trabajo"
+                      name="trabajo"
+                      value={filters.trabajo}
+                      onChange={e => setFilters(f => ({ ...f, trabajo: e.target.value }))}
+                      fullWidth
+                      size="small"
+                      InputProps={{
+                        sx: {
+                          '& .MuiInputBase-input': { color: '#181818', fontSize: isMobile ? '0.75rem' : 'inherit' },
+                          '& .MuiOutlinedInput-notchedOutline': { borderLeft: 'none', borderRight: 'none', borderTop: 'none' },
+                        },
+                      }}
+                      InputLabelProps={{
+                        sx: {
+                          fontSize: isMobile ? '0.75rem' : 'inherit'
+                        }
+                      }}
+                    />
+                  )}
                 </TableCell>
-                <TableCell>Fotos</TableCell>
+                <TableCell sx={{ minWidth: isMobile ? 35 : 105, fontSize: isMobile ? '0.75rem' : 'inherit', padding: isMobile ? '4px 1px' : '8px 4px' }}>
+                  {isMobile ? 'Com' : (
+                    <TextField
+                      label="Comentarios"
+                      name="comentarios"
+                      value={filters.comentarios}
+                      onChange={e => setFilters(f => ({ ...f, comentarios: e.target.value }))}
+                      fullWidth
+                      size="small"
+                      InputProps={{
+                        sx: {
+                          '& .MuiInputBase-input': { color: '#181818', fontSize: isMobile ? '0.75rem' : 'inherit' },
+                          '& .MuiOutlinedInput-notchedOutline': { borderLeft: 'none', borderRight: 'none', borderTop: 'none' },
+                        },
+                      }}
+                      InputLabelProps={{
+                        sx: {
+                          fontSize: isMobile ? '0.75rem' : 'inherit'
+                        }
+                      }}
+                    />
+                  )}
+                </TableCell>
+                <TableCell sx={{ minWidth: isMobile ? 30 : 50, fontSize: isMobile ? '0.75rem' : 'inherit', padding: isMobile ? '4px 1px' : '8px 4px' }}>Img</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {filteredReparaciones.map((reparacion) => (
                 <TableRow key={reparacion.id}>
-                  <TableCell>
+                  <TableCell sx={{ minWidth: isMobile ? 35 : 45, padding: isMobile ? '4px 2px' : '8px 4px' }}>
                     <Tooltip title="Acciones">
                       <IconButton size="small" onClick={e => handleMenuOpen(e, reparacion)}>
                         <FontAwesomeIcon icon={faEllipsisV} />
@@ -344,7 +473,11 @@ export default function ReparacionList() {
                       </MenuItem>
                     </Menu>
                   </TableCell>
-                  <TableCell>{
+                  <TableCell sx={{ 
+                    minWidth: isMobile ? 50 : 75,
+                    fontSize: isMobile ? '0.7rem' : 'inherit',
+                    padding: isMobile ? '4px 2px' : '8px 4px'
+                  }}>{
                     reparacion.fecha
                       ? (() => {
                           const d = new Date(reparacion.fecha);
@@ -356,31 +489,69 @@ export default function ReparacionList() {
                         })()
                       : ''
                   }</TableCell>
-                  <TableCell>{reparacion.num_reparacion || '—'}</TableCell>
-                  <TableCell>{reparacion.num_pedido || '—'}</TableCell>
-                  <TableCell>{reparacion.factura_numero || reparacion.factura || '—'}</TableCell>
-                  <TableCell>{reparacion.proforma_numero || reparacion.proforma || '—'}</TableCell>
-                  <TableCell>
+                  {!isMobile && <TableCell sx={{ minWidth: 90, fontSize: '0.9rem', padding: '8px 4px' }}>{reparacion.num_reparacion || '—'}</TableCell>}
+                  {!isMobile && <TableCell sx={{ minWidth: 90, fontSize: '0.9rem', padding: '8px 4px' }}>{reparacion.num_pedido || '—'}</TableCell>}
+                  {!isMobile && <TableCell sx={{ minWidth: 90, fontSize: '0.9rem', padding: '8px 4px' }}>{reparacion.factura_numero || reparacion.factura || '—'}</TableCell>}
+                  {!isMobile && <TableCell sx={{ minWidth: 90, fontSize: '0.9rem', padding: '8px 4px' }}>{reparacion.proforma_numero || reparacion.proforma || '—'}</TableCell>}
+                  <TableCell sx={{ 
+                    minWidth: isMobile ? 90 : 140,
+                    fontSize: isMobile ? '0.65rem' : '0.9rem',
+                    wordBreak: 'break-word',
+                    maxWidth: isMobile ? 90 : 'none',
+                    padding: isMobile ? '4px 2px' : '8px 4px'
+                  }}>
                       {reparacion.localizacion
-                        ? `${reparacion.localizacion.direccion}, ${reparacion.localizacion.numero}, ${reparacion.localizacion.localidad}, Esc ${reparacion.localizacion.escalera} Asc ${reparacion.localizacion.ascensor}`
+                        ? `${reparacion.localizacion.direccion}, ${reparacion.localizacion.numero}, ${reparacion.localizacion.localidad}${isMobile ? '' : `, Esc ${reparacion.localizacion.escalera} Asc ${reparacion.localizacion.ascensor}`}`
                         : '—'}
                   </TableCell>
-                  <TableCell>
-                    {reparacion.trabajos_reparaciones && reparacion.trabajos_reparaciones.length > 0 ? (
-                      <Box>
-                        {reparacion.trabajos_reparaciones.map((trabajoRel, index) => (
-                          <Typography key={index} variant="body2">
-                           - {trabajoRel.trabajo.nombre_reparacion}
-                          </Typography>
-                        ))}
-                      </Box>
+                  <TableCell sx={{ minWidth: isMobile ? 35 : 85, padding: isMobile ? '4px 1px' : '8px 4px' }}>
+                    {isMobile ? (
+                      <IconButton 
+                        onClick={() => handleOpenTrabajos(reparacion.trabajos_reparaciones)} 
+                        disabled={!reparacion.trabajos_reparaciones || reparacion.trabajos_reparaciones.length === 0}
+                        size="small"
+                      >
+                        <FontAwesomeIcon icon={faFileText} />
+                      </IconButton>
                     ) : (
-                      '—'
+                      reparacion.trabajos_reparaciones && reparacion.trabajos_reparaciones.length > 0 ? (
+                        <Box>
+                          {reparacion.trabajos_reparaciones.map((trabajoRel, index) => (
+                            <Typography key={index} variant="body2" sx={{ fontSize: '0.8rem' }}>
+                             - {trabajoRel.trabajo.nombre_reparacion}
+                            </Typography>
+                          ))}
+                        </Box>
+                      ) : (
+                        '—'
+                      )
                     )}
                   </TableCell>
-                  <TableCell>{reparacion.comentarios || '—'}</TableCell>
-                  <TableCell>
-                    <IconButton onClick={() => handleOpenFotos(reparacion.fotos)} disabled={!reparacion.fotos || reparacion.fotos.length === 0}>
+                  <TableCell sx={{ 
+                    minWidth: isMobile ? 35 : 105,
+                    fontSize: isMobile ? '0.7rem' : '0.9rem',
+                    wordBreak: 'break-word',
+                    maxWidth: isMobile ? 35 : 'none',
+                    padding: isMobile ? '4px 1px' : '8px 4px'
+                  }}>
+                    {isMobile ? (
+                      <IconButton 
+                        onClick={() => handleOpenComentarios(reparacion.comentarios)} 
+                        disabled={!reparacion.comentarios || reparacion.comentarios.trim() === ''}
+                        size="small"
+                      >
+                        <FontAwesomeIcon icon={faComment} />
+                      </IconButton>
+                    ) : (
+                      reparacion.comentarios || '—'
+                    )}
+                  </TableCell>
+                  <TableCell sx={{ minWidth: isMobile ? 30 : 50, padding: isMobile ? '4px 1px' : '8px 4px' }}>
+                    <IconButton 
+                      onClick={() => handleOpenFotos(reparacion.fotos)} 
+                      disabled={!reparacion.fotos || reparacion.fotos.length === 0}
+                      size="small"
+                    >
                       <FontAwesomeIcon icon={faImages} />
                     </IconButton>
                   </TableCell>
@@ -388,7 +559,7 @@ export default function ReparacionList() {
               ))}
               {filteredReparaciones.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={9} align="center" sx={{ py: 4 }}>
+                  <TableCell colSpan={isMobile ? 6 : 9} align="center" sx={{ py: 4 }}>
                     No hay reparaciones registradas.
                   </TableCell>
                 </TableRow>

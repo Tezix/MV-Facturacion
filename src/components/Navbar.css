@@ -7,9 +7,34 @@
   background: #fff;
   box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
+
 /* Logo image size */
 .logo-img {
   width: 30px;
   height: 30px;
+}
+
+/* Mobile menu styles */
+.mobile-menu-backdrop {
+  position: fixed;
+  top: 64px; /* Height of AppBar */
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1200;
+}
+
+/* Ensure mobile menu appears above other content */
+.MuiMenu-paper {
+  z-index: 1300 !important;
+}
+
+/* Mobile responsiveness improvements */
+@media (max-width: 768px) {
+  .logo-img {
+    width: 25px;
+    height: 25px;
+  }
 }
 

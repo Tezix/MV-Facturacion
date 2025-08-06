@@ -24,7 +24,7 @@ function formatFecha(date) {
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { API } from '../../api/axios';
-import { Box, TextField, Button, Typography, CircularProgress, Autocomplete, Chip, Card, CardMedia, IconButton, Grid } from '@mui/material';
+import { Box, TextField, Button, Typography, CircularProgress, Autocomplete, Chip, Card, CardMedia, IconButton, Grid, useTheme, useMediaQuery } from '@mui/material';
 import StarIcon from '@mui/icons-material/Star';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -33,6 +33,9 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { es } from 'date-fns/locale';
 
 const ReparacionForm = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  
   // Formato dd/MM/yyyy
   const getTodayStr = () => {
     const today = new Date();
@@ -176,14 +179,45 @@ const ReparacionForm = () => {
   }, [location.state]);
 
   const handleFileChange = (e) => {
-    const newFiles = Array.from(e.target.files);
+    const selectedFiles = e.target.files;
+    if (!selectedFiles || selectedFiles.length === 0) return;
+    
+    // Convertir FileList a Array y validar cada archivo
+    const newFiles = Array.from(selectedFiles).filter(file => {
+      // Validar que sea una imagen
+      if (!file.type.startsWith('image/')) {
+        console.warn('Archivo no válido:', file.name, 'tipo:', file.type);
+        return false;
+      }
+      // Validar tamaño (máximo 10MB por archivo)
+      if (file.size > 10 * 1024 * 1024) {
+        console.warn('Archivo muy grande:', file.name, 'tamaño:', file.size);
+        alert(`El archivo ${file.name} es muy grande. Máximo 10MB por archivo.`);
+        return false;
+      }
+      return true;
+    });
+    
+    if (newFiles.length === 0) {
+      e.target.value = '';
+      return;
+    }
     
     // Agregar las nuevas fotos a las existentes en lugar de reemplazarlas
     const updatedFotos = [...fotos, ...newFiles];
     setFotos(updatedFotos);
     
-    // Crear URLs de vista previa para las nuevas fotos
-    const newPreviewUrls = newFiles.map(file => URL.createObjectURL(file));
+    // Crear URLs de vista previa para las nuevas fotos de forma segura
+    const newPreviewUrls = [];
+    newFiles.forEach(file => {
+      try {
+        const url = URL.createObjectURL(file);
+        newPreviewUrls.push(url);
+      } catch (error) {
+        console.error('Error creando URL de vista previa para:', file.name, error);
+        newPreviewUrls.push(null);
+      }
+    });
     
     // Agregar las nuevas URLs a las existentes
     const updatedPreviewUrls = [...previewUrls, ...newPreviewUrls];
@@ -271,8 +305,16 @@ const ReparacionForm = () => {
       if (form.comentarios) formData.append('comentarios', form.comentarios);
       // Append trabajos
       trabajosSeleccionadas.forEach(t => formData.append('trabajos', t.id));
-      // Append fotos nuevas
-      fotos.forEach(file => formData.append('fotos', file));
+      // Append fotos nuevas con validación
+      console.log('Agregando fotos al FormData (saveReparacionAndNavigate):', fotos.length);
+      fotos.forEach((file, index) => {
+        if (file && file instanceof File) {
+          console.log(`Foto ${index + 1}:`, file.name, 'tamaño:', file.size, 'tipo:', file.type);
+          formData.append('fotos', file);
+        } else {
+          console.error(`Foto ${index + 1} no es válida:`, file);
+        }
+      });
       
       let nuevaReparacionId = null;
       
@@ -307,8 +349,14 @@ const ReparacionForm = () => {
         }
       });
     } catch (error) {
-      console.error('Error al guardar reparación:', error);
-      alert('Error al guardar la reparación');
+      console.error('Error al guardar reparación (saveReparacionAndNavigate):', error);
+      console.error('Error response:', error.response?.data);
+      console.error('Error status:', error.response?.status);
+      let errorMessage = 'Error al guardar la reparación';
+      if (error.response?.data) {
+        errorMessage += ': ' + JSON.stringify(error.response.data);
+      }
+      alert(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -329,8 +377,16 @@ const ReparacionForm = () => {
       if (form.comentarios) formData.append('comentarios', form.comentarios);
       // Append trabajos
       trabajosSeleccionadas.forEach(t => formData.append('trabajos', t.id));
-      // Append fotos nuevas
-      fotos.forEach(file => formData.append('fotos', file));
+      // Append fotos nuevas con validación
+      console.log('Agregando fotos al FormData (handleSubmit):', fotos.length);
+      fotos.forEach((file, index) => {
+        if (file && file instanceof File) {
+          console.log(`Foto ${index + 1}:`, file.name, 'tamaño:', file.size, 'tipo:', file.type);
+          formData.append('fotos', file);
+        } else {
+          console.error(`Foto ${index + 1} no es válida:`, file);
+        }
+      });
       
       let nuevaReparacionId = null;
       let isCreacion = false;
@@ -372,8 +428,14 @@ const ReparacionForm = () => {
         }
       }
     } catch (error) {
-      console.error('Error al guardar reparación:', error);
-      alert('Error al guardar la reparación');
+      console.error('Error al guardar reparación (handleSubmit):', error);
+      console.error('Error response:', error.response?.data);
+      console.error('Error status:', error.response?.status);
+      let errorMessage = 'Error al guardar la reparación';
+      if (error.response?.data) {
+        errorMessage += ': ' + JSON.stringify(error.response.data);
+      }
+      alert(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -393,20 +455,22 @@ const ReparacionForm = () => {
         component="form"
         onSubmit={handleSubmit}
         sx={{
-          p: 3,
-          width: '70vw',
+          p: isMobile ? 2 : 3,
+          width: isMobile ? '95vw' : '70vw',
           mx: 'auto',
           display: 'flex',
           flexDirection: 'column',
-          gap: 3,
+          gap: isMobile ? 2 : 3,
         }}
       >
-        <Typography variant="h5" fontWeight="bold">
+        <Typography variant={isMobile ? "h6" : "h5"} fontWeight="bold">
           {id ? 'Editar' : 'Crear'} Reparacion
         </Typography>
 
-        <Box display="flex" alignItems="center" gap={1}>
-          <Box flex={1}>
+        <Box display="flex" alignItems="center" gap={1} sx={{ 
+          flexDirection: isMobile ? 'column' : 'row'
+        }}>
+          <Box flex={1} sx={{ width: '100%' }}>
             <Autocomplete
               options={localizaciones}
               getOptionLabel={(option) =>
@@ -432,6 +496,7 @@ const ReparacionForm = () => {
                   label="Localización"
                   required
                   fullWidth
+                  size={isMobile ? "small" : "medium"}
                 />
               )}
               isOptionEqualToValue={(option, value) => option.id === value.id}
@@ -445,6 +510,11 @@ const ReparacionForm = () => {
           <Button
             variant="outlined"
             color="primary"
+            size={isMobile ? "small" : "medium"}
+            sx={{ 
+              minWidth: isMobile ? '100%' : 'auto',
+              mt: isMobile ? 1 : 0
+            }}
             onClick={() => {
               // Usar la ruta correcta para crear localización
               const direccion = form.localizacionInput || '';
@@ -487,6 +557,7 @@ const ReparacionForm = () => {
                 fullWidth: true,
                 required: true,
                 margin: 'normal',
+                size: isMobile ? "small" : "medium",
                 InputLabelProps: { shrink: true },
                 inputProps: {
                   style: { cursor: 'pointer' },
@@ -503,6 +574,7 @@ const ReparacionForm = () => {
           value={form.num_reparacion || ''}
           onChange={handleChange}
           fullWidth
+          size={isMobile ? "small" : "medium"}
         />
 
         <TextField
@@ -511,10 +583,13 @@ const ReparacionForm = () => {
           value={form.num_pedido || ''}
           onChange={handleChange}
           fullWidth
+          size={isMobile ? "small" : "medium"}
         />
 
-        <Box display="flex" alignItems="center" gap={1}>
-          <Box flex={1}>
+        <Box display="flex" alignItems="center" gap={1} sx={{ 
+          flexDirection: isMobile ? 'column' : 'row'
+        }}>
+          <Box flex={1} sx={{ width: '100%' }}>
             <Autocomplete
               multiple
               options={trabajos}
@@ -539,18 +614,30 @@ const ReparacionForm = () => {
                       {...otherProps}
                       icon={option.especial ? <StarIcon color="warning" /> : undefined}
                       label={option.nombre_reparacion}
+                      size={isMobile ? "small" : "medium"}
                     />
                   );
                 })
               }
               renderInput={(params) => (
-                <TextField {...params} label="Trabajos" placeholder="Selecciona trabajos" fullWidth />
+                <TextField 
+                  {...params} 
+                  label="Trabajos" 
+                  placeholder="Selecciona trabajos" 
+                  fullWidth 
+                  size={isMobile ? "small" : "medium"}
+                />
               )}
             />
           </Box>
           <Button
             variant="outlined"
             color="primary"
+            size={isMobile ? "small" : "medium"}
+            sx={{ 
+              minWidth: isMobile ? '100%' : 'auto',
+              mt: isMobile ? 1 : 0
+            }}
             onClick={saveReparacionAndNavigate}
             disabled={loading}
           >
@@ -565,19 +652,26 @@ const ReparacionForm = () => {
           onChange={handleChange}
           fullWidth
           multiline
-          minRows={2}
-          maxRows={6}
+          minRows={isMobile ? 2 : 2}
+          maxRows={isMobile ? 4 : 6}
+          size={isMobile ? "small" : "medium"}
         />
 
-        <Box display="flex" alignItems="center" gap={2} mt={2}>
-          <Button variant="outlined" component="label">
+        <Box display="flex" alignItems="center" gap={2} mt={2} sx={{
+          flexDirection: isMobile ? 'column' : 'row',
+          alignItems: isMobile ? 'stretch' : 'center'
+        }}>
+          <Button variant="outlined" component="label" size={isMobile ? "small" : "medium"}>
             Subir fotos
             <input hidden accept="image/*" multiple type="file" onChange={handleFileChange} />
           </Button>
           
           {fotos.length > 0 && (
             <>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" color="text.secondary" sx={{
+                fontSize: isMobile ? '0.75rem' : 'inherit',
+                textAlign: isMobile ? 'center' : 'left'
+              }}>
                 {fotos.length} foto{fotos.length !== 1 ? 's' : ''} nueva{fotos.length !== 1 ? 's' : ''} seleccionada{fotos.length !== 1 ? 's' : ''}
               </Typography>
               <Button 
@@ -594,13 +688,13 @@ const ReparacionForm = () => {
         
         {(fotosExistentes.length > 0 || fotos.length > 0) && (
           <Box mt={2}>
-            <Typography variant="h6" gutterBottom>
+            <Typography variant={isMobile ? "subtitle1" : "h6"} gutterBottom>
               Fotos de la reparación ({fotosExistentes.length + fotos.length} total{fotosExistentes.length + fotos.length !== 1 ? 'es' : ''})
             </Typography>
-            <Grid container spacing={2}>
+            <Grid container spacing={isMobile ? 1 : 2}>
               {/* Mostrar fotos existentes */}
               {fotosExistentes.map((foto, idx) => (
-                <Grid item xs={12} sm={6} md={4} lg={3} key={`existente-${foto.id || idx}`}>
+                <Grid item xs={6} sm={6} md={4} lg={3} key={`existente-${foto.id || idx}`}>
                   <Card sx={{ 
                     position: 'relative', 
                     border: '2px solid',
@@ -609,7 +703,7 @@ const ReparacionForm = () => {
                   }}>
                     <CardMedia
                       component="img"
-                      height="200"
+                      height={isMobile ? "150" : "200"}
                       image={foto.foto_url}
                       alt={`Foto existente ${idx + 1}`}
                       sx={{ objectFit: 'cover' }}
@@ -621,8 +715,8 @@ const ReparacionForm = () => {
                     <IconButton
                       sx={{
                         position: 'absolute',
-                        top: 8,
-                        right: 8,
+                        top: 4,
+                        right: 4,
                         backgroundColor: 'rgba(255, 255, 255, 0.8)',
                         '&:hover': {
                           backgroundColor: 'rgba(255, 255, 255, 0.9)',
@@ -631,10 +725,12 @@ const ReparacionForm = () => {
                       onClick={() => handleRemoveFotoExistente(idx)}
                       size="small"
                     >
-                      <DeleteIcon />
+                      <DeleteIcon fontSize={isMobile ? "small" : "medium"} />
                     </IconButton>
-                    <Box p={1}>
-                      <Typography variant="caption" display="block" noWrap color="primary">
+                    <Box p={isMobile ? 0.5 : 1}>
+                      <Typography variant="caption" display="block" noWrap color="primary" sx={{
+                        fontSize: isMobile ? '0.65rem' : 'inherit'
+                      }}>
                         📷 Existente {idx + 1}
                       </Typography>
                     </Box>
@@ -644,7 +740,7 @@ const ReparacionForm = () => {
               
               {/* Mostrar fotos nuevas */}
               {fotos.map((file, idx) => (
-                <Grid item xs={12} sm={6} md={4} lg={3} key={`nueva-${idx}`}>
+                <Grid item xs={6} sm={6} md={4} lg={3} key={`nueva-${idx}`}>
                   <Card sx={{ 
                     position: 'relative', 
                     border: '2px solid',
@@ -653,20 +749,20 @@ const ReparacionForm = () => {
                   }}>
                     <CardMedia
                       component="img"
-                      height="200"
+                      height={isMobile ? "150" : "200"}
                       image={previewUrls[idx]}
                       alt={file.name}
                       sx={{ objectFit: 'cover' }}
                       onError={(e) => {
-                        console.error('Error cargando vista previa:', previewUrls[idx]);
+                        console.error('Error cargando vista previa:', previewUrls[idx], 'para archivo:', file.name);
                         e.target.style.display = 'none';
                       }}
                     />
                     <IconButton
                       sx={{
                         position: 'absolute',
-                        top: 8,
-                        right: 8,
+                        top: 4,
+                        right: 4,
                         backgroundColor: 'rgba(255, 255, 255, 0.8)',
                         '&:hover': {
                           backgroundColor: 'rgba(255, 255, 255, 0.9)',
@@ -675,10 +771,12 @@ const ReparacionForm = () => {
                       onClick={() => handleRemoveFoto(idx)}
                       size="small"
                     >
-                      <DeleteIcon />
+                      <DeleteIcon fontSize={isMobile ? "small" : "medium"} />
                     </IconButton>
-                    <Box p={1}>
-                      <Typography variant="caption" display="block" noWrap color="success.main">
+                    <Box p={isMobile ? 0.5 : 1}>
+                      <Typography variant="caption" display="block" noWrap color="success.main" sx={{
+                        fontSize: isMobile ? '0.65rem' : 'inherit'
+                      }}>
                         🆕 {file.name}
                       </Typography>
                     </Box>
@@ -689,8 +787,19 @@ const ReparacionForm = () => {
           </Box>
         )}
 
-        <Button type="submit" variant="contained" color="primary" disabled={loading} sx={{ mt:3 }}>
-          {loading ? <CircularProgress size={24} /> : id ? 'Actualizar' : 'Crear'}
+        <Button 
+          type="submit" 
+          variant="contained" 
+          color="primary" 
+          disabled={loading} 
+          size={isMobile ? "medium" : "large"}
+          sx={{ 
+            mt: 3,
+            minHeight: isMobile ? 40 : 48,
+            fontSize: isMobile ? '0.9rem' : '1rem'
+          }}
+        >
+          {loading ? <CircularProgress size={isMobile ? 20 : 24} /> : id ? 'Actualizar' : 'Crear'}
         </Button>
       </Box>
       {/* Snackbar eliminado, ahora se muestra en la lista */}
