@@ -63,32 +63,32 @@ const FacturaForm = () => {
     Promise.all([
       API.get('clientes/'),
       API.get('estados/'),
-      API.get('reparaciones/agrupados/'),
+      API.get('reparaciones/'),
       id ? API.get(`facturas/${id}/`) : Promise.resolve(null)
-    ]).then(([clientesRes, estadosRes, reparacionesAgrupadosRes, facturaRes]) => {
+    ]).then(([clientesRes, estadosRes, reparacionesRes, facturaRes]) => {
       setClientes(clientesRes.data);
       setEstados(estadosRes.data);
-      let reparacionesGrupos = [];
-      if (Array.isArray(reparacionesAgrupadosRes.data)) {
-        reparacionesGrupos = reparacionesAgrupadosRes.data.map(grupo => ({
-          id: grupo.reparacion_ids[0],
-          fecha: grupo.fecha,
-          num_reparacion: grupo.num_reparacion,
-          num_pedido: grupo.num_pedido,
-          localizacion: grupo.localizacion,
-          trabajo: Array.isArray(grupo.trabajos) && grupo.trabajos.length > 0 ? grupo.trabajos[0] : null,
-          factura: grupo.factura,
-          proforma: grupo.proforma,
-          reparacion_ids: grupo.reparacion_ids,
+      let reparacionesList = [];
+      if (Array.isArray(reparacionesRes.data)) {
+        reparacionesList = reparacionesRes.data.map(reparacion => ({
+          id: reparacion.id,
+          fecha: reparacion.fecha,
+          num_reparacion: reparacion.num_reparacion,
+          num_pedido: reparacion.num_pedido,
+          localizacion: reparacion.localizacion,
+          trabajo: reparacion.trabajo,
+          factura: reparacion.factura,
+          proforma: reparacion.proforma,
+          reparacion_ids: [reparacion.id], // Mantener compatibilidad con el código existente
         }));
         // Filtrar reparaciones: solo mostrar los que NO tienen ni factura ni proforma asignada, o los que están asignados a la factura actual (en edición)
-        reparacionesGrupos = reparacionesGrupos.filter(grupo => {
-          const sinFacturaNiProforma = !grupo.factura && !grupo.proforma;
-          const asignadaEstaFactura = id && grupo.factura === Number(id);
+        reparacionesList = reparacionesList.filter(reparacion => {
+          const sinFacturaNiProforma = !reparacion.factura && !reparacion.proforma;
+          const asignadaEstaFactura = id && reparacion.factura === Number(id);
           return sinFacturaNiProforma || asignadaEstaFactura;
         });
       }
-      setReparaciones(reparacionesGrupos);
+      setReparaciones(reparacionesList);
       if (facturaRes) {
         const facturaData = facturaRes.data;
         // Excluir numero_factura y total del form
@@ -102,15 +102,15 @@ const FacturaForm = () => {
         });
         // Seleccionar automáticamente los grupos de reparaciones que tengan la propiedad factura igual al id de la factura
         if (id) {
-          let gruposSeleccionados = reparacionesGrupos.filter(grupo => grupo.factura === Number(id));
+          let reparacionesSeleccionadas = reparacionesList.filter(reparacion => reparacion.factura === Number(id));
           // Si venimos de crear una nueva reparación, añadirla a los seleccionados
           if (location.state && location.state.nuevaReparacionId) {
-            const nueva = reparacionesGrupos.find(g => g.reparacion_ids.includes(location.state.nuevaReparacionId));
-            if (nueva && !gruposSeleccionados.some(g => g.id === nueva.id)) {
-              gruposSeleccionados = [...gruposSeleccionados, nueva];
+            const nueva = reparacionesList.find(r => r.reparacion_ids.includes(location.state.nuevaReparacionId));
+            if (nueva && !reparacionesSeleccionadas.some(r => r.id === nueva.id)) {
+              reparacionesSeleccionadas = [...reparacionesSeleccionadas, nueva];
             }
           }
-          setReparacionesSeleccionados(gruposSeleccionados);
+          setReparacionesSeleccionados(reparacionesSeleccionadas);
         }
       } else {
         // Si no hay factura cargada (creación), setear estado por defecto a "Creada" y fecha a hoy

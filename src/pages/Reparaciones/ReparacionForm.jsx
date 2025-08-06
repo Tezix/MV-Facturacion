@@ -24,8 +24,9 @@ function formatFecha(date) {
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { API } from '../../api/axios';
-import { Box, TextField, Button, Typography, CircularProgress, Autocomplete, Chip } from '@mui/material';
+import { Box, TextField, Button, Typography, CircularProgress, Autocomplete, Chip, Card, CardMedia, IconButton, Grid } from '@mui/material';
 import StarIcon from '@mui/icons-material/Star';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -55,6 +56,8 @@ const ReparacionForm = () => {
   const [loading, setLoading] = useState(false); // loading de submit
   const [fetching, setFetching] = useState(true); // loading de datos iniciales
   const [fotos, setFotos] = useState([]);
+  const [fotosExistentes, setFotosExistentes] = useState([]); // Fotos que ya existen en el servidor
+  const [previewUrls, setPreviewUrls] = useState([]); // URLs de vista previa para fotos nuevas
   
   const [dataLoaded, setDataLoaded] = useState(false); // Nueva flag para controlar si los datos ya fueron cargados
   
@@ -118,11 +121,11 @@ const ReparacionForm = () => {
     setFetching(true);
     const fetchAll = async () => {
       try {
-        let grupo = null;
+        let reparacion = null;
         if (id) {
-          // Buscar el grupo correspondiente en el endpoint agrupado
-          const grupos = await API.get('reparaciones/agrupados/').then(res => res.data);
-          grupo = grupos.find(g => g.reparacion_ids.includes(Number(id)));
+          // Cargar la reparación específica
+          const reparacionRes = await API.get(`reparaciones/${id}/`);
+          reparacion = reparacionRes.data;
         }
         const [localizacionesRes, trabajosRes] = await Promise.all([
           API.get('localizaciones_reparaciones/'),
@@ -131,19 +134,28 @@ const ReparacionForm = () => {
         if (!isMounted) return;
         setLocalizaciones(localizacionesRes.data);
         setTrabajos(trabajosRes.data);
-        if (grupo) {
+        if (reparacion) {
           setForm((prev) => ({
             ...prev,
-            fecha: grupo.fecha,
-            num_reparacion: grupo.num_reparacion,
-            num_pedido: grupo.num_pedido,
-            factura: grupo.factura,
-            proforma: grupo.proforma,
-            localizacion: grupo.localizacion.id,
-            localizacionInput: `${grupo.localizacion.direccion}, ${grupo.localizacion.numero} ${grupo.localizacion.ascensor || ''} ${grupo.localizacion.escalera || ''}, ${grupo.localizacion.localidad}`,
-            comentarios: grupo.comentarios || '',
+            fecha: reparacion.fecha,
+            num_reparacion: reparacion.num_reparacion,
+            num_pedido: reparacion.num_pedido,
+            factura: reparacion.factura,
+            proforma: reparacion.proforma,
+            localizacion: reparacion.localizacion.id,
+            localizacionInput: `${reparacion.localizacion.direccion}, ${reparacion.localizacion.numero} ${reparacion.localizacion.ascensor || ''} ${reparacion.localizacion.escalera || ''}, ${reparacion.localizacion.localidad}`,
+            comentarios: reparacion.comentarios || '',
           }));
-          setTrabajosSeleccionadas(grupo.trabajos);
+          // Establecer trabajos seleccionados desde trabajos_reparaciones
+          const trabajosSeleccionados = reparacion.trabajos_reparaciones.map(tr => tr.trabajo);
+          setTrabajosSeleccionadas(trabajosSeleccionados);
+          // Establecer fotos existentes si las hay
+          if (reparacion.fotos && reparacion.fotos.length > 0) {
+            // Las fotos ya vienen con el formato correcto: { id, foto_url }
+            setFotosExistentes(reparacion.fotos);
+            // Guardar una copia para detectar cambios
+            setForm(prev => ({ ...prev, fotosOriginales: [...reparacion.fotos] }));
+          }
         } else {
           // Si es creación, setear fecha a hoy (por si el usuario vuelve a la página)
           setForm((prev) => ({ ...prev, fecha: getTodayStr() }));
@@ -164,8 +176,76 @@ const ReparacionForm = () => {
   }, [location.state]);
 
   const handleFileChange = (e) => {
-    setFotos(Array.from(e.target.files));
+    const newFiles = Array.from(e.target.files);
+    
+    // Agregar las nuevas fotos a las existentes en lugar de reemplazarlas
+    const updatedFotos = [...fotos, ...newFiles];
+    setFotos(updatedFotos);
+    
+    // Crear URLs de vista previa para las nuevas fotos
+    const newPreviewUrls = newFiles.map(file => URL.createObjectURL(file));
+    
+    // Agregar las nuevas URLs a las existentes
+    const updatedPreviewUrls = [...previewUrls, ...newPreviewUrls];
+    setPreviewUrls(updatedPreviewUrls);
+    
+    // Limpiar el input para permitir seleccionar los mismos archivos otra vez si es necesario
+    e.target.value = '';
   };
+
+  const handleRemoveFoto = (index) => {
+    const newFotos = fotos.filter((_, i) => i !== index);
+    const newPreviewUrls = previewUrls.filter((_, i) => i !== index);
+    
+    // Limpiar la URL que se está eliminando
+    if (previewUrls[index]) {
+      URL.revokeObjectURL(previewUrls[index]);
+    }
+    
+    setFotos(newFotos);
+    setPreviewUrls(newPreviewUrls);
+  };
+
+  const handleRemoveFotoExistente = async (index) => {
+    const fotoToDelete = fotosExistentes[index];
+    
+    try {
+      // Si la foto tiene un ID real, eliminarla del servidor
+      if (fotoToDelete.id && !fotoToDelete.id.toString().startsWith('temp-')) {
+        // Eliminar la foto directamente usando el ID de la reparación
+        await API.delete(`reparaciones/${id}/fotos/${fotoToDelete.id}/`);
+      }
+      
+      // Actualizar el estado local
+      const newFotosExistentes = fotosExistentes.filter((_, i) => i !== index);
+      setFotosExistentes(newFotosExistentes);
+    } catch (error) {
+      console.error('Error al eliminar foto:', error);
+      alert('Error al eliminar la foto');
+    }
+  };
+
+  const handleClearAllNewFotos = () => {
+    // Limpiar todas las URLs de vista previa
+    previewUrls.forEach(url => {
+      if (url) {
+        URL.revokeObjectURL(url);
+      }
+    });
+    setFotos([]);
+    setPreviewUrls([]);
+  };
+
+  // Limpiar URLs al desmontar el componente
+  useEffect(() => {
+    return () => {
+      previewUrls.forEach(url => {
+        if (url) {
+          URL.revokeObjectURL(url);
+        }
+      });
+    };
+  }, [previewUrls]);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -191,32 +271,27 @@ const ReparacionForm = () => {
       if (form.comentarios) formData.append('comentarios', form.comentarios);
       // Append trabajos
       trabajosSeleccionadas.forEach(t => formData.append('trabajos', t.id));
-      // Append fotos
+      // Append fotos nuevas
       fotos.forEach(file => formData.append('fotos', file));
       
       let nuevaReparacionId = null;
       
       if (id) {
-        // Obtener el grupo de reparaciones a editar
-        const grupos = await API.get('reparaciones/agrupados/').then(res => res.data);
-        const grupo = grupos.find(g => g.reparacion_ids.includes(Number(id)));
-        if (grupo) {
-          // Eliminar todos los reparaciones del grupo
-          await Promise.all(grupo.reparacion_ids.map(tid => API.delete(`reparaciones/${tid}/`)));
-        }
-        // Crear los nuevos reparaciones con las trabajos seleccionadas
-        const res = await API.post('reparaciones/', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
-        if (res.data && Array.isArray(res.data) && res.data.length > 0) {
-          nuevaReparacionId = res.data[0].id;
-        }
+        // EDICIÓN: Actualizar reparación existente
+        // SIEMPRE enviar fotos_a_mantener para indicar qué fotos mantener
+        const fotosIdsAMantener = fotosExistentes.map(foto => foto.id).filter(id => id);
+        formData.append('fotos_a_mantener', fotosIdsAMantener.join(','));
+        
+        await API.patch(`reparaciones/${id}/`, formData, { 
+          headers: { 'Content-Type': 'multipart/form-data' } 
+        });
+        nuevaReparacionId = id;
       } else {
-        // Crear y obtener el id de la nueva reparación
-        const res = await API.post('reparaciones/', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
-        if (res.data && Array.isArray(res.data) && res.data.length > 0) {
-          nuevaReparacionId = res.data[0].id;
-        } else if (res.data && res.data.id) {
-          nuevaReparacionId = res.data.id;
-        }
+        // CREACIÓN: Crear nueva reparación
+        const res = await API.post('reparaciones/', formData, { 
+          headers: { 'Content-Type': 'multipart/form-data' } 
+        });
+        nuevaReparacionId = res.data.id;
       }
 
       // Navegar a crear trabajo
@@ -254,33 +329,31 @@ const ReparacionForm = () => {
       if (form.comentarios) formData.append('comentarios', form.comentarios);
       // Append trabajos
       trabajosSeleccionadas.forEach(t => formData.append('trabajos', t.id));
-      // Append fotos
+      // Append fotos nuevas
       fotos.forEach(file => formData.append('fotos', file));
+      
       let nuevaReparacionId = null;
       let isCreacion = false;
+      
       if (id) {
-        // Obtener el grupo de reparaciones a editar
-        const grupos = await API.get('reparaciones/agrupados/').then(res => res.data);
-        const grupo = grupos.find(g => g.reparacion_ids.includes(Number(id)));
-        if (grupo) {
-          // Eliminar todos los reparaciones del grupo
-          await Promise.all(grupo.reparacion_ids.map(tid => API.delete(`reparaciones/${tid}/`)));
-        }
-        // Crear los nuevos reparaciones con las trabajos seleccionadas
-        const res = await API.post('reparaciones/', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
-        if (res.data && Array.isArray(res.data) && res.data.length > 0) {
-          nuevaReparacionId = res.data[0].id;
-        }
+        // EDICIÓN: Actualizar reparación existente
+        // SIEMPRE enviar fotos_a_mantener para indicar qué fotos mantener
+        const fotosIdsAMantener = fotosExistentes.map(foto => foto.id).filter(id => id);
+        formData.append('fotos_a_mantener', fotosIdsAMantener.join(','));
+        
+        await API.patch(`reparaciones/${id}/`, formData, { 
+          headers: { 'Content-Type': 'multipart/form-data' } 
+        });
+        nuevaReparacionId = id;
       } else {
-        // Crear y obtener el id de la nueva reparación
-        const res = await API.post('reparaciones/', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+        // CREACIÓN: Crear nueva reparación
+        const res = await API.post('reparaciones/', formData, { 
+          headers: { 'Content-Type': 'multipart/form-data' } 
+        });
         isCreacion = true;
-        if (res.data && Array.isArray(res.data) && res.data.length > 0) {
-          nuevaReparacionId = res.data[0].id;
-        } else if (res.data && res.data.id) {
-          nuevaReparacionId = res.data.id;
-        }
+        nuevaReparacionId = res.data.id;
       }
+      
       // Si venimos de una factura o proforma, volver y pasar el id de la nueva reparación
       if (location.state && location.state.fromFactura && location.state.facturaId) {
         navigate(`/facturas/editar/${location.state.facturaId}`, {
@@ -298,6 +371,9 @@ const ReparacionForm = () => {
           navigate('/reparaciones', { state: { snackbar: { open: true, message: 'Reparación actualizada correctamente', severity: 'success' } } });
         }
       }
+    } catch (error) {
+      console.error('Error al guardar reparación:', error);
+      alert('Error al guardar la reparación');
     } finally {
       setLoading(false);
     }
@@ -493,17 +569,125 @@ const ReparacionForm = () => {
           maxRows={6}
         />
 
-        <Button variant="contained" component="label" sx={{ mt:2 }}>
-          Subir fotos
-          <input hidden accept="image/*" multiple type="file" onChange={handleFileChange} capture="environment" />
-        </Button>
-        { fotos.length > 0 && (
-          <Box mt={1} display="flex" flexWrap="wrap">
-            {fotos.map((file, idx) => (
-              <Chip key={idx} label={file.name} sx={{ mr: 1, mb: 1 }} />
-            ))}
+        <Box display="flex" alignItems="center" gap={2} mt={2}>
+          <Button variant="outlined" component="label">
+            Subir fotos
+            <input hidden accept="image/*" multiple type="file" onChange={handleFileChange} />
+          </Button>
+          
+          {fotos.length > 0 && (
+            <>
+              <Typography variant="body2" color="text.secondary">
+                {fotos.length} foto{fotos.length !== 1 ? 's' : ''} nueva{fotos.length !== 1 ? 's' : ''} seleccionada{fotos.length !== 1 ? 's' : ''}
+              </Typography>
+              <Button 
+                variant="outlined" 
+                color="error" 
+                size="small"
+                onClick={handleClearAllNewFotos}
+              >
+                Limpiar nuevas
+              </Button>
+            </>
+          )}
+        </Box>
+        
+        {(fotosExistentes.length > 0 || fotos.length > 0) && (
+          <Box mt={2}>
+            <Typography variant="h6" gutterBottom>
+              Fotos de la reparación ({fotosExistentes.length + fotos.length} total{fotosExistentes.length + fotos.length !== 1 ? 'es' : ''})
+            </Typography>
+            <Grid container spacing={2}>
+              {/* Mostrar fotos existentes */}
+              {fotosExistentes.map((foto, idx) => (
+                <Grid item xs={12} sm={6} md={4} lg={3} key={`existente-${foto.id || idx}`}>
+                  <Card sx={{ 
+                    position: 'relative', 
+                    border: '2px solid',
+                    borderColor: 'primary.main',
+                    borderRadius: 2
+                  }}>
+                    <CardMedia
+                      component="img"
+                      height="200"
+                      image={foto.foto_url}
+                      alt={`Foto existente ${idx + 1}`}
+                      sx={{ objectFit: 'cover' }}
+                      onError={(e) => {
+                        console.error('Error cargando imagen:', foto.foto_url);
+                        e.target.style.display = 'none';
+                      }}
+                    />
+                    <IconButton
+                      sx={{
+                        position: 'absolute',
+                        top: 8,
+                        right: 8,
+                        backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                        '&:hover': {
+                          backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                        },
+                      }}
+                      onClick={() => handleRemoveFotoExistente(idx)}
+                      size="small"
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                    <Box p={1}>
+                      <Typography variant="caption" display="block" noWrap color="primary">
+                        📷 Existente {idx + 1}
+                      </Typography>
+                    </Box>
+                  </Card>
+                </Grid>
+              ))}
+              
+              {/* Mostrar fotos nuevas */}
+              {fotos.map((file, idx) => (
+                <Grid item xs={12} sm={6} md={4} lg={3} key={`nueva-${idx}`}>
+                  <Card sx={{ 
+                    position: 'relative', 
+                    border: '2px solid',
+                    borderColor: 'success.main',
+                    borderRadius: 2
+                  }}>
+                    <CardMedia
+                      component="img"
+                      height="200"
+                      image={previewUrls[idx]}
+                      alt={file.name}
+                      sx={{ objectFit: 'cover' }}
+                      onError={(e) => {
+                        console.error('Error cargando vista previa:', previewUrls[idx]);
+                        e.target.style.display = 'none';
+                      }}
+                    />
+                    <IconButton
+                      sx={{
+                        position: 'absolute',
+                        top: 8,
+                        right: 8,
+                        backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                        '&:hover': {
+                          backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                        },
+                      }}
+                      onClick={() => handleRemoveFoto(idx)}
+                      size="small"
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                    <Box p={1}>
+                      <Typography variant="caption" display="block" noWrap color="success.main">
+                        🆕 {file.name}
+                      </Typography>
+                    </Box>
+                  </Card>
+                </Grid>
+              ))}
+            </Grid>
           </Box>
-        ) }
+        )}
 
         <Button type="submit" variant="contained" color="primary" disabled={loading} sx={{ mt:3 }}>
           {loading ? <CircularProgress size={24} /> : id ? 'Actualizar' : 'Crear'}

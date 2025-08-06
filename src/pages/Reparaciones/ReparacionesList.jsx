@@ -49,19 +49,19 @@ export default function ReparacionList() {
   });
   // Para menú de acciones
   const [menuAnchorEl, setMenuAnchorEl] = useState(null);
-  const [menuGrupo, setMenuGrupo] = useState(null);
-  const handleMenuOpen = (event, grupo) => {
+  const [menuReparacion, setMenuReparacion] = useState(null);
+  const handleMenuOpen = (event, reparacion) => {
     setMenuAnchorEl(event.currentTarget);
-    setMenuGrupo(grupo);
+    setMenuReparacion(reparacion);
   };
   const handleMenuClose = () => {
     setMenuAnchorEl(null);
-    setMenuGrupo(null);
+    setMenuReparacion(null);
   };
-  // Estado para saber si está eliminando un grupo específico
+  // Estado para saber si está eliminando una reparación específica
   const [deletingId, setDeletingId] = useState(null);
   // Dialog de borrado
-  const [deleteDialog, setDeleteDialog] = useState({ open: false, grupo: null });
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, reparacion: null });
   // Snackbar
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const location = useLocation();
@@ -77,23 +77,23 @@ export default function ReparacionList() {
   }, [location.state, location.pathname, navigate]);
 
   useEffect(() => {
-    API.get('reparaciones/agrupados/')
+    API.get('reparaciones/')
       .then((res) => setReparaciones(res.data))
       .finally(() => setLoading(false));
   }, []);
 
-  const handleDelete = async (grupo) => {
-    setDeletingId(grupo && grupo.reparacion_ids ? grupo.reparacion_ids[0] : null);
+  const handleDelete = async (reparacion) => {
+    setDeletingId(reparacion.id);
     try {
-      await Promise.all(grupo.reparacion_ids.map(tid => API.delete(`reparaciones/${tid}/`)));
-      // Refrescar la lista agrupada
-      const nuevos = await API.get('reparaciones/agrupados/').then(res => res.data);
+      await API.delete(`reparaciones/${reparacion.id}/`);
+      // Refrescar la lista
+      const nuevos = await API.get('reparaciones/').then(res => res.data);
       setReparaciones(nuevos);
-      setSnackbar({ open: true, message: 'Reparaciones eliminadas correctamente', severity: 'success' });
+      setSnackbar({ open: true, message: 'Reparación eliminada correctamente', severity: 'success' });
     } catch {
-      setSnackbar({ open: true, message: 'Error al eliminar las reparaciones del grupo', severity: 'error' });
+      setSnackbar({ open: true, message: 'Error al eliminar la reparación', severity: 'error' });
     } finally {
-      setDeleteDialog({ open: false, grupo: null });
+      setDeleteDialog({ open: false, reparacion: null });
       setDeletingId(null);
     }
   };
@@ -110,33 +110,33 @@ export default function ReparacionList() {
     return dateB - dateA;
   });
 
-  const filteredReparaciones = sortedReparaciones.filter((t) => {
+  const filteredReparaciones = sortedReparaciones.filter((reparacion) => {
     // Fecha (permite buscar por substring)
-    if (filters.fecha && !(t.fecha || '').toLowerCase().includes(filters.fecha.toLowerCase())) return false;
+    if (filters.fecha && !(reparacion.fecha || '').toLowerCase().includes(filters.fecha.toLowerCase())) return false;
     // Nº Reparación
-    if (filters.num_reparacion && !(String(t.num_reparacion || '').toLowerCase().includes(filters.num_reparacion.toLowerCase()))) return false;
+    if (filters.num_reparacion && !(String(reparacion.num_reparacion || '').toLowerCase().includes(filters.num_reparacion.toLowerCase()))) return false;
     // Nº Pedido
-    if (filters.num_pedido && !(String(t.num_pedido || '').toLowerCase().includes(filters.num_pedido.toLowerCase()))) return false;
+    if (filters.num_pedido && !(String(reparacion.num_pedido || '').toLowerCase().includes(filters.num_pedido.toLowerCase()))) return false;
     // Factura
-    if (filters.factura && !((t.factura_numero || t.factura || '').toLowerCase().includes(filters.factura.toLowerCase()))) return false;
+    if (filters.factura && !((reparacion.factura_numero || reparacion.factura || '').toLowerCase().includes(filters.factura.toLowerCase()))) return false;
     // Proforma
-    if (filters.proforma && !((t.proforma_numero || t.proforma || '').toLowerCase().includes(filters.proforma.toLowerCase()))) return false;
+    if (filters.proforma && !((reparacion.proforma_numero || reparacion.proforma || '').toLowerCase().includes(filters.proforma.toLowerCase()))) return false;
     // Localización
     if (filters.localizacion) {
-      const loc = t.localizacion
-        ? `${t.localizacion.direccion}, ${t.localizacion.numero}, ${t.localizacion.localidad}`
+      const loc = reparacion.localizacion
+        ? `${reparacion.localizacion.direccion}, ${reparacion.localizacion.numero}, ${reparacion.localizacion.localidad}`
         : '';
       if (!loc.toLowerCase().includes(filters.localizacion.toLowerCase())) return false;
     }
-    // Trabajo (busca en todos los trabajos del grupo)
+    // Trabajo (busca en todos los trabajos de la reparación)
     if (filters.trabajo) {
-      const trabajos = t.trabajos && t.trabajos.length > 0
-        ? t.trabajos.map(tr => tr.nombre_reparacion).join(' ').toLowerCase()
+      const trabajos = reparacion.trabajos_reparaciones && reparacion.trabajos_reparaciones.length > 0
+        ? reparacion.trabajos_reparaciones.map(tr => tr.trabajo.nombre_reparacion).join(' ').toLowerCase()
         : '';
       if (!trabajos.includes(filters.trabajo.toLowerCase())) return false;
     }
     // Comentarios
-    if (filters.comentarios && !(String(t.comentarios || '').toLowerCase().includes(filters.comentarios.toLowerCase()))) return false;
+    if (filters.comentarios && !(String(reparacion.comentarios || '').toLowerCase().includes(filters.comentarios.toLowerCase()))) return false;
     return true;
   });
 
@@ -155,9 +155,13 @@ export default function ReparacionList() {
           <DialogTitle>Fotos adjuntas</DialogTitle>
           <DialogContent dividers>
             {fotosDialog.fotos && fotosDialog.fotos.length > 0 ? (
-              fotosDialog.fotos.map((url, idx) => (
-                <Box key={idx} component="img" src={url} alt={`Foto ${idx+1}`} sx={{ width: '100%', mb: 2 }} />
-              ))
+              fotosDialog.fotos.map((foto, idx) => {
+                // Manejar tanto el formato nuevo (objeto con foto_url) como el viejo (URL directa)
+                const url = typeof foto === 'string' ? foto : foto.foto_url;
+                return (
+                  <Box key={idx} component="img" src={url} alt={`Foto ${idx+1}`} sx={{ width: '100%', mb: 2 }} />
+                );
+              })
             ) : (
               <Typography>No hay fotos adjuntas.</Typography>
             )}
@@ -317,34 +321,34 @@ export default function ReparacionList() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {filteredReparaciones.map((t) => (
-                <TableRow key={t.reparacion_ids[0]}>
+              {filteredReparaciones.map((reparacion) => (
+                <TableRow key={reparacion.id}>
                   <TableCell>
                     <Tooltip title="Acciones">
-                      <IconButton size="small" onClick={e => handleMenuOpen(e, t)}>
+                      <IconButton size="small" onClick={e => handleMenuOpen(e, reparacion)}>
                         <FontAwesomeIcon icon={faEllipsisV} />
                       </IconButton>
                     </Tooltip>
                     <Menu
                       anchorEl={menuAnchorEl}
-                      open={Boolean(menuAnchorEl) && menuGrupo === t}
+                      open={Boolean(menuAnchorEl) && menuReparacion === reparacion}
                       onClose={handleMenuClose}
                     >
-                      <MenuItem component={Link} to={`/reparaciones/editar/${t.reparacion_ids[0]}`} onClick={handleMenuClose}>
+                      <MenuItem component={Link} to={`/reparaciones/editar/${reparacion.id}`} onClick={handleMenuClose}>
                         <ListItemIcon><FontAwesomeIcon icon={faPencilAlt} /></ListItemIcon>
                         <ListItemText>Editar</ListItemText>
                       </MenuItem>
-                      <MenuItem onClick={() => { setDeleteDialog({ open: true, grupo: t }); handleMenuClose(); }}>
+                      <MenuItem onClick={() => { setDeleteDialog({ open: true, reparacion: reparacion }); handleMenuClose(); }}>
                         <ListItemIcon><FontAwesomeIcon icon={faTrash} /></ListItemIcon>
                         <ListItemText>Eliminar</ListItemText>
                       </MenuItem>
                     </Menu>
                   </TableCell>
                   <TableCell>{
-                    t.fecha
+                    reparacion.fecha
                       ? (() => {
-                          const d = new Date(t.fecha);
-                          if (isNaN(d)) return t.fecha;
+                          const d = new Date(reparacion.fecha);
+                          if (isNaN(d)) return reparacion.fecha;
                           const day = String(d.getDate()).padStart(2, '0');
                           const month = String(d.getMonth() + 1).padStart(2, '0');
                           const year = d.getFullYear();
@@ -352,21 +356,21 @@ export default function ReparacionList() {
                         })()
                       : ''
                   }</TableCell>
-                  <TableCell>{t.num_reparacion || '—'}</TableCell>
-                  <TableCell>{t.num_pedido || '—'}</TableCell>
-                  <TableCell>{t.factura_numero || t.factura || '—'}</TableCell>
-                  <TableCell>{t.proforma_numero || t.proforma || '—'}</TableCell>
+                  <TableCell>{reparacion.num_reparacion || '—'}</TableCell>
+                  <TableCell>{reparacion.num_pedido || '—'}</TableCell>
+                  <TableCell>{reparacion.factura_numero || reparacion.factura || '—'}</TableCell>
+                  <TableCell>{reparacion.proforma_numero || reparacion.proforma || '—'}</TableCell>
                   <TableCell>
-                      {t.localizacion
-                        ? `${t.localizacion.direccion}, ${t.localizacion.numero}, ${t.localizacion.localidad}, Esc ${t.localizacion.escalera} Asc ${t.localizacion.ascensor}`
+                      {reparacion.localizacion
+                        ? `${reparacion.localizacion.direccion}, ${reparacion.localizacion.numero}, ${reparacion.localizacion.localidad}, Esc ${reparacion.localizacion.escalera} Asc ${reparacion.localizacion.ascensor}`
                         : '—'}
                   </TableCell>
                   <TableCell>
-                    {t.trabajos && t.trabajos.length > 0 ? (
+                    {reparacion.trabajos_reparaciones && reparacion.trabajos_reparaciones.length > 0 ? (
                       <Box>
-                        {t.trabajos.map((trabajo, index) => (
+                        {reparacion.trabajos_reparaciones.map((trabajoRel, index) => (
                           <Typography key={index} variant="body2">
-                           - {trabajo.nombre_reparacion}
+                           - {trabajoRel.trabajo.nombre_reparacion}
                           </Typography>
                         ))}
                       </Box>
@@ -374,9 +378,9 @@ export default function ReparacionList() {
                       '—'
                     )}
                   </TableCell>
-                  <TableCell>{t.comentarios || '—'}</TableCell>
+                  <TableCell>{reparacion.comentarios || '—'}</TableCell>
                   <TableCell>
-                    <IconButton onClick={() => handleOpenFotos(t.fotos)} disabled={!t.fotos || t.fotos.length === 0}>
+                    <IconButton onClick={() => handleOpenFotos(reparacion.fotos)} disabled={!reparacion.fotos || reparacion.fotos.length === 0}>
                       <FontAwesomeIcon icon={faImages} />
                     </IconButton>
                   </TableCell>
@@ -396,20 +400,20 @@ export default function ReparacionList() {
         {/* Dialog de confirmación de borrado */}
         <Dialog
           open={deleteDialog.open}
-          onClose={() => setDeleteDialog({ open: false, grupo: null })}
+          onClose={() => setDeleteDialog({ open: false, reparacion: null })}
         >
           <DialogTitle>Confirmar eliminación</DialogTitle>
           <DialogContent>
             <DialogContentText>
-              ¿Estás seguro de que quieres eliminar todas las reparaciones de este grupo? Esta acción no se puede deshacer.
+              ¿Estás seguro de que quieres eliminar esta reparación? Esta acción no se puede deshacer.
             </DialogContentText>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setDeleteDialog({ open: false, grupo: null })} color="inherit" disabled={deletingId !== null}>
+            <Button onClick={() => setDeleteDialog({ open: false, reparacion: null })} color="inherit" disabled={deletingId !== null}>
               Cancelar
             </Button>
             <Button
-              onClick={() => handleDelete(deleteDialog.grupo)}
+              onClick={() => handleDelete(deleteDialog.reparacion)}
               color="error"
               variant="contained"
               disabled={deletingId !== null}

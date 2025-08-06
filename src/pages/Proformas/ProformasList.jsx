@@ -26,6 +26,7 @@ import {
   ListItemText,
   TextField
 } from "@mui/material";
+import StarIcon from '@mui/icons-material/Star';
 import IconButton from '@mui/material/IconButton';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash, faPencilAlt, faFilePdf, faEnvelope, faEllipsisV, faFileInvoiceDollar } from '@fortawesome/free-solid-svg-icons';
@@ -141,9 +142,63 @@ const ProformasList = () => {
   };
 
   useEffect(() => {
-    API.get("proformas/con-reparaciones/")
-      .then((res) => setProformas(res.data))
-      .finally(() => setLoading(false));
+    Promise.all([
+      API.get('proformas/'),
+      API.get('reparaciones/'),
+      API.get('estados/'),
+      API.get('clientes/')
+    ]).then(([proformasRes, reparacionesRes, estadosRes, clientesRes]) => {
+      const proformas = proformasRes.data;
+      const reparaciones = reparacionesRes.data;
+      const estados = estadosRes.data;
+      const clientes = clientesRes.data;
+
+      // Crear mapas para búsqueda rápida
+      const estadosMap = estados.reduce((acc, estado) => {
+        acc[estado.id] = estado;
+        return acc;
+      }, {});
+
+      const clientesMap = clientes.reduce((acc, cliente) => {
+        acc[cliente.id] = cliente;
+        return acc;
+      }, {});
+
+      // Agrupar reparaciones por proforma
+      const reparacionesPorProforma = reparaciones.reduce((acc, reparacion) => {
+        if (reparacion.proforma) {
+          if (!acc[reparacion.proforma]) {
+            acc[reparacion.proforma] = [];
+          }
+          acc[reparacion.proforma].push({
+            id: reparacion.id,
+            fecha: reparacion.fecha,
+            num_reparacion: reparacion.num_reparacion,
+            num_pedido: reparacion.num_pedido,
+            localizacion: reparacion.localizacion ? 
+              `${reparacion.localizacion.direccion || ''} ${reparacion.localizacion.numero || ''}`.trim() : 
+              'Sin localización',
+            trabajos: reparacion.trabajos_reparaciones ? 
+              reparacion.trabajos_reparaciones.map(tr => ({
+                nombre_reparacion: tr.trabajo.nombre_reparacion,
+                precio: tr.trabajo.precio,
+                especial: tr.trabajo.especial
+              })) : []
+          });
+        }
+        return acc;
+      }, {});
+
+      // Enriquecer proformas con datos relacionados
+      const proformasEnriquecidas = proformas.map(proforma => ({
+        ...proforma,
+        estado_nombre: estadosMap[proforma.estado]?.nombre || 'Desconocido',
+        cliente_nombre: clientesMap[proforma.cliente]?.nombre || 'Cliente desconocido',
+        reparaciones: reparacionesPorProforma[proforma.id] || []
+      }));
+
+      setProformas(proformasEnriquecidas);
+    }).finally(() => setLoading(false));
   }, []);
 
   // Estado para saber si está eliminando una proforma específica
@@ -572,8 +627,11 @@ const ProformasList = () => {
                 {detalleReparacion.reparacion.trabajos && detalleReparacion.reparacion.trabajos.length > 0 ? (
                   <ul style={{ marginTop: 4 }}>
                     {detalleReparacion.reparacion.trabajos.map((trabajo, idx) => (
-                      <li key={idx}>
-                        {trabajo.nombre_reparacion} ({trabajo.precio} €)
+                      <li key={idx} style={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
+                        <span>
+                          {trabajo.nombre_reparacion} ({trabajo.precio} €)
+                          {trabajo.especial && <StarIcon color="warning" fontSize="small" sx={{ ml: 1 }} />}
+                        </span>
                       </li>
                     ))}
                   </ul>

@@ -26,6 +26,7 @@ import {
   ListItemIcon,
   ListItemText,
 } from '@mui/material';
+import StarIcon from '@mui/icons-material/Star';
 import IconButton from '@mui/material/IconButton';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash, faPencilAlt, faFilePdf, faEnvelope, faEllipsisV } from '@fortawesome/free-solid-svg-icons';
@@ -79,9 +80,64 @@ export default function FacturasList() {
   }, [location.state, location.pathname, navigate]);
 
   useEffect(() => {
-    API.get('facturas/con-reparaciones/')
-      .then((res) => setFacturas(res.data))
-      .finally(() => setLoading(false));
+    Promise.all([
+      API.get('facturas/'),
+      API.get('reparaciones/'),
+      API.get('estados/'),
+      API.get('clientes/')
+    ]).then(([facturasRes, reparacionesRes, estadosRes, clientesRes]) => {
+      const facturasData = facturasRes.data;
+      const reparacionesData = reparacionesRes.data;
+      const estadosData = estadosRes.data;
+      const clientesData = clientesRes.data;
+      
+      // Enriquecer facturas con sus reparaciones, estados y clientes
+      const facturasConReparaciones = facturasData.map(factura => {
+        const reparacionesFactura = reparacionesData.filter(rep => rep.factura === factura.id);
+        
+        // Buscar el estado y cliente correspondientes
+        const estadoObj = estadosData.find(e => e.id === factura.estado);
+        const clienteObj = clientesData.find(c => c.id === factura.cliente);
+        
+        // Agrupar reparaciones por localizacion y num_reparacion para mostrar trabajos juntos
+        const gruposReparaciones = {};
+        reparacionesFactura.forEach(rep => {
+          const key = `${rep.num_reparacion}-${rep.localizacion?.id || 'sin-loc'}`;
+          if (!gruposReparaciones[key]) {
+            gruposReparaciones[key] = {
+              id: rep.id,
+              fecha: rep.fecha,
+              num_reparacion: rep.num_reparacion,
+              num_pedido: rep.num_pedido,
+              localizacion: rep.localizacion ? 
+                `${rep.localizacion.direccion} ${rep.localizacion.numero}${rep.localizacion.escalera ? `, Esc ${rep.localizacion.escalera}` : ''}${rep.localizacion.ascensor ? `, Asc ${rep.localizacion.ascensor}` : ''}` : 
+                'Sin localización',
+              trabajos: []
+            };
+          }
+          
+          // Añadir trabajos de esta reparación al grupo
+          if (rep.trabajos_reparaciones && rep.trabajos_reparaciones.length > 0) {
+            rep.trabajos_reparaciones.forEach(tr => {
+              gruposReparaciones[key].trabajos.push({
+                nombre_reparacion: tr.trabajo.nombre_reparacion,
+                precio: tr.trabajo.precio,
+                especial: tr.trabajo.especial
+              });
+            });
+          }
+        });
+        
+        return {
+          ...factura,
+          estado_nombre: estadoObj ? estadoObj.nombre : factura.estado,
+          cliente_nombre: clienteObj ? clienteObj.nombre : factura.cliente,
+          reparaciones: Object.values(gruposReparaciones)
+        };
+      });
+      
+      setFacturas(facturasConReparaciones);
+    }).finally(() => setLoading(false));
   }, []);
   // Cargar estados para asignar estado 'Enviada'
   useEffect(() => {
@@ -484,8 +540,11 @@ export default function FacturasList() {
                 {detalleReparacion.reparacion.trabajos && detalleReparacion.reparacion.trabajos.length > 0 ? (
                   <ul style={{ marginTop: 4 }}>
                     {detalleReparacion.reparacion.trabajos.map((trabajo, idx) => (
-                      <li key={idx}>
-                        {trabajo.nombre_reparacion} ({trabajo.precio} €)
+                      <li key={idx} style={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
+                        <span>
+                          {trabajo.nombre_reparacion} ({trabajo.precio} €)
+                          {trabajo.especial && <StarIcon color="warning" fontSize="small" sx={{ ml: 1 }} />}
+                        </span>
                       </li>
                     ))}
                   </ul>
