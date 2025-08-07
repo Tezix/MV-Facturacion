@@ -24,18 +24,23 @@ import {
   MenuItem,
   ListItemIcon,
   ListItemText,
-  TextField
+  TextField,
+  useTheme,
+  useMediaQuery,
 } from "@mui/material";
 import StarIcon from '@mui/icons-material/Star';
 import IconButton from '@mui/material/IconButton';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTrash, faPencilAlt, faFilePdf, faEnvelope, faEllipsisV, faFileInvoiceDollar } from '@fortawesome/free-solid-svg-icons';
+import { faTrash, faPencilAlt, faFilePdf, faEnvelope, faEllipsisV, faFileInvoiceDollar, faFileText } from '@fortawesome/free-solid-svg-icons';
 import { saveAs } from 'file-saver';
 import NumPedidoDialog from './NumPedidoDialog';
 import LoadingOverlay from '../../components/LoadingOverlay';
 import emailjs from '@emailjs/browser';
 
 const ProformasList = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  
   // Inicializar EmailJS usando variable de entorno
   emailjs.init(import.meta.env.VITE_EMAILJS_USER_ID);
 
@@ -58,6 +63,10 @@ const ProformasList = () => {
   useEffect(() => {
     API.get('estados/').then(res => setEstados(res.data));
   }, []);
+  // Estado para el popup de detalle de reparación
+  const [detalleReparacion, setDetalleReparacion] = useState({ open: false, reparacion: null });
+  // Estado para el popup de estado
+  const [estadoDialog, setEstadoDialog] = useState({ open: false, estado: null });
   // Estado para el menú de acciones
   const [menuAnchorEl, setMenuAnchorEl] = useState(null);
   const [menuProformaId, setMenuProformaId] = useState(null);
@@ -94,8 +103,6 @@ const ProformasList = () => {
   const [confirmDialog, setConfirmDialog] = useState({ open: false, proformaId: null });
   // Dialog para pedir número de pedido
   const [numPedidoDialog, setNumPedidoDialog] = useState({ open: false, proformaId: null });
-  // Estado para el popup de detalle de reparación
-  const [detalleReparacion, setDetalleReparacion] = useState({ open: false, reparacion: null });
   // Estado global para tooltip flotante de fila convertida
   const [hoveredRow, setHoveredRow] = useState(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
@@ -289,9 +296,12 @@ const ProformasList = () => {
 
   return (
     <LoadingOverlay loading={loading}>
-      <Box p={3}>
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-          <Typography variant="h4" component="h1">
+      <Box p={isMobile ? 1 : 1} sx={{overflowX: 'hidden' }}>
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3} sx={{ 
+          flexDirection: isMobile ? 'column' : 'row',
+          gap: isMobile ? 1 : 0
+        }}>
+          <Typography variant={isMobile ? "h5" : "h4"} sx={{ mb: isMobile ? 1 : 0 }}>
             Proformas
           </Typography>
           <Button
@@ -300,17 +310,23 @@ const ProformasList = () => {
             component={Link}
             to="/proformas/nueva"
             startIcon={<span style={{fontSize: 20, fontWeight: 'bold', lineHeight: 1}}>+</span>}
+            size={isMobile ? "small" : "medium"}
           >
             Nueva
           </Button>
         </Box>
 
-        <Paper elevation={3}>
-          <Table>
+        <Paper elevation={3} sx={{ overflowX: 'auto' }}>
+          <Table sx={{ 
+            minWidth: isMobile ? 'auto' : 650,
+            '& .MuiTableCell-root': {
+              padding: isMobile ? '4px 2px' : '4px 2px'
+            }
+          }}>
             <TableHead>
               <TableRow>
-                <TableCell /> {/* Columna de acciones */}
-                <TableCell>
+                <TableCell sx={{ minWidth: isMobile ? 35 : 45, padding: isMobile ? '4px 2px' : '4px 2px' }} />
+                <TableCell sx={{ minWidth: isMobile ? 50 : 75, padding: isMobile ? '4px 2px' : '4px 2px' }}>
                   <TextField
                     label="Número"
                     name="numero"
@@ -320,19 +336,18 @@ const ProformasList = () => {
                     size="small"
                     InputProps={{
                       sx: {
-                        '& .MuiInputBase-input': {
-                          color: '#181818',
-                        },
-                        '& .MuiOutlinedInput-notchedOutline': {
-                          borderLeft: 'none',
-                          borderRight: 'none',
-                          borderTop: 'none',
-                        },
+                        '& .MuiInputBase-input': { color: '#181818', fontSize: isMobile ? '0.75rem' : 'inherit' },
+                        '& .MuiOutlinedInput-notchedOutline': { borderLeft: 'none', borderRight: 'none', borderTop: 'none' },
                       },
+                    }}
+                    InputLabelProps={{
+                      sx: {
+                        fontSize: isMobile ? '0.75rem' : 'inherit'
+                      }
                     }}
                   />
                 </TableCell>
-                <TableCell>
+                <TableCell sx={{ minWidth: isMobile ? 70 : 120, padding: isMobile ? '4px 2px' : '4px 2px' }}>
                   <TextField
                     label="Cliente"
                     name="cliente"
@@ -342,108 +357,90 @@ const ProformasList = () => {
                     size="small"
                     InputProps={{
                       sx: {
-                        '& .MuiInputBase-input': {
-                          color: '#181818',
-                        },
-                        '& .MuiOutlinedInput-notchedOutline': {
-                          borderLeft: 'none',
-                          borderRight: 'none',
-                          borderTop: 'none',
-                        },
+                        '& .MuiInputBase-input': { color: '#181818', fontSize: isMobile ? '0.75rem' : 'inherit' },
+                        '& .MuiOutlinedInput-notchedOutline': { borderLeft: 'none', borderRight: 'none', borderTop: 'none' },
                       },
+                    }}
+                    InputLabelProps={{
+                      sx: {
+                        fontSize: isMobile ? '0.75rem' : 'inherit'
+                      }
                     }}
                   />
                 </TableCell>
-                <TableCell>
-                  <TextField
-                    label="Fecha"
-                    name="fecha"
-                    value={filters.fecha}
-                    onChange={e => setFilters(f => ({ ...f, fecha: e.target.value }))}
-                    fullWidth
-                    size="small"
-                    InputProps={{
-                      sx: {
-                        '& .MuiInputBase-input': {
-                          color: '#181818',
+                {!isMobile && (
+                  <TableCell sx={{ width: 25, padding: '4px 2px' }}>
+                    <TextField
+                      label="Fecha"
+                      name="fecha"
+                      value={filters.fecha}
+                      onChange={e => setFilters(f => ({ ...f, fecha: e.target.value }))}
+                      fullWidth
+                      size="small"
+                      InputProps={{
+                        sx: {
+                          '& .MuiInputBase-input': { color: '#181818' },
+                          '& .MuiOutlinedInput-notchedOutline': { borderLeft: 'none', borderRight: 'none', borderTop: 'none' },
                         },
-                        '& .MuiOutlinedInput-notchedOutline': {
-                          borderLeft: 'none',
-                          borderRight: 'none',
-                          borderTop: 'none',
+                      }}
+                    />
+                  </TableCell>
+                )}
+                <TableCell sx={{ minWidth: isMobile ? 35 : 85, fontSize: isMobile ? '0.75rem' : 'inherit', padding: isMobile ? '4px 1px' : '4px 2px' }}>
+                  {isMobile ? 'Est' : (
+                    <TextField
+                      label="Estado"
+                      name="estado"
+                      value={filters.estado}
+                      onChange={e => setFilters(f => ({ ...f, estado: e.target.value }))}
+                      fullWidth
+                      size="small"
+                      InputProps={{
+                        sx: {
+                          '& .MuiInputBase-input': { color: '#181818' },
+                          '& .MuiOutlinedInput-notchedOutline': { borderLeft: 'none', borderRight: 'none', borderTop: 'none' },
                         },
-                      },
-                    }}
-                  />
+                      }}
+                    />
+                  )}
                 </TableCell>
-                <TableCell>
-                  <TextField
-                    label="Estado"
-                    name="estado"
-                    value={filters.estado}
-                    onChange={e => setFilters(f => ({ ...f, estado: e.target.value }))}
-                    fullWidth
-                    size="small"
-                    InputProps={{
-                      sx: {
-                        '& .MuiInputBase-input': {
-                          color: '#181818',
+                {!isMobile && (
+                  <TableCell sx={{ minWidth: 90, padding: '4px 2px' }}>
+                    <TextField
+                      label="Total"
+                      name="total"
+                      value={filters.total}
+                      onChange={e => setFilters(f => ({ ...f, total: e.target.value }))}
+                      fullWidth
+                      size="small"
+                      InputProps={{
+                        sx: {
+                          '& .MuiInputBase-input': { color: '#181818' },
+                          '& .MuiOutlinedInput-notchedOutline': { borderLeft: 'none', borderRight: 'none', borderTop: 'none' },
                         },
-                        '& .MuiOutlinedInput-notchedOutline': {
-                          borderLeft: 'none',
-                          borderRight: 'none',
-                          borderTop: 'none',
+                      }}
+                    />
+                  </TableCell>
+                )}
+                <TableCell sx={{ minWidth: isMobile ? 35 : 105, fontSize: isMobile ? '0.75rem' : 'inherit', padding: isMobile ? '4px 1px' : '4px 2px' }}>
+                  {isMobile ? 'Rep' : (
+                    <TextField
+                      label="Reparaciones"
+                      name="reparaciones"
+                      value={filters.reparaciones}
+                      onChange={e => setFilters(f => ({ ...f, reparaciones: e.target.value }))}
+                      fullWidth
+                      size="small"
+                      InputProps={{
+                        sx: {
+                          '& .MuiInputBase-input': { color: '#181818' },
+                          '& .MuiOutlinedInput-notchedOutline': { borderLeft: 'none', borderRight: 'none', borderTop: 'none' },
                         },
-                      },
-                    }}
-                  />
-                </TableCell>
-                <TableCell>
-                  <TextField
-                    label="Total"
-                    name="total"
-                    value={filters.total}
-                    onChange={e => setFilters(f => ({ ...f, total: e.target.value }))}
-                    fullWidth
-                    size="small"
-                    InputProps={{
-                      sx: {
-                        '& .MuiInputBase-input': {
-                          color: '#181818',
-                        },
-                        '& .MuiOutlinedInput-notchedOutline': {
-                          borderLeft: 'none',
-                          borderRight: 'none',
-                          borderTop: 'none',
-                        },
-                      },
-                    }}
-                  />
-                </TableCell>
-                <TableCell>
-                  <TextField
-                    label="Reparaciones"
-                    name="reparaciones"
-                    value={filters.reparaciones}
-                    onChange={e => setFilters(f => ({ ...f, reparaciones: e.target.value }))}
-                    fullWidth
-                    size="small"
-                    InputProps={{
-                      sx: {
-                        '& .MuiInputBase-input': {
-                          color: '#181818',
-                        },
-                        '& .MuiOutlinedInput-notchedOutline': {
-                          borderLeft: 'none',
-                          borderRight: 'none',
-                          borderTop: 'none',
-                        },
-                      },
-                    }}
-                  />
+                      }}
+                    />
+                  )}
                 </TableCell>
               </TableRow>
-              
             </TableHead>
             <TableBody>
               {/* Filas de proformas */}
@@ -462,7 +459,7 @@ const ProformasList = () => {
                     onMouseLeave={isConverted ? () => setHoveredRow(null) : undefined}
                     onMouseMove={isConverted ? (e) => setMousePos({ x: e.clientX, y: e.clientY }) : undefined}
                   >
-                    <TableCell>
+                    <TableCell sx={{ minWidth: isMobile ? 35 : 45, padding: isMobile ? '4px 2px' : '4px 2px' }}>
                       <Tooltip title="Acciones">
                         <IconButton size="small" onClick={(e) => handleMenuOpen(e, proforma.id)}>
                           <FontAwesomeIcon icon={faEllipsisV} />
@@ -501,68 +498,122 @@ const ProformasList = () => {
                         )}
                       </Menu>
                     </TableCell>
-                    <TableCell>{proforma.numero_proforma}</TableCell>
-                    <TableCell>{proforma.cliente_nombre || proforma.cliente}</TableCell>
-                    <TableCell>{
-                      proforma.fecha
-                        ? (() => {
-                            const d = new Date(proforma.fecha);
-                            if (isNaN(d)) return proforma.fecha;
-                            const day = String(d.getDate()).padStart(2, '0');
-                            const month = String(d.getMonth() + 1).padStart(2, '0');
-                            const year = d.getFullYear();
-                            return `${day}/${month}/${year}`;
-                          })()
-                        : ''
-                    }</TableCell>
-                    <TableCell>
-                      <Tooltip
-                        title={(() => {
-                          const estadoObj = estados.find(e => e.nombre === (proforma.estado_nombre || proforma.estado));
-                          return estadoObj && estadoObj.descripcion ? estadoObj.descripcion : '';
-                        })()}
-                        arrow
-                        disableHoverListener={false}
-                      >
-                        <span
-                          style={{
-                            display: 'inline-block',
-                            padding: '4px 12px',
-                            borderRadius: 12,
-                            color: '#fff',
-                            fontWeight: 600,
-                            backgroundColor:
-                              (proforma.estado_nombre === 'Enviada') ? '#43a047' :
-                              (proforma.estado_nombre === 'Aceptada') ? '#1976d2' :
-                              (proforma.estado_nombre === 'Creada') ? '#757575' :
-                              '#bdbdbd',
-                          }}
+                    <TableCell sx={{ 
+                      minWidth: isMobile ? 50 : 75,
+                      fontSize: isMobile ? '0.7rem' : 'inherit',
+                      padding: isMobile ? '4px 2px' : '4px 2px'
+                    }}>{proforma.numero_proforma}</TableCell>
+                    <TableCell sx={{ 
+                      minWidth: isMobile ? 70 : 120,
+                      fontSize: isMobile ? '0.65rem' : 'inherit',
+                      wordBreak: 'break-word',
+                      maxWidth: isMobile ? 70 : 'none',
+                      padding: isMobile ? '4px 2px' : '4px 2px'
+                    }}>{proforma.cliente_nombre || proforma.cliente}</TableCell>
+                    {!isMobile && (
+                      <TableCell sx={{ minWidth: 90, fontSize: '0.9rem', padding: '4px 2px' }}>{
+                        proforma.fecha
+                          ? (() => {
+                              const d = new Date(proforma.fecha);
+                              if (isNaN(d)) return proforma.fecha;
+                              const day = String(d.getDate()).padStart(2, '0');
+                              const month = String(d.getMonth() + 1).padStart(2, '0');
+                              const year = d.getFullYear();
+                              return `${day}/${month}/${year}`;
+                            })()
+                          : ''
+                      }</TableCell>
+                    )}
+                    <TableCell sx={{ minWidth: isMobile ? 35 : 85, padding: isMobile ? '4px 1px' : '4px 2px' }}>
+                      {isMobile ? (
+                        <IconButton 
+                          onClick={() => setEstadoDialog({ 
+                            open: true, 
+                            estado: {
+                              nombre: proforma.estado_nombre || proforma.estado,
+                              descripcion: (() => {
+                                const estadoObj = estados.find(e => e.nombre === (proforma.estado_nombre || proforma.estado));
+                                return estadoObj && estadoObj.descripcion ? estadoObj.descripcion : '';
+                              })()
+                            }
+                          })} 
+                          size="small"
+                          sx={{ padding: '2px' }}
                         >
-                          {proforma.estado_nombre || proforma.estado}
-                        </span>
-                      </Tooltip>
-                    </TableCell>
-                    <TableCell>{proforma.total} €</TableCell>
-                    <TableCell>
-                      {proforma.reparaciones && proforma.reparaciones.length > 0 ? (
-                        <Box>
-                          {proforma.reparaciones.map((r, index) => (
-                            <Box key={index} display="flex" alignItems="center" mb={0.5}>
-                              <IconButton
-                                size="small"
-                                color="info"
-                                onClick={() => setDetalleReparacion({ open: true, reparacion: r })}
-                              >
-                                <span style={{ fontSize: 18, fontWeight: 'bold', lineHeight: 1 }}>+</span>
-                              </IconButton>
-                              <Typography variant="body2" sx={{ mr: 1 }}>
-                                {r.localizacion}
-                              </Typography>
-                            </Box>
-                          ))}
-                        </Box>
+                          <Box
+                            sx={{
+                              width: 20,
+                              height: 20,
+                              borderRadius: '50%',
+                              backgroundColor:
+                                (proforma.estado_nombre === 'Enviada') ? '#43a047' :
+                                (proforma.estado_nombre === 'Aceptada') ? '#1976d2' :
+                                (proforma.estado_nombre === 'Creada') ? '#757575' :
+                                '#bdbdbd',
+                            }}
+                          />
+                        </IconButton>
                       ) : (
-                        '—'
+                        <Tooltip
+                          title={(() => {
+                            const estadoObj = estados.find(e => e.nombre === (proforma.estado_nombre || proforma.estado));
+                            return estadoObj && estadoObj.descripcion ? estadoObj.descripcion : '';
+                          })()}
+                          arrow
+                          disableHoverListener={false}
+                        >
+                          <span
+                            style={{
+                              display: 'inline-block',
+                              padding: '4px 12px',
+                              borderRadius: 12,
+                              color: '#fff',
+                              fontWeight: 600,
+                              backgroundColor:
+                                (proforma.estado_nombre === 'Enviada') ? '#43a047' :
+                                (proforma.estado_nombre === 'Aceptada') ? '#1976d2' :
+                                (proforma.estado_nombre === 'Creada') ? '#757575' :
+                                '#bdbdbd',
+                            }}
+                          >
+                            {proforma.estado_nombre || proforma.estado}
+                          </span>
+                        </Tooltip>
+                      )}
+                    </TableCell>
+                    {!isMobile && (
+                      <TableCell sx={{ minWidth: 90, fontSize: '0.9rem', padding: '4px 2px' }}>{proforma.total} €</TableCell>
+                    )}
+                    <TableCell sx={{ minWidth: isMobile ? 35 : 105, padding: isMobile ? '4px 1px' : '4px 2px' }}>
+                      {isMobile ? (
+                        <IconButton 
+                          onClick={() => setDetalleReparacion({ open: true, reparacion: proforma.reparaciones || null })} 
+                          disabled={!proforma.reparaciones || proforma.reparaciones.length === 0}
+                          size="small"
+                        >
+                          <FontAwesomeIcon icon={faFileText} />
+                        </IconButton>
+                      ) : (
+                        proforma.reparaciones && proforma.reparaciones.length > 0 ? (
+                          <Box>
+                            {proforma.reparaciones.map((r, index) => (
+                              <Box key={index} display="flex" alignItems="center" mb={0.5}>
+                                <IconButton
+                                  size="small"
+                                  color="info"
+                                  onClick={() => setDetalleReparacion({ open: true, reparacion: r })}
+                                >
+                                  <span style={{ fontSize: 18, fontWeight: 'bold', lineHeight: 1 }}>+</span>
+                                </IconButton>
+                                <Typography variant="body2" sx={{ mr: 1, fontSize: '0.8rem' }}>
+                                  {r.localizacion}
+                                </Typography>
+                              </Box>
+                            ))}
+                          </Box>
+                        ) : (
+                          '—'
+                        )
                       )}
                     </TableCell>
                   </TableRow>
@@ -608,42 +659,96 @@ const ProformasList = () => {
       {/* Popup de detalle de reparación */}
       <Dialog
         open={detalleReparacion.open}
-        onClose={() => setDetalleReparacion({ open: false, reparacion: null })}
+        onClose={() => {
+          // Primero cerrar el popup
+          setDetalleReparacion(prev => ({ ...prev, open: false }));
+          // Luego limpiar los datos con un pequeño delay
+          setTimeout(() => {
+            setDetalleReparacion({ open: false, reparacion: null });
+          }, 300);
+        }}
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle>Detalle de Reparación</DialogTitle>
+        <DialogTitle>Detalle de Reparación{Array.isArray(detalleReparacion.reparacion) && detalleReparacion.reparacion.length > 1 ? 'es' : ''}</DialogTitle>
         <DialogContent>
           {detalleReparacion.reparacion && (
             <>
-              <DialogContentText>
-                <strong>Localización:</strong> {detalleReparacion.reparacion.localizacion}<br />
-                <strong>Fecha:</strong> {detalleReparacion.reparacion.fecha || '—'}<br />
-                <strong>Nº Reparación:</strong> {detalleReparacion.reparacion.num_reparacion || '—'}<br />
-                <strong>Nº Pedido:</strong> {detalleReparacion.reparacion.num_pedido || '—'}<br />
-              </DialogContentText>
-              <Box mt={2}>
-                <Typography variant="subtitle1"><strong>Trabajos:</strong></Typography>
-                {detalleReparacion.reparacion.trabajos && detalleReparacion.reparacion.trabajos.length > 0 ? (
-                  <ul style={{ marginTop: 4 }}>
-                    {detalleReparacion.reparacion.trabajos.map((trabajo, idx) => (
-                      <li key={idx} style={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
-                        <span>
-                          {trabajo.nombre_reparacion} ({trabajo.precio} €)
-                          {trabajo.especial && <StarIcon color="warning" fontSize="small" sx={{ ml: 1 }} />}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <Typography variant="body2">No hay trabajos registrados.</Typography>
-                )}
-              </Box>
+              {Array.isArray(detalleReparacion.reparacion) ? (
+                // Mostrar múltiples reparaciones (versión móvil)
+                detalleReparacion.reparacion.map((reparacion, index) => (
+                  <Box key={index} mb={3} sx={{ borderBottom: index < detalleReparacion.reparacion.length - 1 ? '1px solid #e0e0e0' : 'none', pb: index < detalleReparacion.reparacion.length - 1 ? 2 : 0 }}>
+                    <Typography variant="h6" sx={{ mb: 1, color: 'primary.main' }}>
+                      Reparación {index + 1}
+                    </Typography>
+                    <DialogContentText>
+                      <strong>Localización:</strong> {reparacion.localizacion}<br />
+                      <strong>Fecha:</strong> {reparacion.fecha || '—'}<br />
+                      <strong>Nº Reparación:</strong> {reparacion.num_reparacion || '—'}<br />
+                      <strong>Nº Pedido:</strong> {reparacion.num_pedido || '—'}<br />
+                    </DialogContentText>
+                    <Box mt={2}>
+                      <Typography variant="subtitle1"><strong>Trabajos:</strong></Typography>
+                      {reparacion.trabajos && reparacion.trabajos.length > 0 ? (
+                        <ul style={{ marginTop: 4 }}>
+                          {reparacion.trabajos.map((trabajo, idx) => (
+                            <li key={idx} style={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
+                              <span>
+                                {trabajo.nombre_reparacion} ({trabajo.precio} €)
+                                {trabajo.especial && <StarIcon color="warning" fontSize="small" sx={{ ml: 1 }} />}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <Typography variant="body2">No hay trabajos registrados.</Typography>
+                      )}
+                    </Box>
+                  </Box>
+                ))
+              ) : (
+                // Mostrar una sola reparación (versión desktop)
+                <>
+                  <DialogContentText>
+                    <strong>Localización:</strong> {detalleReparacion.reparacion.localizacion}<br />
+                    <strong>Fecha:</strong> {detalleReparacion.reparacion.fecha || '—'}<br />
+                    <strong>Nº Reparación:</strong> {detalleReparacion.reparacion.num_reparacion || '—'}<br />
+                    <strong>Nº Pedido:</strong> {detalleReparacion.reparacion.num_pedido || '—'}<br />
+                  </DialogContentText>
+                  <Box mt={2}>
+                    <Typography variant="subtitle1"><strong>Trabajos:</strong></Typography>
+                    {detalleReparacion.reparacion.trabajos && detalleReparacion.reparacion.trabajos.length > 0 ? (
+                      <ul style={{ marginTop: 4 }}>
+                        {detalleReparacion.reparacion.trabajos.map((trabajo, idx) => (
+                          <li key={idx} style={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
+                            <span>
+                              {trabajo.nombre_reparacion} ({trabajo.precio} €)
+                              {trabajo.especial && <StarIcon color="warning" fontSize="small" sx={{ ml: 1 }} />}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <Typography variant="body2">No hay trabajos registrados.</Typography>
+                    )}
+                  </Box>
+                </>
+              )}
             </>
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDetalleReparacion({ open: false, reparacion: null })} color="primary">
+          <Button 
+            onClick={() => {
+              // Primero cerrar el popup
+              setDetalleReparacion(prev => ({ ...prev, open: false }));
+              // Luego limpiar los datos con un pequeño delay
+              setTimeout(() => {
+                setDetalleReparacion({ open: false, reparacion: null });
+              }, 300);
+            }} 
+            color="primary"
+          >
             Cerrar
           </Button>
         </DialogActions>
@@ -732,6 +837,47 @@ const ProformasList = () => {
           </DialogActions>
         </Dialog>
 
+      {/* Dialog para mostrar estado */}
+      <Dialog
+        open={estadoDialog.open}
+        onClose={() => setEstadoDialog({ open: false, estado: null })}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>Estado de la proforma</DialogTitle>
+        <DialogContent>
+          {estadoDialog.estado && (
+            <Box display="flex" alignItems="center" gap={2}>
+              <Box
+                sx={{
+                  width: 24,
+                  height: 24,
+                  borderRadius: '50%',
+                  backgroundColor:
+                    (estadoDialog.estado.nombre === 'Enviada') ? '#43a047' :
+                    (estadoDialog.estado.nombre === 'Aceptada') ? '#1976d2' :
+                    (estadoDialog.estado.nombre === 'Creada') ? '#757575' :
+                    '#bdbdbd',
+                }}
+              />
+              <Box>
+                <Typography variant="h6">{estadoDialog.estado.nombre}</Typography>
+                {estadoDialog.estado.descripcion && (
+                  <Typography variant="body2" color="textSecondary">
+                    {estadoDialog.estado.descripcion}
+                  </Typography>
+                )}
+              </Box>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEstadoDialog({ open: false, estado: null })} color="primary">
+            Cerrar
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       {/* Snackbar para notificaciones */}
       <Snackbar
         open={snackbar.open}
@@ -745,7 +891,7 @@ const ProformasList = () => {
       </Snackbar>
               {proformas.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
+                  <TableCell colSpan={isMobile ? 5 : 7} align="center" sx={{ py: 4 }}>
                     No hay proformas registradas.
                   </TableCell>
                 </TableRow>

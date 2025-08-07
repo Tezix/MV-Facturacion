@@ -351,12 +351,23 @@ const ProformaForm = () => {
                 const direccion = loc.direccion || '';
                 const numero = loc.numero !== undefined && loc.numero !== null ? loc.numero : '';
                 return (
-                  <Chip label={`${fecha} - ${numReparacion} - ${direccion} ${numero}`} {...getTagProps({ index })} key={option.id} />
+                  <Chip 
+                    label={`${fecha} - ${numReparacion} - ${direccion} ${numero}`} 
+                    {...getTagProps({ index })} 
+                    key={option.id} 
+                    size={isMobile ? "small" : "medium"}
+                  />
                 );
               })
             }
             renderInput={(params) => (
-              <TextField {...params} label="Reparaciones a asociar" placeholder="Selecciona reparaciones" fullWidth />
+              <TextField 
+                {...params} 
+                label="Reparaciones a asociar" 
+                placeholder="Selecciona reparaciones" 
+                fullWidth 
+                size={isMobile ? "small" : "medium"}
+              />
             )}
           />
         </Box>
@@ -374,9 +385,12 @@ const ProformaForm = () => {
               variant="outlined"
               color="primary"
               size={isMobile ? "small" : "medium"}
+              sx={{ 
+                minWidth: isMobile ? '100%' : 'auto',
+                mt: isMobile ? 1 : 0
+              }}
               onClick={handleNuevaReparacion}
               disabled={saving || !requiredFieldsFilled}
-              fullWidth={isMobile}
             >
               Nueva
             </Button>
@@ -398,9 +412,13 @@ const ProformaForm = () => {
             type="submit"
             variant="contained"
             color="success"
-            size={isMobile ? "small" : "medium"}
             disabled={saving || !requiredFieldsFilled}
-            sx={{ position: 'relative' }}
+            size={isMobile ? "medium" : "large"}
+            sx={{ 
+              position: 'relative',
+              minHeight: isMobile ? 40 : 48,
+              fontSize: isMobile ? '0.9rem' : '1rem'
+            }}
             fullWidth
           >
             {saving ? (
