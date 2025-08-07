@@ -13,7 +13,7 @@ const emitidasLinks = [
 ];
 
 const gastosLinks = [
-  { label: 'Listado', path: '/gastos/registrar' },
+  { label: 'Gastos', path: '/gastos/registrar' },
 ];
 
 const dropdownLinks = [
