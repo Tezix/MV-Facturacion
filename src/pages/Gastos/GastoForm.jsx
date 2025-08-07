@@ -337,7 +337,6 @@ export default function GastoForm() {
                 name="archivo"
                 hidden
                 accept="image/jpeg,image/jpg,image/png,image/gif,image/webp,image/bmp,image/*,application/pdf,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar"
-                capture={isMobile ? "environment" : undefined} // Permite usar la cámara en móviles
                 onChange={handleChange}
               />
             </Button>

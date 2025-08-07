@@ -33,6 +33,13 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash, faEllipsisV, faPencilAlt, faFileAlt } from '@fortawesome/free-solid-svg-icons';
 import LoadingOverlay from '../../components/LoadingOverlay';
 
+// Helper para detectar si un archivo es una imagen por la extensión
+const isImageFile = (url) => {
+  if (!url) return false;
+  const imageExtensions = /\.(jpg|jpeg|png|gif|webp|bmp)$/i;
+  return imageExtensions.test(url);
+};
+
 export default function GastosList() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -51,6 +58,7 @@ export default function GastosList() {
   const [menuGasto, setMenuGasto] = useState(null);
   const [deleteDialog, setDeleteDialog] = useState({ open: false, gastoId: null });
   const [estadoDialog, setEstadoDialog] = useState({ open: false, estado: null });
+  const [archivoDialog, setArchivoDialog] = useState({ open: false, archivo: null, nombre: '' });
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
   useEffect(() => {
@@ -306,11 +314,26 @@ export default function GastosList() {
                   }</TableCell>
                   <TableCell sx={{ minWidth: isMobile ? 30 : 50, padding: isMobile ? '4px 1px' : '4px 2px' }}>
                     {gasto.archivo ? (
-                      <Tooltip title="Ver archivo">
-                        <a href={gasto.archivo} target="_blank" rel="noopener noreferrer" style={{ color: 'inherit' }}>
-                          <FontAwesomeIcon icon={faFileAlt} size="lg" />
-                        </a>
-                      </Tooltip>
+                      isImageFile(gasto.archivo) ? (
+                        <Tooltip title="Ver imagen">
+                          <IconButton 
+                            size="small"
+                            onClick={() => setArchivoDialog({ 
+                              open: true, 
+                              archivo: gasto.archivo, 
+                              nombre: gasto.nombre 
+                            })}
+                          >
+                            <FontAwesomeIcon icon={faFileAlt} size="lg" />
+                          </IconButton>
+                        </Tooltip>
+                      ) : (
+                        <Tooltip title="Ver archivo">
+                          <a href={gasto.archivo} target="_blank" rel="noopener noreferrer" style={{ color: 'inherit' }}>
+                            <FontAwesomeIcon icon={faFileAlt} size="lg" />
+                          </a>
+                        </Tooltip>
+                      )
                     ) : ''}
                   </TableCell>
                 </TableRow>
@@ -389,6 +412,46 @@ export default function GastosList() {
           <DialogActions>
             <Button onClick={() => setEstadoDialog({ open: false, estado: null })} color="primary">
               Cerrar
+            </Button>
+          </DialogActions>
+        </Dialog>
+        
+        {/* Dialog para mostrar imagen */}
+        <Dialog 
+          open={archivoDialog.open} 
+          onClose={() => setArchivoDialog({ open: false, archivo: null, nombre: '' })} 
+          maxWidth="md" 
+          fullWidth
+        >
+          <DialogTitle>Archivo adjunto - {archivoDialog.nombre}</DialogTitle>
+          <DialogContent dividers>
+            {archivoDialog.archivo && (
+              <Box 
+                component="img" 
+                src={archivoDialog.archivo} 
+                alt={archivoDialog.nombre}
+                sx={{ 
+                  width: '100%', 
+                  height: 'auto',
+                  maxHeight: isMobile ? '60vh' : '70vh',
+                  objectFit: 'contain'
+                }} 
+                onError={(e) => {
+                  console.error('Error cargando imagen:', archivoDialog.archivo);
+                  e.target.style.display = 'none';
+                }}
+              />
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setArchivoDialog({ open: false, archivo: null, nombre: '' })}>
+              Cerrar
+            </Button>
+            <Button 
+              onClick={() => window.open(archivoDialog.archivo, '_blank')}
+              variant="outlined"
+            >
+              Abrir en nueva pestaña
             </Button>
           </DialogActions>
         </Dialog>
