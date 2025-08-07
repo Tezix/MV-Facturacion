@@ -539,7 +539,7 @@ export default function FacturasList() {
                   <TableCell sx={{ minWidth: isMobile ? 35 : 105, padding: isMobile ? '4px 1px' : '4px 2px' }}>
                     {isMobile ? (
                       <IconButton 
-                        onClick={() => setDetalleReparacion({ open: true, reparacion: factura.reparaciones?.[0] || null })} 
+                        onClick={() => setDetalleReparacion({ open: true, reparacion: factura.reparaciones || null })} 
                         disabled={!factura.reparaciones || factura.reparaciones.length === 0}
                         size="small"
                       >
@@ -571,42 +571,96 @@ export default function FacturasList() {
       {/* Popup de detalle de reparación */}
       <Dialog
         open={detalleReparacion.open}
-        onClose={() => setDetalleReparacion({ open: false, reparacion: null })}
+        onClose={() => {
+          // Primero cerrar el popup
+          setDetalleReparacion(prev => ({ ...prev, open: false }));
+          // Luego limpiar los datos con un pequeño delay
+          setTimeout(() => {
+            setDetalleReparacion({ open: false, reparacion: null });
+          }, 300);
+        }}
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle>Detalle de Reparación</DialogTitle>
+        <DialogTitle>Detalle de Reparación{Array.isArray(detalleReparacion.reparacion) && detalleReparacion.reparacion.length > 1 ? 'es' : ''}</DialogTitle>
         <DialogContent>
           {detalleReparacion.reparacion && (
             <>
-              <DialogContentText>
-                <strong>Localización:</strong> {detalleReparacion.reparacion.localizacion}<br />
-                <strong>Fecha:</strong> {detalleReparacion.reparacion.fecha || '—'}<br />
-                <strong>Nº Reparación:</strong> {detalleReparacion.reparacion.num_reparacion || '—'}<br />
-                <strong>Nº Pedido:</strong> {detalleReparacion.reparacion.num_pedido || '—'}<br />
-              </DialogContentText>
-              <Box mt={2}>
-                <Typography variant="subtitle1"><strong>Trabajos:</strong></Typography>
-                {detalleReparacion.reparacion.trabajos && detalleReparacion.reparacion.trabajos.length > 0 ? (
-                  <ul style={{ marginTop: 4 }}>
-                    {detalleReparacion.reparacion.trabajos.map((trabajo, idx) => (
-                      <li key={idx} style={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
-                        <span>
-                          {trabajo.nombre_reparacion} ({trabajo.precio} €)
-                          {trabajo.especial && <StarIcon color="warning" fontSize="small" sx={{ ml: 1 }} />}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <Typography variant="body2">No hay trabajos registrados.</Typography>
-                )}
-              </Box>
+              {Array.isArray(detalleReparacion.reparacion) ? (
+                // Mostrar múltiples reparaciones (versión móvil)
+                detalleReparacion.reparacion.map((reparacion, index) => (
+                  <Box key={index} mb={3} sx={{ borderBottom: index < detalleReparacion.reparacion.length - 1 ? '1px solid #e0e0e0' : 'none', pb: index < detalleReparacion.reparacion.length - 1 ? 2 : 0 }}>
+                    <Typography variant="h6" sx={{ mb: 1, color: 'primary.main' }}>
+                      Reparación {index + 1}
+                    </Typography>
+                    <DialogContentText>
+                      <strong>Localización:</strong> {reparacion.localizacion}<br />
+                      <strong>Fecha:</strong> {reparacion.fecha || '—'}<br />
+                      <strong>Nº Reparación:</strong> {reparacion.num_reparacion || '—'}<br />
+                      <strong>Nº Pedido:</strong> {reparacion.num_pedido || '—'}<br />
+                    </DialogContentText>
+                    <Box mt={2}>
+                      <Typography variant="subtitle1"><strong>Trabajos:</strong></Typography>
+                      {reparacion.trabajos && reparacion.trabajos.length > 0 ? (
+                        <ul style={{ marginTop: 4 }}>
+                          {reparacion.trabajos.map((trabajo, idx) => (
+                            <li key={idx} style={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
+                              <span>
+                                {trabajo.nombre_reparacion} ({trabajo.precio} €)
+                                {trabajo.especial && <StarIcon color="warning" fontSize="small" sx={{ ml: 1 }} />}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <Typography variant="body2">No hay trabajos registrados.</Typography>
+                      )}
+                    </Box>
+                  </Box>
+                ))
+              ) : (
+                // Mostrar una sola reparación (versión desktop)
+                <>
+                  <DialogContentText>
+                    <strong>Localización:</strong> {detalleReparacion.reparacion.localizacion}<br />
+                    <strong>Fecha:</strong> {detalleReparacion.reparacion.fecha || '—'}<br />
+                    <strong>Nº Reparación:</strong> {detalleReparacion.reparacion.num_reparacion || '—'}<br />
+                    <strong>Nº Pedido:</strong> {detalleReparacion.reparacion.num_pedido || '—'}<br />
+                  </DialogContentText>
+                  <Box mt={2}>
+                    <Typography variant="subtitle1"><strong>Trabajos:</strong></Typography>
+                    {detalleReparacion.reparacion.trabajos && detalleReparacion.reparacion.trabajos.length > 0 ? (
+                      <ul style={{ marginTop: 4 }}>
+                        {detalleReparacion.reparacion.trabajos.map((trabajo, idx) => (
+                          <li key={idx} style={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
+                            <span>
+                              {trabajo.nombre_reparacion} ({trabajo.precio} €)
+                              {trabajo.especial && <StarIcon color="warning" fontSize="small" sx={{ ml: 1 }} />}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <Typography variant="body2">No hay trabajos registrados.</Typography>
+                    )}
+                  </Box>
+                </>
+              )}
             </>
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDetalleReparacion({ open: false, reparacion: null })} color="primary">
+          <Button 
+            onClick={() => {
+              // Primero cerrar el popup
+              setDetalleReparacion(prev => ({ ...prev, open: false }));
+              // Luego limpiar los datos con un pequeño delay
+              setTimeout(() => {
+                setDetalleReparacion({ open: false, reparacion: null });
+              }, 300);
+            }} 
+            color="primary"
+          >
             Cerrar
           </Button>
         </DialogActions>

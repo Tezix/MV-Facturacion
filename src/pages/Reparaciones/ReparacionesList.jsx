@@ -28,6 +28,7 @@ import {
   useMediaQuery,
   useTheme
 } from '@mui/material';
+import StarIcon from '@mui/icons-material/Star';
 import IconButton from '@mui/material/IconButton';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash, faPencilAlt, faEllipsisV, faImages, faFileText, faComment } from '@fortawesome/free-solid-svg-icons';
@@ -168,9 +169,6 @@ export default function ReparacionList() {
   const handleOpenTrabajos = (trabajos) => {
     setTrabajosDialog({ open: true, trabajos });
   };
-  const handleCloseTrabajos = () => {
-    setTrabajosDialog({ open: false, trabajos: [] });
-  };
 
   const handleOpenComentarios = (comentarios) => {
     setComentariosDialog({ open: true, comentarios });
@@ -204,13 +202,26 @@ export default function ReparacionList() {
         </Dialog>
 
         {/* Dialog para mostrar trabajos */}
-        <Dialog open={trabajosDialog.open} onClose={handleCloseTrabajos} maxWidth="sm" fullWidth>
+        <Dialog 
+          open={trabajosDialog.open} 
+          onClose={() => {
+            // Primero cerrar el popup
+            setTrabajosDialog(prev => ({ ...prev, open: false }));
+            // Luego limpiar los datos con un pequeño delay
+            setTimeout(() => {
+              setTrabajosDialog({ open: false, trabajos: [] });
+            }, 300);
+          }} 
+          maxWidth="sm" 
+          fullWidth
+        >
           <DialogTitle>Trabajos</DialogTitle>
           <DialogContent dividers>
             {trabajosDialog.trabajos && trabajosDialog.trabajos.length > 0 ? (
               trabajosDialog.trabajos.map((trabajoRel, idx) => (
-                <Typography key={idx} variant="body1" sx={{ mb: 1 }}>
+                <Typography key={idx} variant="body1" sx={{ mb: 1, display: 'flex', alignItems: 'center' }}>
                   • {trabajoRel.trabajo.nombre_reparacion}
+                  {trabajoRel.trabajo.especial && <StarIcon color="warning" fontSize="small" sx={{ ml: 1 }} />}
                 </Typography>
               ))
             ) : (
@@ -218,7 +229,18 @@ export default function ReparacionList() {
             )}
           </DialogContent>
           <DialogActions>
-            <Button onClick={handleCloseTrabajos}>Cerrar</Button>
+            <Button 
+              onClick={() => {
+                // Primero cerrar el popup
+                setTrabajosDialog(prev => ({ ...prev, open: false }));
+                // Luego limpiar los datos con un pequeño delay
+                setTimeout(() => {
+                  setTrabajosDialog({ open: false, trabajos: [] });
+                }, 300);
+              }}
+            >
+              Cerrar
+            </Button>
           </DialogActions>
         </Dialog>
 
@@ -401,7 +423,7 @@ export default function ReparacionList() {
                   />
                 </TableCell>
                 <TableCell sx={{ minWidth: isMobile ? 35 : 85, fontSize: isMobile ? '0.75rem' : 'inherit', padding: isMobile ? '4px 1px' : '4px 2px' }}>
-                  {isMobile ? 'Trab' : (
+                  {isMobile ? '' : (
                     <TextField
                       label="Trabajo"
                       name="trabajo"
@@ -424,7 +446,7 @@ export default function ReparacionList() {
                   )}
                 </TableCell>
                 <TableCell sx={{ minWidth: isMobile ? 35 : 105, fontSize: isMobile ? '0.75rem' : 'inherit', padding: isMobile ? '4px 1px' : '4px 2px' }}>
-                  {isMobile ? 'Com' : (
+                  {isMobile ? '' : (
                     <TextField
                       label="Comentarios"
                       name="comentarios"
@@ -446,7 +468,7 @@ export default function ReparacionList() {
                     />
                   )}
                 </TableCell>
-                <TableCell sx={{ minWidth: isMobile ? 30 : 50, fontSize: isMobile ? '0.75rem' : 'inherit', padding: isMobile ? '4px 1px' : '4px 2px' }}>Img</TableCell>
+                <TableCell sx={{ minWidth: isMobile ? 30 : 50, fontSize: isMobile ? '0.75rem' : 'inherit', padding: isMobile ? '4px 1px' : '4px 2px' }}></TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
