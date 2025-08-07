@@ -181,7 +181,7 @@ export default function ReparacionList() {
 
   return (
     <LoadingOverlay loading={loading}>
-      <Box p={isMobile ? 1 : 3} sx={{ width: '100%', overflowX: 'hidden' }}>
+      <Box p={isMobile ? 1 : 3} sx={{ overflowX: 'hidden' }}>
         {/* Dialog para mostrar fotos */}
         <Dialog open={fotosDialog.open} onClose={handleCloseFotos} maxWidth="sm" fullWidth>
           <DialogTitle>Fotos adjuntas</DialogTitle>
@@ -260,13 +260,13 @@ export default function ReparacionList() {
           <Table sx={{ 
             minWidth: isMobile ? 'auto' : 650,
             '& .MuiTableCell-root': {
-              padding: isMobile ? '4px 2px' : '8px 4px'
+              padding: isMobile ? '4px 2px' : '4px 2px'
             }
           }}>
             <TableHead>
               <TableRow>
-                <TableCell sx={{ minWidth: isMobile ? 35 : 45, padding: isMobile ? '4px 2px' : '8px 4px' }} />
-                <TableCell sx={{ minWidth: isMobile ? 50 : 75, padding: isMobile ? '4px 2px' : '8px 4px' }}>
+                <TableCell sx={{ minWidth: isMobile ? 35 : 45, width: isMobile ? 30 : 30,padding: isMobile ? '4px 2px' : '4px 2px' }} />
+                <TableCell sx={{ minWidth: isMobile ? 50 : 75, width: isMobile ? 70 : 120, padding: isMobile ? '4px 2px' : '4px 2px' }}>
                   <TextField
                     label="Fecha"
                     name="fecha"
@@ -288,7 +288,7 @@ export default function ReparacionList() {
                   />
                 </TableCell>
                 {!isMobile && (
-                  <TableCell sx={{ minWidth: 90, padding: '8px 4px' }}>
+                  <TableCell sx={{ minWidth: 90, padding: '4px 2px' }}>
                     <TextField
                       label="Nº Reparación"
                       name="num_reparacion"
@@ -311,7 +311,7 @@ export default function ReparacionList() {
                   </TableCell>
                 )}
                 {!isMobile && (
-                  <TableCell sx={{ minWidth: 90, padding: '8px 4px' }}>
+                  <TableCell sx={{ minWidth: 90, padding: '4px 2px' }}>
                     <TextField
                       label="Nº Pedido"
                       name="num_pedido"
@@ -334,7 +334,7 @@ export default function ReparacionList() {
                   </TableCell>
                 )}
                 {!isMobile && (
-                  <TableCell sx={{ minWidth: 90, padding: '8px 4px' }}>
+                  <TableCell sx={{ minWidth: 90, padding: '4px 2px' }}>
                     <TextField
                       label="Factura"
                       name="factura"
@@ -357,7 +357,7 @@ export default function ReparacionList() {
                   </TableCell>
                 )}
                 {!isMobile && (
-                  <TableCell sx={{ minWidth: 90, padding: '8px 4px' }}>
+                  <TableCell sx={{ minWidth: 90, padding: '4px 2px' }}>
                     <TextField
                       label="Proforma"
                       name="proforma"
@@ -379,7 +379,7 @@ export default function ReparacionList() {
                     />
                   </TableCell>
                 )}
-                <TableCell sx={{ minWidth: isMobile ? 90 : 140, padding: isMobile ? '4px 2px' : '8px 4px' }}>
+                <TableCell sx={{ minWidth: isMobile ? 90 : 140, padding: isMobile ? '4px 2px' : '4px 2px' }}>
                   <TextField
                     label="Localización"
                     name="localizacion"
@@ -400,7 +400,7 @@ export default function ReparacionList() {
                     }}
                   />
                 </TableCell>
-                <TableCell sx={{ minWidth: isMobile ? 35 : 85, fontSize: isMobile ? '0.75rem' : 'inherit', padding: isMobile ? '4px 1px' : '8px 4px' }}>
+                <TableCell sx={{ minWidth: isMobile ? 35 : 85, fontSize: isMobile ? '0.75rem' : 'inherit', padding: isMobile ? '4px 1px' : '4px 2px' }}>
                   {isMobile ? 'Trab' : (
                     <TextField
                       label="Trabajo"
@@ -423,7 +423,7 @@ export default function ReparacionList() {
                     />
                   )}
                 </TableCell>
-                <TableCell sx={{ minWidth: isMobile ? 35 : 105, fontSize: isMobile ? '0.75rem' : 'inherit', padding: isMobile ? '4px 1px' : '8px 4px' }}>
+                <TableCell sx={{ minWidth: isMobile ? 35 : 105, fontSize: isMobile ? '0.75rem' : 'inherit', padding: isMobile ? '4px 1px' : '4px 2px' }}>
                   {isMobile ? 'Com' : (
                     <TextField
                       label="Comentarios"
@@ -446,13 +446,13 @@ export default function ReparacionList() {
                     />
                   )}
                 </TableCell>
-                <TableCell sx={{ minWidth: isMobile ? 30 : 50, fontSize: isMobile ? '0.75rem' : 'inherit', padding: isMobile ? '4px 1px' : '8px 4px' }}>Img</TableCell>
+                <TableCell sx={{ minWidth: isMobile ? 30 : 50, fontSize: isMobile ? '0.75rem' : 'inherit', padding: isMobile ? '4px 1px' : '4px 2px' }}>Img</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {filteredReparaciones.map((reparacion) => (
                 <TableRow key={reparacion.id}>
-                  <TableCell sx={{ minWidth: isMobile ? 35 : 45, padding: isMobile ? '4px 2px' : '8px 4px' }}>
+                  <TableCell sx={{ minWidth: isMobile ? 35 : 45, padding: isMobile ? '4px 2px' : '4px 2px' }}>
                     <Tooltip title="Acciones">
                       <IconButton size="small" onClick={e => handleMenuOpen(e, reparacion)}>
                         <FontAwesomeIcon icon={faEllipsisV} />
@@ -476,7 +476,7 @@ export default function ReparacionList() {
                   <TableCell sx={{ 
                     minWidth: isMobile ? 50 : 75,
                     fontSize: isMobile ? '0.7rem' : 'inherit',
-                    padding: isMobile ? '4px 2px' : '8px 4px'
+                    padding: isMobile ? '4px 2px' : '4px 2px'
                   }}>{
                     reparacion.fecha
                       ? (() => {
@@ -489,22 +489,22 @@ export default function ReparacionList() {
                         })()
                       : ''
                   }</TableCell>
-                  {!isMobile && <TableCell sx={{ minWidth: 90, fontSize: '0.9rem', padding: '8px 4px' }}>{reparacion.num_reparacion || '—'}</TableCell>}
-                  {!isMobile && <TableCell sx={{ minWidth: 90, fontSize: '0.9rem', padding: '8px 4px' }}>{reparacion.num_pedido || '—'}</TableCell>}
-                  {!isMobile && <TableCell sx={{ minWidth: 90, fontSize: '0.9rem', padding: '8px 4px' }}>{reparacion.factura_numero || reparacion.factura || '—'}</TableCell>}
-                  {!isMobile && <TableCell sx={{ minWidth: 90, fontSize: '0.9rem', padding: '8px 4px' }}>{reparacion.proforma_numero || reparacion.proforma || '—'}</TableCell>}
+                  {!isMobile && <TableCell sx={{ minWidth: 90, fontSize: '0.9rem', padding: '4px 2px' }}>{reparacion.num_reparacion || '—'}</TableCell>}
+                  {!isMobile && <TableCell sx={{ minWidth: 90, fontSize: '0.9rem', padding: '4px 2px' }}>{reparacion.num_pedido || '—'}</TableCell>}
+                  {!isMobile && <TableCell sx={{ minWidth: 90, fontSize: '0.9rem', padding: '4px 2px' }}>{reparacion.factura_numero || reparacion.factura || '—'}</TableCell>}
+                  {!isMobile && <TableCell sx={{ minWidth: 90, fontSize: '0.9rem', padding: '4px 2px' }}>{reparacion.proforma_numero || reparacion.proforma || '—'}</TableCell>}
                   <TableCell sx={{ 
                     minWidth: isMobile ? 90 : 140,
                     fontSize: isMobile ? '0.65rem' : '0.9rem',
                     wordBreak: 'break-word',
                     maxWidth: isMobile ? 90 : 'none',
-                    padding: isMobile ? '4px 2px' : '8px 4px'
+                    padding: isMobile ? '4px 2px' : '4px 2px'
                   }}>
                       {reparacion.localizacion
                         ? `${reparacion.localizacion.direccion}, ${reparacion.localizacion.numero}, ${reparacion.localizacion.localidad}${isMobile ? '' : `, Esc ${reparacion.localizacion.escalera} Asc ${reparacion.localizacion.ascensor}`}`
                         : '—'}
                   </TableCell>
-                  <TableCell sx={{ minWidth: isMobile ? 35 : 85, padding: isMobile ? '4px 1px' : '8px 4px' }}>
+                  <TableCell sx={{ minWidth: isMobile ? 35 : 85, padding: isMobile ? '4px 1px' : '4px 2px' }}>
                     {isMobile ? (
                       <IconButton 
                         onClick={() => handleOpenTrabajos(reparacion.trabajos_reparaciones)} 
@@ -532,7 +532,7 @@ export default function ReparacionList() {
                     fontSize: isMobile ? '0.7rem' : '0.9rem',
                     wordBreak: 'break-word',
                     maxWidth: isMobile ? 35 : 'none',
-                    padding: isMobile ? '4px 1px' : '8px 4px'
+                    padding: isMobile ? '4px 1px' : '4px 2px'
                   }}>
                     {isMobile ? (
                       <IconButton 
@@ -546,7 +546,7 @@ export default function ReparacionList() {
                       reparacion.comentarios || '—'
                     )}
                   </TableCell>
-                  <TableCell sx={{ minWidth: isMobile ? 30 : 50, padding: isMobile ? '4px 1px' : '8px 4px' }}>
+                  <TableCell sx={{ minWidth: isMobile ? 30 : 50, padding: isMobile ? '4px 1px' : '4px 2px' }}>
                     <IconButton 
                       onClick={() => handleOpenFotos(reparacion.fotos)} 
                       disabled={!reparacion.fotos || reparacion.fotos.length === 0}

@@ -21,6 +21,30 @@ function formatFecha(date) {
   return `${dd}/${mm}/${yyyy}`;
 }
 
+// Helper para detectar Android
+function isAndroid() {
+  return /Android/i.test(navigator.userAgent);
+}
+
+// Helper para validar archivos de imagen más estrictamente
+function isValidImageFile(file) {
+  // Verificar extensión del archivo
+  const validExtensions = /\.(jpg|jpeg|png|gif|webp|bmp)$/i;
+  const hasValidExtension = validExtensions.test(file.name);
+  
+  // Verificar tipo MIME (puede estar vacío en Android)
+  const hasValidMimeType = file.type && file.type.startsWith('image/');
+  
+  // Para Android, si el tipo MIME está vacío pero la extensión es válida, aceptar
+  if (isAndroid() && !hasValidMimeType && hasValidExtension) {
+    console.log('Android: Aceptando archivo con extensión válida pero sin tipo MIME:', file.name);
+    return true;
+  }
+  
+  // Para otros navegadores, requerir tanto extensión como tipo MIME válidos
+  return hasValidExtension && hasValidMimeType;
+}
+
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { API } from '../../api/axios';
@@ -182,26 +206,53 @@ const ReparacionForm = () => {
     const selectedFiles = e.target.files;
     if (!selectedFiles || selectedFiles.length === 0) return;
     
+    console.log('=== DEBUG INFO ===');
+    console.log('Archivos seleccionados:', selectedFiles.length);
+    console.log('Dispositivo Android detectado:', isAndroid());
+    console.log('User Agent:', navigator.userAgent);
+    console.log('=================');
+    
     // Convertir FileList a Array y validar cada archivo
     const newFiles = Array.from(selectedFiles).filter(file => {
-      // Validar que sea una imagen
-      if (!file.type.startsWith('image/')) {
+      console.log('Procesando archivo:', {
+        name: file.name,
+        type: file.type,
+        size: file.size,
+        lastModified: file.lastModified,
+        constructor: file.constructor.name
+      });
+      
+      // Usar la función de validación mejorada
+      if (!isValidImageFile(file)) {
         console.warn('Archivo no válido:', file.name, 'tipo:', file.type);
+        alert(`El archivo ${file.name} no parece ser una imagen válida.`);
         return false;
       }
+      
       // Validar tamaño (máximo 10MB por archivo)
       if (file.size > 10 * 1024 * 1024) {
         console.warn('Archivo muy grande:', file.name, 'tamaño:', file.size);
         alert(`El archivo ${file.name} es muy grande. Máximo 10MB por archivo.`);
         return false;
       }
+      
+      // Validar que el archivo no esté vacío
+      if (file.size === 0) {
+        console.warn('Archivo vacío:', file.name);
+        alert(`El archivo ${file.name} está vacío.`);
+        return false;
+      }
+      
       return true;
     });
     
     if (newFiles.length === 0) {
+      console.log('No hay archivos válidos para procesar');
       e.target.value = '';
       return;
     }
+    
+    console.log('Archivos válidos procesados:', newFiles.length);
     
     // Agregar las nuevas fotos a las existentes en lugar de reemplazarlas
     const updatedFotos = [...fotos, ...newFiles];
@@ -209,13 +260,26 @@ const ReparacionForm = () => {
     
     // Crear URLs de vista previa para las nuevas fotos de forma segura
     const newPreviewUrls = [];
-    newFiles.forEach(file => {
+    newFiles.forEach((file) => {
       try {
-        const url = URL.createObjectURL(file);
-        newPreviewUrls.push(url);
+        // Verificar que el archivo sea válido antes de crear la URL
+        if (file && file.size > 0) {
+          const url = URL.createObjectURL(file);
+          newPreviewUrls.push(url);
+          console.log(`URL creada exitosamente para ${file.name}`);
+        } else {
+          console.warn('Archivo inválido o vacío:', file);
+          newPreviewUrls.push(null);
+        }
       } catch (error) {
         console.error('Error creando URL de vista previa para:', file.name, error);
-        newPreviewUrls.push(null);
+        // En Android, a veces fallan las URLs pero el archivo es válido
+        if (isAndroid()) {
+          console.log('Intentando fallback para Android...');
+          newPreviewUrls.push(null); // Permitir null pero continuar
+        } else {
+          newPreviewUrls.push(null);
+        }
       }
     });
     
@@ -381,8 +445,26 @@ const ReparacionForm = () => {
       console.log('Agregando fotos al FormData (handleSubmit):', fotos.length);
       fotos.forEach((file, index) => {
         if (file && file instanceof File) {
-          console.log(`Foto ${index + 1}:`, file.name, 'tamaño:', file.size, 'tipo:', file.type);
-          formData.append('fotos', file);
+          console.log(`Foto ${index + 1}:`, {
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            lastModified: file.lastModified
+          });
+          
+          // Validación adicional para Android
+          if (file.size === 0) {
+            console.error(`Foto ${index + 1} tiene tamaño 0, omitiendo:`, file.name);
+            return;
+          }
+          
+          // Para Android, a veces el tipo viene vacío, intentar inferirlo del nombre
+          if (!file.type && file.name) {
+            const extension = file.name.split('.').pop().toLowerCase();
+            console.log(`Tipo MIME vacío para ${file.name}, extensión detectada:`, extension);
+          }
+          
+          formData.append('fotos', file, file.name);
         } else {
           console.error(`Foto ${index + 1} no es válida:`, file);
         }
@@ -431,10 +513,40 @@ const ReparacionForm = () => {
       console.error('Error al guardar reparación (handleSubmit):', error);
       console.error('Error response:', error.response?.data);
       console.error('Error status:', error.response?.status);
+      console.error('User Agent:', navigator.userAgent);
+      console.error('Es Android:', isAndroid());
+      
       let errorMessage = 'Error al guardar la reparación';
-      if (error.response?.data) {
-        errorMessage += ': ' + JSON.stringify(error.response.data);
+      
+      // Manejo específico de errores comunes
+      if (error.response?.status === 413) {
+        errorMessage = 'Las fotos son demasiado grandes. Intenta con imágenes más pequeñas.';
+      } else if (error.response?.status === 415) {
+        errorMessage = 'Formato de archivo no soportado. Usa JPG, PNG o WEBP.';
+      } else if (error.response?.data) {
+        // Mostrar errores específicos del servidor
+        if (typeof error.response.data === 'object') {
+          const errorDetails = Object.entries(error.response.data)
+            .map(([field, messages]) => {
+              if (Array.isArray(messages)) {
+                return `${field}: ${messages.join(', ')}`;
+              }
+              return `${field}: ${messages}`;
+            })
+            .join('; ');
+          errorMessage += ': ' + errorDetails;
+        } else {
+          errorMessage += ': ' + error.response.data;
+        }
+      } else if (error.message) {
+        errorMessage += ': ' + error.message;
       }
+      
+      // Para Android, agregar sugerencias específicas
+      if (isAndroid()) {
+        errorMessage += '\n\nSi tienes problemas subiendo fotos desde Android, intenta:\n- Reducir el tamaño de las imágenes\n- Subir las fotos de una en una\n- Usar la cámara del navegador en lugar de seleccionar desde galería';
+      }
+      
       alert(errorMessage);
     } finally {
       setLoading(false);
@@ -663,7 +775,13 @@ const ReparacionForm = () => {
         }}>
           <Button variant="outlined" component="label" size={isMobile ? "small" : "medium"}>
             Subir fotos
-            <input hidden accept="image/*" multiple type="file" onChange={handleFileChange} />
+            <input 
+              hidden 
+              accept="image/jpeg,image/jpg,image/png,image/gif,image/webp,image/bmp,image/*" 
+              multiple 
+              type="file" 
+              onChange={handleFileChange}
+            />
           </Button>
           
           {fotos.length > 0 && (

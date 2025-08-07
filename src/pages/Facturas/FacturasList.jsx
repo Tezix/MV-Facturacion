@@ -266,7 +266,7 @@ export default function FacturasList() {
 
   return (
     <LoadingOverlay loading={loading}>
-      <Box p={isMobile ? 1 : 3} sx={{ width: '100%', overflowX: 'hidden' }}>
+      <Box p={isMobile ? 1 : 1} sx={{overflowX: 'hidden' }}>
         <Box display="flex" justifyContent="space-between" alignItems="center" mb={3} sx={{ 
           flexDirection: isMobile ? 'column' : 'row',
           gap: isMobile ? 1 : 0
@@ -288,13 +288,13 @@ export default function FacturasList() {
           <Table sx={{ 
             minWidth: isMobile ? 'auto' : 650,
             '& .MuiTableCell-root': {
-              padding: isMobile ? '4px 2px' : '8px 4px'
+              padding: isMobile ? '4px 2px' : '4px 2px'
             }
           }}>
             <TableHead>
               <TableRow>
-                <TableCell sx={{ minWidth: isMobile ? 35 : 45, padding: isMobile ? '4px 2px' : '8px 4px' }} />
-                <TableCell sx={{ minWidth: isMobile ? 50 : 75, padding: isMobile ? '4px 2px' : '8px 4px' }}>
+                <TableCell sx={{ minWidth: isMobile ? 35 : 45, padding: isMobile ? '4px 2px' : '4px 2px' }} />
+                <TableCell sx={{ minWidth: isMobile ? 50 : 75, padding: isMobile ? '4px 2px' : '4px 2px' }}>
                   <TextField
                     label="Número"
                     name="numero"
@@ -315,7 +315,7 @@ export default function FacturasList() {
                     }}
                   />
                 </TableCell>
-                <TableCell sx={{ minWidth: isMobile ? 70 : 120, padding: isMobile ? '4px 2px' : '8px 4px' }}>
+                <TableCell sx={{ minWidth: isMobile ? 70 : 120, padding: isMobile ? '4px 2px' : '4px 2px' }}>
                   <TextField
                     label="Cliente"
                     name="cliente"
@@ -337,7 +337,7 @@ export default function FacturasList() {
                   />
                 </TableCell>
                 {!isMobile && (
-                  <TableCell sx={{ minWidth: 90, padding: '8px 4px' }}>
+                  <TableCell sx={{ width: 25, padding: '4px 2px' }}>
                     <TextField
                       label="Fecha"
                       name="fecha"
@@ -354,7 +354,7 @@ export default function FacturasList() {
                     />
                   </TableCell>
                 )}
-                <TableCell sx={{ minWidth: isMobile ? 35 : 85, fontSize: isMobile ? '0.75rem' : 'inherit', padding: isMobile ? '4px 1px' : '8px 4px' }}>
+                <TableCell sx={{ minWidth: isMobile ? 35 : 85, fontSize: isMobile ? '0.75rem' : 'inherit', padding: isMobile ? '4px 1px' : '4px 2px' }}>
                   {isMobile ? 'Est' : (
                     <TextField
                       label="Estado"
@@ -373,7 +373,7 @@ export default function FacturasList() {
                   )}
                 </TableCell>
                 {!isMobile && (
-                  <TableCell sx={{ minWidth: 90, padding: '8px 4px' }}>
+                  <TableCell sx={{ minWidth: 90, padding: '4px 2px' }}>
                     <TextField
                       label="Total"
                       name="total"
@@ -390,7 +390,7 @@ export default function FacturasList() {
                     />
                   </TableCell>
                 )}
-                <TableCell sx={{ minWidth: isMobile ? 35 : 105, fontSize: isMobile ? '0.75rem' : 'inherit', padding: isMobile ? '4px 1px' : '8px 4px' }}>
+                <TableCell sx={{ minWidth: isMobile ? 35 : 105, fontSize: isMobile ? '0.75rem' : 'inherit', padding: isMobile ? '4px 1px' : '4px 2px' }}>
                   {isMobile ? 'Rep' : (
                     <TextField
                       label="Reparaciones"
@@ -413,7 +413,7 @@ export default function FacturasList() {
             <TableBody>
               {filteredFacturas.map((factura) => (
                 <TableRow key={factura.id}>
-                  <TableCell sx={{ minWidth: isMobile ? 35 : 45, padding: isMobile ? '4px 2px' : '8px 4px' }}>
+                  <TableCell sx={{ minWidth: isMobile ? 35 : 45, padding: isMobile ? '4px 2px' : '4px 2px' }}>
                     <Tooltip title="Acciones">
                       <IconButton size="small" onClick={e => handleMenuOpen(e, factura.id)}>
                         <FontAwesomeIcon icon={faEllipsisV} />
@@ -451,17 +451,17 @@ export default function FacturasList() {
                   <TableCell sx={{ 
                     minWidth: isMobile ? 50 : 75,
                     fontSize: isMobile ? '0.7rem' : 'inherit',
-                    padding: isMobile ? '4px 2px' : '8px 4px'
+                    padding: isMobile ? '4px 2px' : '4px 2px'
                   }}>{factura.numero_factura}</TableCell>
                   <TableCell sx={{ 
                     minWidth: isMobile ? 70 : 120,
                     fontSize: isMobile ? '0.65rem' : 'inherit',
                     wordBreak: 'break-word',
                     maxWidth: isMobile ? 70 : 'none',
-                    padding: isMobile ? '4px 2px' : '8px 4px'
+                    padding: isMobile ? '4px 2px' : '4px 2px'
                   }}>{factura.cliente_nombre || factura.cliente}</TableCell>
                   {!isMobile && (
-                    <TableCell sx={{ minWidth: 90, fontSize: '0.9rem', padding: '8px 4px' }}>{
+                    <TableCell sx={{ minWidth: 90, fontSize: '0.9rem', padding: '4px 2px' }}>{
                       factura.fecha
                         ? (() => {
                             const d = new Date(factura.fecha);
@@ -474,7 +474,7 @@ export default function FacturasList() {
                         : ''
                     }</TableCell>
                   )}
-                  <TableCell sx={{ minWidth: isMobile ? 35 : 85, padding: isMobile ? '4px 1px' : '8px 4px' }}>
+                  <TableCell sx={{ minWidth: isMobile ? 35 : 85, padding: isMobile ? '4px 1px' : '4px 2px' }}>
                     {isMobile ? (
                       <IconButton 
                         onClick={() => setEstadoDialog({ 
@@ -534,9 +534,9 @@ export default function FacturasList() {
                     )}
                   </TableCell>
                   {!isMobile && (
-                    <TableCell sx={{ minWidth: 90, fontSize: '0.9rem', padding: '8px 4px' }}>{factura.total} €</TableCell>
+                    <TableCell sx={{ minWidth: 90, fontSize: '0.9rem', padding: '4px 2px' }}>{factura.total} €</TableCell>
                   )}
-                  <TableCell sx={{ minWidth: isMobile ? 35 : 105, padding: isMobile ? '4px 1px' : '8px 4px' }}>
+                  <TableCell sx={{ minWidth: isMobile ? 35 : 105, padding: isMobile ? '4px 1px' : '4px 2px' }}>
                     {isMobile ? (
                       <IconButton 
                         onClick={() => setDetalleReparacion({ open: true, reparacion: factura.reparaciones?.[0] || null })} 
