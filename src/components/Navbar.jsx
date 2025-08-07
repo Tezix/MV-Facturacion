@@ -54,8 +54,25 @@ export default function Navbar() {
   ];
 
   return (
-    <AppBar position="fixed" elevation={3} sx={{ backgroundColor: "black", width: "100%", top: 0, left: 0, borderRadius: 0 }}>
-      <Toolbar sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <AppBar 
+      position="fixed" 
+      elevation={3} 
+      sx={{ 
+        backgroundColor: "black", 
+        width: "100%", 
+        top: 0, 
+        left: 0, 
+        borderRadius: 0,
+        height: isMobile ? '90px' : 'auto' // Aproximadamente 60% más alto en móvil
+      }}
+    >
+      <Toolbar sx={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: isMobile ? 'flex-end' : 'center',
+        height: '100%',
+        pb: isMobile ? 1 : 0 // Padding bottom en móvil para separar del borde
+      }}>
         {/* Logo */}
         <Link to="/">
           <Box

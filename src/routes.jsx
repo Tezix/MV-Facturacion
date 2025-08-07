@@ -2,6 +2,7 @@ import GastosList from './pages/Gastos/GastosList';
 import GastoForm from './pages/Gastos/GastoForm';
 import { BrowserRouter as BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import { Box, useTheme, useMediaQuery } from '@mui/material';
 import LoginPage from './auth/LoginPage';
 import Navbar from './components/Navbar';
 import Dashboard from './pages/Dashboard/Dashboard';
@@ -37,6 +38,8 @@ function ScrollToTop() {
 export default function AppRoutes() {
 
 const [auth, setAuth] = useState(!!localStorage.getItem('token'));
+const theme = useTheme();
+const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -50,7 +53,8 @@ const [auth, setAuth] = useState(!!localStorage.getItem('token'));
     <BrowserRouter>
       <ScrollToTop />
       <Navbar onLogout={handleLogout} />
-      <Routes>
+      <Box sx={{ marginTop: isMobile ? '40px' : '0px' }}>
+        <Routes>
         <Route path="/" element={<Dashboard />} />
         <Route path="/clientes" element={<ClientesList />} />
         <Route path="/clientes/crear" element={<ClienteForm />} />
@@ -83,7 +87,8 @@ const [auth, setAuth] = useState(!!localStorage.getItem('token'));
         <Route path="/gastos/registrar" element={<GastosList />} />
         <Route path="/gastos/registrar/nuevo" element={<GastoForm />} />
         <Route path="/gastos/editar/:id" element={<GastoForm />} />
-      </Routes>
+        </Routes>
+      </Box>
     </BrowserRouter>
       
   );
