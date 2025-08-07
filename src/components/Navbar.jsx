@@ -51,8 +51,6 @@ export default function Navbar() {
   const allLinks = [
     ...emitidasLinks,
     ...gastosLinks,
-    { label: 'Gastos', path: '/gastos/registrar' },
-    ...dropdownLinks,
   ];
 
   return (

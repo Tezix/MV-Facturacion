@@ -20,13 +20,43 @@ function formatFecha(date) {
   const yyyy = date.getFullYear();
   return `${dd}/${mm}/${yyyy}`;
 }
+
+// Helper para detectar Android
+function isAndroid() {
+  return /Android/i.test(navigator.userAgent);
+}
+
+// Helper para validar archivos (tanto documentos como imágenes)
+function isValidFile(file) {
+  // Extensiones válidas para documentos e imágenes
+  const validExtensions = /\.(jpg|jpeg|png|gif|webp|bmp|pdf|doc|docx|xls|xlsx|txt|zip|rar)$/i;
+  const hasValidExtension = validExtensions.test(file.name);
+  
+  // Verificar tipo MIME
+  const validMimeTypes = [
+    'image/', 'application/pdf', 'application/msword', 
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'text/plain', 'application/zip', 'application/x-rar-compressed'
+  ];
+  const hasValidMimeType = file.type && validMimeTypes.some(type => file.type.startsWith(type));
+  
+  // Para Android, si el tipo MIME está vacío pero la extensión es válida, aceptar
+  if (isAndroid() && !hasValidMimeType && hasValidExtension) {
+    console.log('Android: Aceptando archivo con extensión válida pero sin tipo MIME:', file.name);
+    return true;
+  }
+  
+  // Para otros navegadores, requerir tanto extensión como tipo MIME válidos
+  return hasValidExtension && hasValidMimeType;
+}
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { API } from '../../api/axios';
 
 
 import {
-  Box, Button, TextField, Typography, MenuItem, InputLabel, Select, FormControl, Paper, Alert
+  Box, Button, TextField, Typography, MenuItem, InputLabel, Select, FormControl, Paper, Alert, useMediaQuery, useTheme
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -37,6 +67,9 @@ import { es } from 'date-fns/locale';
 // Los tipos y estados se obtendrán dinámicamente del backend
 
 export default function GastoForm() {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  
   const [tipos, setTipos] = useState([]);
   const [estados, setEstados] = useState([]);
   const { id } = useParams();
@@ -52,20 +85,63 @@ export default function GastoForm() {
     archivo: null,
   });
   const [archivoUrl, setArchivoUrl] = useState(null);
+  const [archivoPreview, setArchivoPreview] = useState(null); // Para vista previa de imágenes
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
-    setForm((prev) => ({
-      ...prev,
-      [name]: files ? files[0] : value,
-    }));
-    // Si el usuario selecciona un nuevo archivo, ya no mostramos el anterior
+    
     if (name === 'archivo' && files && files[0]) {
+      const file = files[0];
+      
+      // Validar archivo
+      if (!isValidFile(file)) {
+        setError('Por favor, selecciona un archivo válido (imagen, PDF, documento de oficina, etc.)');
+        return;
+      }
+      
+      setForm((prev) => ({
+        ...prev,
+        [name]: file,
+      }));
+      
+      // Si el usuario selecciona un nuevo archivo, ya no mostramos el anterior
       setArchivoUrl(null);
+      
+      // Crear vista previa si es una imagen
+      if (file.type.startsWith('image/')) {
+        const previewUrl = URL.createObjectURL(file);
+        setArchivoPreview(previewUrl);
+      } else {
+        setArchivoPreview(null);
+      }
+      
+      setError(''); // Limpiar errores previos
+    } else {
+      setForm((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
     }
   };
+
+  const handleClearArchivo = () => {
+    setForm((prev) => ({ ...prev, archivo: null }));
+    if (archivoPreview) {
+      URL.revokeObjectURL(archivoPreview);
+      setArchivoPreview(null);
+    }
+  };
+
+  // Limpiar URLs al desmontar el componente
+  useEffect(() => {
+    return () => {
+      if (archivoPreview) {
+        URL.revokeObjectURL(archivoPreview);
+      }
+    };
+  }, [archivoPreview]);
 
   const toIsoDate = (fechaStr) => {
     // Convierte dd/MM/yyyy o Date a yyyy-MM-dd
@@ -144,9 +220,14 @@ export default function GastoForm() {
   }, [id]);
 
   return (
-    <Box sx={{ maxWidth: 500, mx: 'auto', mt: 6 }}>
-      <Paper sx={{ p: 3 }}>
-        <Typography variant="h5" mb={2}>{id ? 'Editar Gasto' : 'Registrar Gasto'}</Typography>
+    <Box sx={{ 
+      maxWidth: isMobile ? '95vw' : 500, 
+      mx: 'auto', 
+      mt: isMobile ? 2 : 6,
+      px: isMobile ? 1 : 0
+    }}>
+      <Paper sx={{ p: isMobile ? 2 : 3 }}>
+        <Typography variant={isMobile ? "h6" : "h5"} mb={2}>{id ? 'Editar Gasto' : 'Registrar Gasto'}</Typography>
         {error && <Alert severity="error">{error}</Alert>}
         <form onSubmit={handleSubmit}>
           <TextField
@@ -157,8 +238,9 @@ export default function GastoForm() {
             fullWidth
             required
             margin="normal"
+            size={isMobile ? "small" : "medium"}
           />
-          <FormControl fullWidth margin="normal">
+          <FormControl fullWidth margin="normal" size={isMobile ? "small" : "medium"}>
             <InputLabel>Tipo</InputLabel>
             <Select
               name="tipo"
@@ -170,7 +252,7 @@ export default function GastoForm() {
               {tipos.map((t) => <MenuItem key={t} value={t}>{t}</MenuItem>)}
             </Select>
           </FormControl>
-          <FormControl fullWidth margin="normal">
+          <FormControl fullWidth margin="normal" size={isMobile ? "small" : "medium"}>
             <InputLabel>Estado</InputLabel>
             <Select
               name="estado"
@@ -195,6 +277,7 @@ export default function GastoForm() {
                   fullWidth: true,
                   required: true,
                   margin: 'normal',
+                  size: isMobile ? "small" : "medium",
                   InputLabelProps: { shrink: true },
                   inputProps: {
                     style: { cursor: 'pointer' },
@@ -213,6 +296,7 @@ export default function GastoForm() {
             fullWidth
             required
             margin="normal"
+            size={isMobile ? "small" : "medium"}
             inputProps={{ step: '0.01' }}
           />
           <TextField
@@ -222,34 +306,89 @@ export default function GastoForm() {
             onChange={handleChange}
             fullWidth
             margin="normal"
+            size={isMobile ? "small" : "medium"}
             multiline
-            rows={2}
+            rows={isMobile ? 2 : 2}
+            maxRows={isMobile ? 4 : 6}
           />
           {archivoUrl && (
             <Box sx={{ mt: 2, mb: 1 }}>
+              <Typography variant="body2" color="textSecondary" gutterBottom>
+                Archivo actual:
+              </Typography>
               <a href={archivoUrl} target="_blank" rel="noopener noreferrer">Ver archivo actual</a>
             </Box>
           )}
-          <Button
-            variant="outlined"
-            component="label"
-            sx={{ mt: 2 }}
-            fullWidth
-          >
-            {archivoUrl ? 'Actualizar archivo' : 'Subir archivo'}
-            <input
-              type="file"
-              name="archivo"
-              hidden
-              onChange={handleChange}
-            />
-          </Button>
+          
+          {/* Sección de subida de archivos mejorada */}
+          <Box display="flex" alignItems="center" gap={2} mt={2} sx={{
+            flexDirection: isMobile ? 'column' : 'row',
+            alignItems: isMobile ? 'stretch' : 'center'
+          }}>
+            <Button 
+              variant="outlined" 
+              component="label" 
+              size={isMobile ? "small" : "medium"}
+              sx={{ minWidth: isMobile ? '100%' : 'auto' }}
+            >
+              {form.archivo ? 'Cambiar archivo/foto' : (archivoUrl ? 'Actualizar archivo/foto' : 'Subir archivo/foto')}
+              <input
+                type="file"
+                name="archivo"
+                hidden
+                accept="image/jpeg,image/jpg,image/png,image/gif,image/webp,image/bmp,image/*,application/pdf,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar"
+                capture={isMobile ? "environment" : undefined} // Permite usar la cámara en móviles
+                onChange={handleChange}
+              />
+            </Button>
+            
+            {form.archivo && (
+              <>
+                <Typography variant="body2" color="text.secondary" sx={{
+                  fontSize: isMobile ? '0.75rem' : 'inherit',
+                  textAlign: isMobile ? 'center' : 'left'
+                }}>
+                  {form.archivo.name}
+                </Typography>
+                <Button 
+                  variant="outlined" 
+                  color="error" 
+                  size="small"
+                  onClick={handleClearArchivo}
+                >
+                  Quitar
+                </Button>
+              </>
+            )}
+          </Box>
+          
+          {/* Vista previa de imagen */}
+          {archivoPreview && (
+            <Box sx={{ mt: 2, textAlign: 'center' }}>
+              <Typography variant="body2" color="textSecondary" gutterBottom>
+                Vista previa:
+              </Typography>
+              <Box
+                component="img"
+                src={archivoPreview}
+                alt="Vista previa"
+                sx={{
+                  maxWidth: '100%',
+                  maxHeight: isMobile ? 200 : 300,
+                  objectFit: 'contain',
+                  border: '1px solid #e0e0e0',
+                  borderRadius: 1,
+                }}
+              />
+            </Box>
+          )}
           <Button
             type="submit"
             variant="contained"
             color="primary"
             sx={{ mt: 3 }}
             fullWidth
+            size={isMobile ? "medium" : "large"}
           >
             {id ? 'Guardar cambios' : 'Registrar'}
           </Button>
